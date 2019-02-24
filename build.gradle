@@ -1,21 +1,4 @@
 
-plugins {
-    // Apply the scala plugin to add support for Scala
-    id 'scala'
-    id 'idea'
-}
-
-repositories {
-    jcenter()
-}
-
-dependencies {
-    implementation 'org.scala-lang:scala-library:2.12.8'
-
-    implementation 'com.typesafe.akka:akka-http_2.12:10.1.7'
-    implementation 'com.typesafe.akka:akka-stream_2.12:2.5.19'
-
-    testImplementation 'org.scalatest:scalatest_2.12:3.0.5'
-
-    testRuntimeOnly 'org.scala-lang.modules:scala-xml_2.12:1.1.1'
+allprojects {
+    apply plugin: 'idea'
 }

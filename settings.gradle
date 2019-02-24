@@ -8,3 +8,5 @@
  */
 
 rootProject.name = 'docker4s'
+
+include 'docker-client'

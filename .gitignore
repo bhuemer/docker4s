@@ -1,18 +1,13 @@
-#####=== Scala ===#####
-
 *.class
 *.log
-
-#####=== JetBrains ===#####
+**/build/
+**/out/
 
 # Project format
 .idea
 *.iws
 *.iml
 *.ipr
-
-# IntelliJ
-out/
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/
@@ -26,11 +21,5 @@ out/
 # Thumbnails
 ._*
 
-#####=== Gradle ===#####
-
 .gradle
-/build/
-
-# # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
-# gradle/wrapper/gradle-wrapper.properties
 

@@ -20,10 +20,11 @@
  * SOFTWARE.
  */
 package org.docker4s.transport.unix
+
 import com.typesafe.scalalogging.LazyLogging
 import io.netty.channel.{Channel, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http.{HttpContent, HttpObject, HttpResponse, LastHttpContent}
-import io.netty.util.{AttributeKey, ReferenceCountUtil}
+import io.netty.util.AttributeKey
 
 import scala.concurrent.{Future, Promise}
 
@@ -36,29 +37,25 @@ class ResponseHandler extends SimpleChannelInboundHandler[HttpObject] with LazyL
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpObject): Unit = {
     val state = ctx.channel().attr(stateKey)
 
-    try {
-      (state.get(), msg) match {
-        case (Waiting(promise), response: HttpResponse) =>
-          val stream = new ResponseStream
-          promise.success((response, stream))
-          state.set(Receiving(stream))
+    (state.get(), msg) match {
+      case (Waiting(promise), response: HttpResponse) =>
+        val stream = new ResponseStream
+        promise.success((response, stream))
+        state.set(Receiving(stream))
 
-        case (Receiving(stream), content: HttpContent) =>
-          stream.enqueue(scala.util.Success(content.content().copy()))
+      case (Receiving(stream), content: HttpContent) =>
+        stream.enqueue(scala.util.Success(content.content().copy()))
 
-          // Close the stream if we've received the last chunk, otherwise
-          // continue processing with the current `Receiving` state.
-          if (content.isInstanceOf[LastHttpContent]) {
-            stream.close()
-            state.set(Done)
-          }
+        // Close the stream if we've received the last chunk, otherwise
+        // continue processing with the current `Receiving` state.
+        if (content.isInstanceOf[LastHttpContent]) {
+          stream.close()
+          state.set(Done)
+        }
 
-        case _ =>
-          throw new IllegalStateException(
-            s"Received the message [$msg] in a state [${state.get()}] where we didn't expect it.")
-      }
-    } finally {
-      ReferenceCountUtil.release(msg)
+      case _ =>
+        throw new IllegalStateException(
+          s"Received the message [$msg] in a state [${state.get()}] where we didn't expect it.")
     }
 
     // Close the channel once the request/response has finished processing. It'd be more efficient to reuse the

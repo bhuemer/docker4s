@@ -27,12 +27,13 @@ import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.netty.buffer.Unpooled
-import io.netty.channel.unix.DomainSocketChannel
-import io.netty.handler.codec.http._
+import io.netty.channel.unix.{DomainSocketAddress, DomainSocketChannel}
+import io.netty.handler.codec.http.{HttpContent, HttpRequest, HttpResponse}
 import org.http4s.client.Client
 import org.http4s.{Request, Response}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.higherKinds
 import scala.util.{Failure, Success}
 
 private[unix] final class DomainSocketClient[F[_]](private val eventLoop: DomainSocketEventLoop)(
@@ -45,9 +46,9 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
     */
   def run(request: Request[F]): F[Response[F]] = {
     for {
-      channel <- async({ eventLoop.connect() })
+      channel <- async { eventLoop.connect() }
 
-      responseAndStream <- async({
+      responseAndStream <- async {
         val future = ResponseHandler.initialiseChannel(channel)
 
         channel.writeAndFlush(asNettyRequest(request))
@@ -64,20 +65,25 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
           .unsafeRunSync()
 
         future
-      })
+      }
 
-      response <- asHttp4sResponse(responseAndStream._1)
+      // @formatter:off
+      response <- asHttp4sResponse(responseAndStream._1).recoverWith({ case ex =>
+        F.raiseError(new IllegalStateException(
+          s"Error occurred while parsing the response [${responseAndStream._1}] to the request [$request].", ex))
+      })
+      // @formatter:on
 
       // Note that the channel will be closed by the `ResponseHandler` - we don't need to worry about it here.
     } yield {
+      // Return the fully formed response, but don't wait for the response stream. That will keep
+      // processing, but this also allows the caller to consume the streaming response already.
       response.withBodyStream(asHttp4sResponseStream(responseAndStream._2))
     }
   }
 
-  /**
-    * Converts the information that is immediately available in the given http4s request into a Netty one, i.e.
-    * it converts everything apart from a potential request body. That body needs to be processed separately.
-    */
+  // -------------------------------------------- Utility methods
+
   private def asNettyRequest(request: Request[F]): HttpRequest = {
     import io.netty.handler.codec.http.{DefaultHttpRequest, HttpMethod, HttpVersion}
 
@@ -96,8 +102,7 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
   }
 
   private def asNettyRequestStream(request: Request[F]): Stream[F, HttpContent] = {
-    import io.netty.handler.codec.http.DefaultHttpContent
-    import io.netty.handler.codec.http.LastHttpContent
+    import io.netty.handler.codec.http.{DefaultHttpContent, LastHttpContent}
 
     request.body.chunks.map({ chunk =>
       new DefaultHttpContent(Unpooled.wrappedBuffer(chunk.toByteBuffer))
@@ -134,26 +139,27 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
 
   private def asHttp4sResponseStream(stream: ResponseStream): Stream[F, Byte] =
     Stream
-      .repeatEval(async({ stream.nextChunk() }))
+      .repeatEval(async { stream.nextChunk() })
       .takeWhile(_.isDefined)
       .flatMap({
         case Some(chunk) =>
           // Depending on the backing of the byte buffer: extract the underlying bytes. The response handler
           // has already created a defensive copy of the byte buffer, so we don't need to worry about Netty
           // re-using it and the bytes possibly having been corrupted at this stage.
-          val bytes = if (chunk.hasArray) {
+          Stream.emits(if (chunk.hasArray) {
             chunk.array()
           } else {
-            val temp = Array.ofDim[Byte](chunk.readableBytes())
-            chunk.readBytes(temp)
-            temp
-          }
-
-          Stream.emits(bytes)
+            val bytes = Array.ofDim[Byte](chunk.readableBytes())
+            chunk.readBytes(bytes)
+            bytes
+          })
 
         case None => Stream.empty
       })
 
+  /**
+    * Asynchronously processes/consumes the given future under the effect type `F`.
+    */
   private def async[T](f: => Future[T]): F[T] =
     F.async({ cb =>
       f.onComplete({
@@ -164,42 +170,41 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
 
 }
 
-object DomainSocketClient {
+object DomainSocketClient extends LazyLogging {
 
-  def apply[F[_]: ConcurrentEffect]()(implicit ec: ExecutionContext): Client[F] = {
-    val client = new DomainSocketClient[F](
-      DomainSocketEventLoop(
+  private val defaultSocketAddress: DomainSocketAddress = new DomainSocketAddress("/var/run/docker.sock")
+
+  /**
+    * Creates a new http4s client that will use the given UNIX socket path for communication.
+    *
+    * Note that the execution context will never be used for blocking calls (the client's backend is implemented
+    * in a non-blocking way), but it allows you to off-load response processing from Netty's event loop thread.
+    */
+  def apply[F[_]](address: DomainSocketAddress = defaultSocketAddress)(
+      implicit F: ConcurrentEffect[F],
+      ec: ExecutionContext): Resource[F, Client[F]] = {
+    val eventLoopResource = Resource.make(
+      F.fromTry(DomainSocketEventLoop(
         (channel: DomainSocketChannel) => {
           val p = channel.pipeline
-          p.addLast(new HttpClientCodec)
-          p.addLast(new HttpContentDecompressor)
+          p.addLast(new io.netty.handler.codec.http.HttpClientCodec)
+          p.addLast(new io.netty.handler.codec.http.HttpContentDecompressor)
           p.addLast(new ResponseHandler)
         },
-      ).get)
+        address
+      )))({ eventLoop =>
+      F.delay({
+        logger.info(s"Closing the domain socket event loop.")
+        eventLoop.close()
+      })
+    })
 
-    Client { request =>
-      Resource.liftF(client.run(request))
-    }
+    eventLoopResource.map({ eventLoop =>
+      val client = new DomainSocketClient[F](eventLoop)
+      Client[F] { request =>
+        Resource.liftF(client.run(request))
+      }
+    })
   }
-
-//  def main(args: Array[String]): Unit = {
-//    import cats.effect.{ContextShift, Timer}
-//    import scala.concurrent.ExecutionContext.global
-//
-//    implicit val cs: ContextShift[IO] = IO.contextShift(global)
-//    implicit val timer: Timer[IO] = IO.timer(global)
-//    val cf: ConcurrentEffect[IO] = implicitly[ConcurrentEffect[IO]]
-//
-//    val client = DomainSocketClient()(cf, global)
-//
-//    val response = client
-//      .fetchAs[String](
-//        Request[IO]()
-//          .withMethod(Method.GET)
-//          .withHeaders(Header("Host", "localhost"))
-//          .withUri(Uri.unsafeFromString("http://localhost/info")))
-//      .unsafeRunSync()
-//    println(response)
-//  }
 
 }

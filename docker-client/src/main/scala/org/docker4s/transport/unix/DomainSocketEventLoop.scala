@@ -23,6 +23,7 @@ package org.docker4s.transport.unix
 
 import java.util.concurrent.CancellationException
 
+import com.typesafe.scalalogging.LazyLogging
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.{Channel, ChannelInitializer}
 import io.netty.channel.epoll.{EpollDomainSocketChannel, EpollEventLoopGroup}
@@ -77,9 +78,10 @@ private[unix] final class DomainSocketEventLoop(
 
 }
 
-object DomainSocketEventLoop {
+object DomainSocketEventLoop extends LazyLogging {
 
-  private val defaultSocketAddress: DomainSocketAddress = new DomainSocketAddress("/var/run/docker.sock")
+  // Netty will use its own default number (available processors * 2) if this value is passed in.
+  private val DEFAULT_EVENT_LOOP_THREADS = 0
 
   /**
     * Creates a new domain-socket-based event loop that will connect to the given socket path for every request.
@@ -92,21 +94,29 @@ object DomainSocketEventLoop {
     */
   def apply(
       initializer: ChannelInitializer[DomainSocketChannel],
-      address: DomainSocketAddress = defaultSocketAddress): Try[DomainSocketEventLoop] = {
+      address: DomainSocketAddress): Try[DomainSocketEventLoop] = {
+    val threadFactory = org.http4s.util.threads.threadFactory(name = { i =>
+      s"docker4s-netty-client-worker-$i"
+    })
+
     if (isEpollAvailable) {
+      logger.info(s"Creating a new UNIX domain socket event loop using `epoll` [address: $address].")
+
       // @formatter:off
       Success(new DomainSocketEventLoop(
         new Bootstrap()
-          .group(new EpollEventLoopGroup())
+          .group(new EpollEventLoopGroup(DEFAULT_EVENT_LOOP_THREADS, threadFactory))
           .channel(classOf[EpollDomainSocketChannel])
           .handler(initializer)
         , address))
       // @formatter:on
     } else if (isKQueueAvailable) {
+      logger.info(s"Creating a new UNIX domain socket event loop using `kqueue` [address: $address].")
+
       // @formatter:off
       Success(new DomainSocketEventLoop(
         new Bootstrap()
-          .group(new KQueueEventLoopGroup())
+          .group(new KQueueEventLoopGroup(DEFAULT_EVENT_LOOP_THREADS, threadFactory))
           .channel(classOf[KQueueDomainSocketChannel])
           .handler(initializer)
         , address))
@@ -120,6 +130,7 @@ object DomainSocketEventLoop {
     }
   }
 
+  // won't throw, even if the JAR or JNI files are not available on the classpath
   private lazy val isKQueueAvailable: Boolean = {
     try {
       Class.forName("io.netty.channel.kqueue.KQueue")
@@ -130,6 +141,7 @@ object DomainSocketEventLoop {
     }
   }
 
+  // also won't throw, regardless of what's on the classpath
   private lazy val isEpollAvailable: Boolean = {
     try {
       Class.forName("io.netty.channel.epoll.Epoll")

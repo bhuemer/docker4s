@@ -4,18 +4,15 @@ dependencies {
     implementation 'com.typesafe.scala-logging:scala-logging_2.12:3.9.2'
 
     implementation 'org.http4s:http4s-core_2.12:0.20.0-M6'
+    implementation 'org.http4s:http4s-circe_2.12:0.20.0-M6'
     implementation 'org.http4s:http4s-client_2.12:0.20.0-M6'
-    implementation 'org.http4s:http4s-async-http-client_2.12:0.20.0-M6'
 
     implementation 'io.netty:netty-handler:4.1.33.Final'
     implementation 'io.netty:netty-codec-http:4.1.33.Final'
     compileOnly 'io.netty:netty-transport-native-epoll:4.1.33.Final'
-    implementation 'io.netty:netty-transport-native-kqueue:4.1.33.Final:osx-x86_64'
+    compileOnly 'io.netty:netty-transport-native-kqueue:4.1.33.Final'
 
-    implementation 'com.typesafe.netty:netty-reactive-streams-http:2.0.2'
-
-    implementation 'io.circe:circe-core_2.12:0.10.0'
-    implementation 'io.circe:circe-parser_2.12:0.10.0'
+    testImplementation 'io.netty:netty-transport-native-kqueue:4.1.33.Final:osx-x86_64'
 
     implementation 'org.slf4j:slf4j-simple:1.7.25'
 }

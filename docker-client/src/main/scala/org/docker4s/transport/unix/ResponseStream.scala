@@ -98,6 +98,7 @@ private[unix] final class ResponseStream extends LazyLogging {
         if (!state.compareAndSet(current, Available(Queue(response)))) {
           enqueue(response)
         } else {
+          logger.trace(s"Switching response stream to available state given the response [$response].")
           true
         }
 
@@ -108,6 +109,8 @@ private[unix] final class ResponseStream extends LazyLogging {
           enqueue(response)
         } else {
           response.fold(previous.failure, buffer => previous.success(Option(buffer)))
+          logger.trace(
+            s"Resolved previously registered promise with response [$response]. There are ${queue.size - 1} promises still waiting.")
           true
         }
 
@@ -116,6 +119,7 @@ private[unix] final class ResponseStream extends LazyLogging {
         if (!state.compareAndSet(current, Available(queue.enqueue(response)))) {
           enqueue(response)
         } else {
+          logger.trace(s"Enqueued response [$response] to the queue [size: ${queue.size + 1}].")
           true
         }
 

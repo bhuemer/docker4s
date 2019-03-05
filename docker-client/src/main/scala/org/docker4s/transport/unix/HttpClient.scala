@@ -1,16 +1,16 @@
 package org.docker4s.transport.unix
 
-import cats.effect.{IO, Resource}
+import cats.effect.IO
 import io.netty.buffer.ByteBuf
-import io.netty.channel.unix.{DomainSocketAddress, DomainSocketChannel}
+import io.netty.channel.unix.DomainSocketChannel
 import io.netty.handler.codec.http._
 import org.http4s.Response
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success}
 
-class HttpClient(private val eventLoop: EventLoop) {
+class HttpClient {
 
 //  def execute(request: Request[IO])(implicit F: ConcurrentEffect[IO]): IO[Response[IO]] = {
 //    val nettyRequest = new DefaultStreamedHttpRequest(
@@ -93,15 +93,14 @@ object HttpClient {
 //  }
 
   def main(args: Array[String]): Unit = {
-    val eventLoop = EventLoop(
+    val eventLoop = DomainSocketEventLoop(
       (channel: DomainSocketChannel) => {
         val p = channel.pipeline
         p.addLast(new HttpClientCodec)
         p.addLast(new HttpContentDecompressor)
         p.addLast(new ResponseHandler)
       },
-      new DomainSocketAddress("/var/run/docker.sock")
-    )
+    ).get
 
     import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -124,10 +123,11 @@ object HttpClient {
             .withBodyStream(streaming(stream))
       })
 
-    val response = Await.result(result, FiniteDuration(1, "min"))
-    System.out.println(response.as[String].unsafeRunSync())
+    val response = Await.result(result, FiniteDuration(1, "min")).as[String].unsafeRunSync()
 
-    import ExecutionContext.Implicits.global
+    val json = io.circe.parser.parse(response).fold(throw _, Predef.identity)
+    System.out.println("Response: " + json.spaces2)
+
 //    println("Response: " + Await.result(client.request, FiniteDuration(1, "min")))
 
     Await.result(eventLoop.close, FiniteDuration(1, "min"))
@@ -143,8 +143,12 @@ object HttpClient {
       }))
       .takeWhile(_.isDefined)
       .flatMap({
-        case Some(buffer) => fs2.Stream.emits(buffer.array())
-        case None         => fs2.Stream.empty
+        case Some(buffer) =>
+          val bytes = Array.ofDim[Byte](buffer.readableBytes())
+          buffer.readBytes(bytes)
+          fs2.Stream.emits(bytes)
+
+        case None => fs2.Stream.empty
       })
   }
 

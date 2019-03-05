@@ -35,7 +35,7 @@ import scala.util.Try
   * Implements an asynchronous unbounded queue of byte buffers based on Viktor Klang's asynchronous queue from:
   * https://groups.google.com/forum/#!topic/scala-user/lyoAdNs3E1o
   */
-class ResponseStream extends LazyLogging {
+private[unix] final class ResponseStream extends LazyLogging {
 
   import ResponseStream._
 
@@ -47,7 +47,7 @@ class ResponseStream extends LazyLogging {
     * about the error. `None` will be returned, if the stream has been closed and all previously accumulated chunks
     * have been drained already.
     */
-  @tailrec final def nextChunk: Future[Option[ByteBuf]] = {
+  @tailrec def nextChunk: Future[Option[ByteBuf]] = {
     state.get() match {
       // No byte buffers are available yet -> register a promise.
       case current @ Waiting(queue) =>
@@ -91,7 +91,7 @@ class ResponseStream extends LazyLogging {
     }
   }
 
-  @tailrec private[unix] final def enqueue(response: Try[ByteBuf]): Boolean = {
+  @tailrec def enqueue(response: Try[ByteBuf]): Boolean = {
     state.get() match {
       // Nobody waiting yet, so we switch into the available state
       case current @ Waiting(queue) if queue.isEmpty =>
@@ -128,7 +128,7 @@ class ResponseStream extends LazyLogging {
   /**
     * Marks this response stream as closed.
     */
-  @tailrec private[unix] final def close(): Unit = {
+  @tailrec def close(): Unit = {
     state.get() match {
       // Zero, one or more chunks have been requested. All will be notified about the end of the stream (Option.none).
       case current @ Waiting(queue) =>
@@ -153,7 +153,7 @@ class ResponseStream extends LazyLogging {
 
 }
 
-object ResponseStream {
+private[unix] object ResponseStream {
 
   private sealed trait State
 

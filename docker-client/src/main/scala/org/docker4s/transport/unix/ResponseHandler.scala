@@ -28,7 +28,10 @@ import io.netty.util.AttributeKey
 
 import scala.concurrent.{Future, Promise}
 
-class ResponseHandler extends SimpleChannelInboundHandler[HttpObject] with LazyLogging {
+/**
+  *
+  */
+private[unix] final class ResponseHandler extends SimpleChannelInboundHandler[HttpObject] with LazyLogging {
 
   import ResponseHandler._
 
@@ -46,21 +49,25 @@ class ResponseHandler extends SimpleChannelInboundHandler[HttpObject] with LazyL
       case (Receiving(stream), content: HttpContent) =>
         stream.enqueue(scala.util.Success(content.content().copy()))
 
-        // Close the stream if we've received the last chunk, otherwise
-        // continue processing with the current `Receiving` state.
+        // Close the stream if we've received the last chunk, otherwise continue receiving more bytes.
         if (content.isInstanceOf[LastHttpContent]) {
           stream.close()
           state.set(Done)
         }
 
+      case (null, _) =>
+        // This really shouldn't ever happen and would be a serious bug in this client somewhere ..
+        throw new IllegalStateException(
+          s"The state for this channel hasn't ben initialised correctly. See `ResponseHandler.initialiseChannel()`.")
+
       case _ =>
         throw new IllegalStateException(
-          s"Received the message [$msg] in a state [${state.get()}] where we didn't expect it.")
+          s"Received the message [$msg, class: ${msg.getClass.getName}] in a state [${state.get()}] where we didn't expect it.")
     }
 
     // Close the channel once the request/response has finished processing. It'd be more efficient to reuse the
-    // channel instead of creating another one for another request, but we'll leave that for the future, if it
-    // really turns out to be a performance problem.
+    // channel instead of creating one for every request, but we'll leave that for the future, if it really
+    // turns out to be a performance problem.
     if (state.get() == Done) {
       ctx.close()
     }
@@ -85,7 +92,7 @@ class ResponseHandler extends SimpleChannelInboundHandler[HttpObject] with LazyL
 
 }
 
-object ResponseHandler {
+private[unix] object ResponseHandler {
 
   private val stateKey: AttributeKey[ResponseHandler.State] =
     AttributeKey.valueOf[ResponseHandler.State]("docker4s.http-handler-state")

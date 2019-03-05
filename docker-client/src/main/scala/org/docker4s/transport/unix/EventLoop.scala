@@ -25,12 +25,12 @@ import java.net.SocketAddress
 import java.util.concurrent.CancellationException
 
 import io.netty.bootstrap.Bootstrap
-import io.netty.channel.epoll.{ EpollDomainSocketChannel, EpollEventLoopGroup }
-import io.netty.channel.kqueue.{ KQueueDomainSocketChannel, KQueueEventLoopGroup }
+import io.netty.channel.epoll.{EpollDomainSocketChannel, EpollEventLoopGroup}
+import io.netty.channel.kqueue.{KQueueDomainSocketChannel, KQueueEventLoopGroup}
 import io.netty.channel.unix.DomainSocketChannel
-import io.netty.channel.{ Channel, ChannelInitializer }
+import io.netty.channel.{Channel, ChannelInitializer}
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{Future, Promise}
 
 /**
   *
@@ -52,8 +52,7 @@ trait EventLoop {
 
 object EventLoop {
 
-  def apply(initializer: ChannelInitializer[DomainSocketChannel],
-            remoteAddress: SocketAddress): EventLoop = {
+  def apply(initializer: ChannelInitializer[DomainSocketChannel], remoteAddress: SocketAddress): EventLoop = {
     val bootstrap = new Bootstrap()
 
     if (isEpollAvailable) {
@@ -118,8 +117,8 @@ object EventLoop {
       io.netty.channel.kqueue.KQueue.isAvailable
     } catch {
       case _: ClassNotFoundException =>
+        false
     }
-    false
   }
 
   private lazy val isEpollAvailable: Boolean = {
@@ -128,8 +127,8 @@ object EventLoop {
       io.netty.channel.epoll.Epoll.isAvailable
     } catch {
       case _: ClassNotFoundException =>
+        false
     }
-    false
   }
 
 }

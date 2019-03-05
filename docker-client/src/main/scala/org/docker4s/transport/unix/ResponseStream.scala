@@ -47,13 +47,13 @@ private[unix] final class ResponseStream extends LazyLogging {
     * about the error. `None` will be returned, if the stream has been closed and all previously accumulated chunks
     * have been drained already.
     */
-  @tailrec def nextChunk: Future[Option[ByteBuf]] = {
+  @tailrec def nextChunk(): Future[Option[ByteBuf]] = {
     state.get() match {
       // No byte buffers are available yet -> register a promise.
       case current @ Waiting(queue) =>
         val promise = Promise[Option[ByteBuf]]()
         if (!state.compareAndSet(current, Waiting(queue.enqueue(promise)))) {
-          nextChunk
+          nextChunk()
         } else {
           promise.future
         }
@@ -62,7 +62,7 @@ private[unix] final class ResponseStream extends LazyLogging {
       case current @ Available(queue) if queue.isEmpty =>
         val promise = Promise[Option[ByteBuf]]()
         if (!state.compareAndSet(current, Waiting(Queue(promise)))) {
-          nextChunk
+          nextChunk()
         } else {
           promise.future
         }
@@ -71,7 +71,7 @@ private[unix] final class ResponseStream extends LazyLogging {
       case current @ Available(queue) =>
         val (result, remaining) = queue.dequeue
         if (!state.compareAndSet(current, Available(remaining))) {
-          nextChunk
+          nextChunk()
         } else {
           Future.fromTry(result.map(Option(_)))
         }
@@ -84,7 +84,7 @@ private[unix] final class ResponseStream extends LazyLogging {
       case current @ Closed(queue) =>
         val (result, remaining) = queue.dequeue
         if (!state.compareAndSet(current, Closed(remaining))) {
-          nextChunk
+          nextChunk()
         } else {
           Future.fromTry(result.map(Option(_)))
         }

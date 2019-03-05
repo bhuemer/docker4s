@@ -43,7 +43,7 @@ private[unix] final class DomainSocketEventLoop(
     * Creates a new connection / channel to the Docker UNIX domain socket.
     * @return a future that will complete once the connection has been established
     */
-  def connect: Future[Channel] = {
+  def connect(): Future[Channel] = {
     val future = bootstrap.connect(address)
     onComplete(future, result = future.channel())
   }
@@ -53,7 +53,7 @@ private[unix] final class DomainSocketEventLoop(
     *
     * Returns a future that will be notified when the closing operation has completed.
     */
-  def close: Future[Unit] = {
+  def close(): Future[Unit] = {
     val future = bootstrap.config().group().shutdownGracefully()
     onComplete(future, result = ())
   }

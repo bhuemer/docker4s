@@ -21,38 +21,24 @@
  */
 package org.docker4s
 
-import cats.effect.{ConcurrentEffect, Resource}
+import cats.effect.ConcurrentEffect
 import org.docker4s.models.Info
-import org.docker4s.transport.unix.DomainSocketClient
-import org.http4s.Uri
+import org.docker4s.models.Decoders._
+import org.http4s.{EntityDecoder, Header, Method, Request, Uri}
+import org.http4s.client.Client
 
-import scala.concurrent.ExecutionContext
 import scala.language.higherKinds
 
-/**
-  * Allows you to communicate with a docker daemon.
-  * @tparam F the effect type for evaluations, e.g. `IO`
-  */
-trait DockerClient[F[_]] {
+private[docker4s] class Http4sDockerClient[F[_]: ConcurrentEffect](client: Client[F], uri: Uri)
+    extends DockerClient[F] {
 
-  def info: F[Info]
-
-}
-
-object DockerClient {
-
-  /**
-    * Returns a [[DockerClient]] configured from environment variables.
-    *
-    * The environment variables used are the same as those used by the Docker command-line client. They are:
-    *  - '''DOCKER_HOST''' - the URL to the Docker host
-    *  - '''DOCKER_TLS_VERIFY''' - verify the host against a CA certificate
-    *  - '''DOCKER_CERT_PATH''' - path to a directory containing TLS certificates to use when connecting
-    */
-  def fromEnvironment[F[_]: ConcurrentEffect](implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
-    DomainSocketClient().map({ client =>
-      new Http4sDockerClient[F](client, uri = Uri.unsafeFromString("http://localhost"))
-    })
+  override def info: F[Info] = {
+    implicit val infoEntityDecoder: EntityDecoder[F, Info] = org.http4s.circe.accumulatingJsonOf
+    client.fetchAs[Info](
+      Request[F]()
+        .withMethod(Method.GET)
+        .withHeaders(Header("Host", uri.host.map(_.value).getOrElse("localhost")))
+        .withUri(uri.withPath("/info")))
   }
 
 }

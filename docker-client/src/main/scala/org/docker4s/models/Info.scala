@@ -21,6 +21,8 @@
  */
 package org.docker4s.models
 
+import java.time.ZonedDateTime
+
 case class Info(
     id: String,
     containers: Int,
@@ -34,4 +36,5 @@ case class Info(
     architecture: String,
     httpProxy: Option[String],
     httpsProxy: Option[String],
-    noProxy: Option[String])
+    noProxy: Option[String],
+    systemTime: ZonedDateTime)

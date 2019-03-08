@@ -25,10 +25,10 @@ import java.util.concurrent.CancellationException
 
 import com.typesafe.scalalogging.LazyLogging
 import io.netty.bootstrap.Bootstrap
-import io.netty.channel.{Channel, ChannelInitializer}
 import io.netty.channel.epoll.{EpollDomainSocketChannel, EpollEventLoopGroup}
 import io.netty.channel.kqueue.{KQueueDomainSocketChannel, KQueueEventLoopGroup}
 import io.netty.channel.unix.{DomainSocketAddress, DomainSocketChannel}
+import io.netty.channel.{Channel, ChannelInitializer}
 
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success, Try}

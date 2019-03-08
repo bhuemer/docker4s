@@ -21,11 +21,13 @@
  */
 package org.docker4s
 
+import java.time.ZonedDateTime
+
 import cats.effect.{ConcurrentEffect, Sync}
 import io.circe.Decoder
 import org.docker4s.models.Info
-import org.http4s.{EntityDecoder, Header, Method, Request, Uri}
 import org.http4s.client.Client
+import org.http4s.{EntityDecoder, Header, Method, Request, Uri}
 
 import scala.language.higherKinds
 
@@ -53,6 +55,8 @@ private[docker4s] class Http4sDockerClient[F[_]: ConcurrentEffect](private val c
       httpProxy <- c.downField("HttpProxy").as[Option[String]].right
       httpsProxy <- c.downField("HttpsProxy").as[Option[String]].right
       noProxy <- c.downField("NoProxy").as[Option[String]].right
+
+      systemTime <- c.downField("SystemTime").as[ZonedDateTime].right
     } yield
       Info(
         id = id,
@@ -67,7 +71,8 @@ private[docker4s] class Http4sDockerClient[F[_]: ConcurrentEffect](private val c
         architecture = architecture,
         httpProxy = httpProxy,
         httpsProxy = httpsProxy,
-        noProxy = noProxy
+        noProxy = noProxy,
+        systemTime = systemTime
       )
   })
 

@@ -19,28 +19,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s
+package org.docker4s.models
 
-import java.nio.file.{Path, Paths}
+import java.time.OffsetDateTime
 
-sealed trait DockerHost
-
-object DockerHost {
-
-  def fromEnvironment: DockerHost = {
-    // TODO: Implement this properly
-    DockerHost.Unix(Paths.get("/var/run/docker.sock"), None)
-  }
-
-  /**
-    * Connects via UNIX domain sockets to the given docker host.
-    */
-  case class Unix(socketPath: Path, certificatePath: Option[Path]) extends DockerHost
-
-  case class Npipe()
-
-  /**
-    * Connects via TCP to the given docker host.
-    */
-  case class Tcp(host: String, port: Int, certificatePath: Option[Path]) extends DockerHost
-}
+case class Version(
+    version: String,
+    apiVersion: String,
+    minApiVersion: Option[String],
+    gitCommit: String,
+    goVersion: String,
+    os: String,
+    arch: String,
+    kernelVersion: String,
+    buildTime: OffsetDateTime)

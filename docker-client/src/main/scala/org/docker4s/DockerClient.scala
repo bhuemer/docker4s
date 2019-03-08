@@ -23,7 +23,7 @@ package org.docker4s
 
 import cats.effect.{ConcurrentEffect, Resource}
 import io.netty.channel.unix.DomainSocketAddress
-import org.docker4s.models.Info
+import org.docker4s.models.{Info, Version}
 import org.docker4s.transport.unix.DomainSocketClient
 import org.http4s.Uri
 
@@ -40,6 +40,8 @@ trait DockerClient[F[_]] {
     * Returns system-wide information. Identical to the `docker info` command.
     */
   def info: F[Info]
+
+  def version: F[Version]
 
 }
 

@@ -21,11 +21,11 @@
  */
 package org.docker4s
 
-import java.time.ZonedDateTime
+import java.time.{OffsetDateTime, ZonedDateTime}
 
 import cats.effect.{ConcurrentEffect, Sync}
 import io.circe.Decoder
-import org.docker4s.models.Info
+import org.docker4s.models.{Info, Version}
 import org.http4s.client.Client
 import org.http4s.{EntityDecoder, Header, Method, Request, Uri}
 
@@ -85,6 +85,42 @@ private[docker4s] class Http4sDockerClient[F[_]: ConcurrentEffect](private val c
         .withMethod(Method.GET)
         .withHeaders(Header("Host", uri.host.map(_.value).getOrElse("localhost")))
         .withUri(uri.withPath("/info")))(accumulatingJsonOf(infoDecoder))
+  }
+
+  private val versionDecoder: Decoder[Version] = Decoder.instance({ c =>
+    for {
+      version <- c.downField("Version").as[String].right
+      apiVersion <- c.downField("ApiVersion").as[String].right
+      minApiVersion <- c.downField("MinAPIVersion").as[Option[String]].right
+
+      gitCommit <- c.downField("GitCommit").as[String].right
+      goVersion <- c.downField("GoVersion").as[String].right
+
+      os <- c.downField("Os").as[String].right
+      arch <- c.downField("Arch").as[String].right
+      kernelVersion <- c.downField("KernelVersion").as[String].right
+
+      buildTime <- c.downField("BuildTime").as[OffsetDateTime].right
+    } yield
+      Version(
+        version = version,
+        apiVersion = apiVersion,
+        minApiVersion = minApiVersion,
+        gitCommit = gitCommit,
+        goVersion = goVersion,
+        os = os,
+        arch = arch,
+        kernelVersion = kernelVersion,
+        buildTime = buildTime
+      )
+  })
+
+  override def version: F[Version] = {
+    client.fetchAs[Version](
+      Request[F]()
+        .withMethod(Method.GET)
+        .withHeaders(Header("Host", uri.host.map(_.value).getOrElse("localhost")))
+        .withUri(uri.withPath("/version")))(accumulatingJsonOf(versionDecoder))
   }
 
   // Partially applied version of `accumulatingJsonOf` that doesn't require evidence for the effect type any more.

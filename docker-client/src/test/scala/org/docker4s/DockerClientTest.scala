@@ -14,9 +14,13 @@ object DockerClientTest {
     DockerClient
       .fromEnvironment(cf, global)
       .use({ client =>
-        client.info.flatMap({ info =>
-          IO.delay(println(s"Info: $info"))
-        })
+        for {
+          info <- client.info
+          version <- client.version
+        } yield {
+          println(s"Info: $info")
+          println(s"Version: $version")
+        }
       })
       .unsafeRunSync()
   }

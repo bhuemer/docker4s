@@ -21,35 +21,17 @@
  */
 package org.docker4s.models
 
-import io.circe.Decoder
-
 case class Info(
     id: String,
     containers: Int,
     containersRunning: Int,
     containersPaused: Int,
     containersStopped: Int,
+    cpuCfsPeriod: Option[Boolean],
+    cpuCfsQuota: Option[Boolean],
     images: Int,
     osType: String,
-    architecture: String)
-
-object Info {
-
-  val decoder: Decoder[Info] = Decoder.instance({ c =>
-    for {
-      id <- c.downField("ID").as[String].right
-
-      // @formatter:off
-      containers        <- c.downField("Containers").as[Int].right
-      containersRunning <- c.downField("ContainersRunning").as[Int].right
-      containersPaused  <- c.downField("ContainersPaused").as[Int].right
-      containersStopped <- c.downField("ContainersStopped").as[Int].right
-      // @formatter:on
-
-      images <- c.downField("Images").as[Int].right
-      osType <- c.downField("OSType").as[String].right
-      architecture <- c.downField("Architecture").as[String].right
-    } yield Info(id, containers, containersRunning, containersPaused, containersStopped, images, osType, architecture)
-  })
-
-}
+    architecture: String,
+    httpProxy: Option[String],
+    httpsProxy: Option[String],
+    noProxy: Option[String])

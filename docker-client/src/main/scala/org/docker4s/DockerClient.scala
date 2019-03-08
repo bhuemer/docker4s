@@ -22,6 +22,7 @@
 package org.docker4s
 
 import cats.effect.{ConcurrentEffect, Resource}
+import io.netty.channel.unix.DomainSocketAddress
 import org.docker4s.models.Info
 import org.docker4s.transport.unix.DomainSocketClient
 import org.http4s.Uri
@@ -35,6 +36,9 @@ import scala.language.higherKinds
   */
 trait DockerClient[F[_]] {
 
+  /**
+    * Returns system-wide information. Identical to the `docker info` command.
+    */
   def info: F[Info]
 
 }
@@ -50,9 +54,20 @@ object DockerClient {
     *  - '''DOCKER_CERT_PATH''' - path to a directory containing TLS certificates to use when connecting
     */
   def fromEnvironment[F[_]: ConcurrentEffect](implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
-    DomainSocketClient().map({ client =>
-      new Http4sDockerClient[F](client, uri = Uri.unsafeFromString("http://localhost"))
-    })
+    fromHost(DockerHost.fromEnvironment)
+  }
+
+  def fromHost[F[_]: ConcurrentEffect](dockerHost: DockerHost)(
+      implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
+    dockerHost match {
+      case DockerHost.Unix(socketPath, _) =>
+        DomainSocketClient(new DomainSocketAddress(socketPath.toFile.getAbsolutePath)).map({ client =>
+          new Http4sDockerClient[F](client, uri = Uri.unsafeFromString("http://localhost"))
+        })
+
+      case DockerHost.Tcp(host, port, _) =>
+        ???
+    }
   }
 
 }

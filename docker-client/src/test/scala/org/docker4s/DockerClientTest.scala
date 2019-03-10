@@ -1,4 +1,6 @@
 package org.docker4s
+import java.time.ZonedDateTime
+
 import cats.effect.{ConcurrentEffect, IO}
 
 object DockerClientTest {
@@ -14,13 +16,13 @@ object DockerClientTest {
     DockerClient
       .fromEnvironment(cf, global)
       .use({ client =>
-        for {
-          info <- client.info
-          version <- client.version
+        val stream = for {
+          event <- client.system.events(until = Some(ZonedDateTime.now().plusSeconds(60)))
         } yield {
-          println(s"Info: $info")
-          println(s"Version: $version")
+          println(s"[${Thread.currentThread().getName}] Event: $event")
         }
+
+        stream.compile.drain
       })
       .unsafeRunSync()
   }

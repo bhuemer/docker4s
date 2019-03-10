@@ -24,6 +24,7 @@ package org.docker4s
 import cats.effect.{ConcurrentEffect, Resource}
 import io.netty.channel.unix.DomainSocketAddress
 import org.docker4s.models.{Info, Version}
+import org.docker4s.transport.Client
 import org.docker4s.transport.unix.DomainSocketClient
 import org.http4s.Uri
 
@@ -37,11 +38,16 @@ import scala.language.higherKinds
 trait DockerClient[F[_]] {
 
   /**
-    * Returns system-wide information. Identical to the `docker info` command.
+    * Returns system-wide information. Similar to the `docker info` command.
     */
   def info: F[Info]
 
+  /**
+    * Returns version information from the server. Similar to the `docker version` command.
+    */
   def version: F[Version]
+
+  def system: api.System[F]
 
 }
 
@@ -64,7 +70,7 @@ object DockerClient {
     dockerHost match {
       case DockerHost.Unix(socketPath, _) =>
         DomainSocketClient(new DomainSocketAddress(socketPath.toFile.getAbsolutePath)).map({ client =>
-          new Http4sDockerClient[F](client, uri = Uri.unsafeFromString("http://localhost"))
+          new Http4sDockerClient[F](Client.from(client), uri = Uri.unsafeFromString("http://localhost"))
         })
 
       case DockerHost.Tcp(host, port, _) =>

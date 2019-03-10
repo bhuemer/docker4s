@@ -23,6 +23,8 @@ package org.docker4s.models
 
 import java.time.ZonedDateTime
 
+import io.circe.Decoder
+
 case class Info(
     id: String,
     containers: Int,
@@ -38,3 +40,51 @@ case class Info(
     httpsProxy: Option[String],
     noProxy: Option[String],
     systemTime: ZonedDateTime)
+
+object Info {
+
+  // -------------------------------------------- Circe decoders
+
+  val decoder: Decoder[Info] = Decoder.instance({ c =>
+    for {
+      id <- c.downField("ID").as[String].right
+
+      // @formatter:off
+      containers        <- c.downField("Containers").as[Int].right
+      containersRunning <- c.downField("ContainersRunning").as[Int].right
+      containersPaused  <- c.downField("ContainersPaused").as[Int].right
+      containersStopped <- c.downField("ContainersStopped").as[Int].right
+      // @formatter:on
+
+      cpuCfsPeriod <- c.downField("CpuCfsPeriod").as[Option[Boolean]].right
+      cpuCfsQuota <- c.downField("CpuCfsQuota").as[Option[Boolean]].right
+
+      images <- c.downField("Images").as[Int].right
+      osType <- c.downField("OSType").as[String].right
+      architecture <- c.downField("Architecture").as[String].right
+
+      httpProxy <- c.downField("HttpProxy").as[Option[String]].right
+      httpsProxy <- c.downField("HttpsProxy").as[Option[String]].right
+      noProxy <- c.downField("NoProxy").as[Option[String]].right
+
+      systemTime <- c.downField("SystemTime").as[ZonedDateTime].right
+    } yield
+      Info(
+        id = id,
+        containers = containers,
+        containersRunning = containersRunning,
+        containersPaused = containersPaused,
+        containersStopped = containersStopped,
+        cpuCfsPeriod = cpuCfsPeriod,
+        cpuCfsQuota = cpuCfsQuota,
+        images = images,
+        osType = osType,
+        architecture = architecture,
+        httpProxy = httpProxy,
+        httpsProxy = httpsProxy,
+        noProxy = noProxy,
+        systemTime = systemTime
+      )
+  })
+
+}

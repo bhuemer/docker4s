@@ -23,6 +23,8 @@ package org.docker4s.models
 
 import java.time.OffsetDateTime
 
+import io.circe.Decoder
+
 case class Version(
     version: String,
     apiVersion: String,
@@ -33,3 +35,37 @@ case class Version(
     arch: String,
     kernelVersion: String,
     buildTime: OffsetDateTime)
+
+object Version {
+
+  // -------------------------------------------- Circe decoders
+
+  val decoder: Decoder[Version] = Decoder.instance({ c =>
+    for {
+      version <- c.downField("Version").as[String].right
+      apiVersion <- c.downField("ApiVersion").as[String].right
+      minApiVersion <- c.downField("MinAPIVersion").as[Option[String]].right
+
+      gitCommit <- c.downField("GitCommit").as[String].right
+      goVersion <- c.downField("GoVersion").as[String].right
+
+      os <- c.downField("Os").as[String].right
+      arch <- c.downField("Arch").as[String].right
+      kernelVersion <- c.downField("KernelVersion").as[String].right
+
+      buildTime <- c.downField("BuildTime").as[OffsetDateTime].right
+    } yield
+      Version(
+        version = version,
+        apiVersion = apiVersion,
+        minApiVersion = minApiVersion,
+        gitCommit = gitCommit,
+        goVersion = goVersion,
+        os = os,
+        arch = arch,
+        kernelVersion = kernelVersion,
+        buildTime = buildTime
+      )
+  })
+
+}

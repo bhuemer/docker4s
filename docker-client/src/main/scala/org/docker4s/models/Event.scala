@@ -199,14 +199,14 @@ object Event {
       actor <- c.downField("Actor").as(actorDecoder).right
       scope <- c.downField("scope").as(scopeDecoder).right
       timeInSec <- c.downField("time").as[Long].right
-      timeInSecAndNano <- c.downField("timeNano").as[Long].right
+      timeInNano <- c.downField("timeNano").as[Long].right
     } yield
       Event(
         tpe,
         action,
         actor,
         scope, {
-          val nanoAdjustment = timeInSecAndNano - (timeInSec * 1000000000)
+          val nanoAdjustment = timeInNano - (timeInSec * 1000000000)
           Instant.ofEpochSecond(timeInSec, nanoAdjustment).atZone(ZoneId.of("Z"))
         }
       )

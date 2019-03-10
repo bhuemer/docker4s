@@ -91,6 +91,9 @@ private[unix] final class ResponseStream extends LazyLogging {
     }
   }
 
+  /**
+    * Enqueues another chunk of bytes in this response stream.
+    */
   @tailrec def enqueue(response: Try[ByteBuf]): Boolean = {
     state.get() match {
       // Nobody waiting yet, so we switch into the available state
@@ -131,6 +134,8 @@ private[unix] final class ResponseStream extends LazyLogging {
 
   /**
     * Marks this response stream as closed.
+    *
+    * Closing this stream is necessary to indicate to downstream subscribers: you shouldn't expect any further chunks.
     */
   @tailrec def close(): Unit = {
     state.get() match {

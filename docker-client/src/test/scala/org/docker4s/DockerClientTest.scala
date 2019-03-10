@@ -1,7 +1,7 @@
 package org.docker4s
-import java.time.ZonedDateTime
 
 import cats.effect.{ConcurrentEffect, IO}
+import org.docker4s.models.images.Image
 
 object DockerClientTest {
 
@@ -16,14 +16,17 @@ object DockerClientTest {
     DockerClient
       .fromEnvironment(cf, global)
       .use({ client =>
-        for {
-          images <- client.images.list
-        } yield {
-          println("Images: ")
-          images.foreach(println)
-        }
+        main(client)
       })
       .unsafeRunSync()
+  }
+
+  private def main(client: DockerClient[IO]): IO[Unit] = {
+    for {
+      info <- client.system.info
+    } yield {
+      println(s"Info: $info")
+    }
   }
 
 }

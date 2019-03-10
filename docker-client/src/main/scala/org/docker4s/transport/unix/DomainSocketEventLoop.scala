@@ -21,8 +21,6 @@
  */
 package org.docker4s.transport.unix
 
-import java.util.concurrent.CancellationException
-
 import com.typesafe.scalalogging.LazyLogging
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.epoll.{EpollDomainSocketChannel, EpollEventLoopGroup}
@@ -30,7 +28,7 @@ import io.netty.channel.kqueue.{KQueueDomainSocketChannel, KQueueEventLoopGroup}
 import io.netty.channel.unix.{DomainSocketAddress, DomainSocketChannel}
 import io.netty.channel.{Channel, ChannelInitializer}
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{CancellationException, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -68,7 +66,7 @@ private[unix] final class DomainSocketEventLoop(
       if (future.isSuccess) {
         promise.success(result)
       } else if (future.isCancelled) {
-        promise.failure(new CancellationException())
+        promise.failure(new CancellationException)
       } else {
         promise.failure(future.cause())
       }

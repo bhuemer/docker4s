@@ -52,8 +52,8 @@ class ImageSummarySpec extends FlatSpec with Matchers {
 
     image should be(
       ImageSummary(
-        id = "sha256:353d7641c769b651ecaf0d72aca46b886372e3ccf15ab2a6ce8be857bae85daa",
-        parentId = "",
+        id = Image.Id("sha256:353d7641c769b651ecaf0d72aca46b886372e3ccf15ab2a6ce8be857bae85daa"),
+        parentId = Image.Id(""),
         createdAt = ZonedDateTime.parse("2018-07-03T02:52:05Z"),
         containers = -1,
         labels = Map.empty,
@@ -84,8 +84,8 @@ class ImageSummarySpec extends FlatSpec with Matchers {
 
     image should be(
       ImageSummary(
-        id = "sha256:dd1db67e5b51500664f82a4770cfad56a1abb24fafdc8de2035a9265b992f0ba",
-        parentId = "sha256:8faa0e5ae99c35ace7eb793e1fa62f7e3de2a5aed8a724d59215fc98b91627f3",
+        id = Image.Id("sha256:dd1db67e5b51500664f82a4770cfad56a1abb24fafdc8de2035a9265b992f0ba"),
+        parentId = Image.Id("sha256:8faa0e5ae99c35ace7eb793e1fa62f7e3de2a5aed8a724d59215fc98b91627f3"),
         createdAt = ZonedDateTime.parse("2018-12-08T16:48:07Z"),
         containers = -1,
         labels = Map("maintainer" -> "Bernhard Huemer <bernhard.huemer@gmail.com>"),
@@ -117,8 +117,8 @@ class ImageSummarySpec extends FlatSpec with Matchers {
 
     image should be(
       ImageSummary(
-        id = "sha256:ecad69f6c9e8313706fdbe26d4306c3bf04feb7f7af2615f18afe5c5d47f695c",
-        parentId = "sha256:73aab8755cc5c2db2459090735451c57843796733a2c836b3a0b629f8a0ceae2",
+        id = Image.Id("sha256:ecad69f6c9e8313706fdbe26d4306c3bf04feb7f7af2615f18afe5c5d47f695c"),
+        parentId = Image.Id("sha256:73aab8755cc5c2db2459090735451c57843796733a2c836b3a0b629f8a0ceae2"),
         createdAt = ZonedDateTime.parse("2018-12-08T16:08:56Z"),
         containers = -1,
         labels = Map("maintainer" -> "Bernhard Huemer <bernhard.huemer@gmail.com>"),

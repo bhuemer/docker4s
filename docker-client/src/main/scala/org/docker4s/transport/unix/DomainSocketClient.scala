@@ -27,12 +27,13 @@ import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.netty.buffer.Unpooled
+import io.netty.channel.Channel
 import io.netty.channel.unix.{DomainSocketAddress, DomainSocketChannel}
 import io.netty.handler.codec.http.{HttpContent, HttpRequest, HttpResponse}
 import org.http4s.client.Client
 import org.http4s.{Request, Response}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{CancellationException, ExecutionContext, Future}
 import scala.language.higherKinds
 import scala.util.{Failure, Success}
 
@@ -73,12 +74,11 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
           s"Error occurred while parsing the response [${responseAndStream._1}] to the request [$request].", ex))
       })
       // @formatter:on
-
-      // Note that the channel will be closed by the `ResponseHandler` - we don't need to worry about it here.
     } yield {
       // Return the fully formed response, but don't wait for the response stream. That will keep
-      // processing, but this also allows the caller to consume the streaming response already.
-      response.withBodyStream(asHttp4sResponseStream(responseAndStream._2))
+      // processing, but this also allows the caller to consume the streaming response already. If
+      // the caller stops consuming the streaming response, the channel will be automatically closed.
+      response.withBodyStream(bracket(channel).flatMap(_ => asHttp4sResponseStream(responseAndStream._2)))
     }
   }
 
@@ -155,6 +155,37 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
 
         case None => Stream.empty
       })
+
+  /**
+    * Wraps the given channel in a stream such that when this stream is consumed/terminated, the channel will be
+    * closed at the end of it. In the case of "normal" HTTP responses with just a single JSON object coming back,
+    * this isn't necessary as the response handler will know when to close the channel. However, some responses
+    * can be "infinite" (e.g. monitoring system events) where the channel needs to be closed once the subscriber
+    * isn't processing anything any more.
+    */
+  private def bracket(channel: Channel): Stream[F, Channel] = {
+    Stream.bracket(F.delay(channel))({ channel =>
+      if (channel.isOpen) {
+        logger.info(s"Closing the channel $channel, because the response body is not consumed any more.")
+        F.async({ cb =>
+          channel
+            .close()
+            .addListener({ future: io.netty.util.concurrent.Future[_ >: Void] =>
+              if (future.isSuccess) {
+                cb(Right(()))
+              } else if (future.isCancelled) {
+                cb(Left(new CancellationException()))
+              } else {
+                cb(Left(future.cause()))
+              }
+            })
+        })
+      } else {
+        // Channel is already closed, no further action needed.
+        F.unit
+      }
+    })
+  }
 
   /**
     * Asynchronously processes/consumes the given future under the effect type `F`.

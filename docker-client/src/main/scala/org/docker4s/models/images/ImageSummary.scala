@@ -26,8 +26,8 @@ import java.time.{Instant, ZoneId, ZonedDateTime}
 import io.circe.Decoder
 
 case class ImageSummary(
-    id: String,
-    parentId: String,
+    id: Image.Id,
+    parentId: Image.Id,
     createdAt: ZonedDateTime,
     containers: Int,
     labels: Map[String, String],
@@ -38,17 +38,6 @@ case class ImageSummary(
     * Returns the maintainer of this image, if one is known.
     */
   def maintainer: Option[String] = labels.get("maintainer")
-
-  /**
-    * Returns the ID of the image truncated to 10 characters, plus the `sha256:` prefix.
-    */
-  def shortId: String = {
-    if (id.startsWith("sha256:")) {
-      id.substring(0, "sha256:".length + 10)
-    } else {
-      id.substring(0, 10)
-    }
-  }
 
 }
 
@@ -67,8 +56,8 @@ object ImageSummary {
       repoTags <- c.downField("RepoTags").as[Option[List[String]]].right
     } yield
       ImageSummary(
-        id = id,
-        parentId = parentId,
+        id = Image.Id(id),
+        parentId = Image.Id(parentId),
         createdAt = Instant.ofEpochSecond(created).atZone(ZoneId.of("Z")),
         containers = containers,
         labels = labels.getOrElse(Map()),

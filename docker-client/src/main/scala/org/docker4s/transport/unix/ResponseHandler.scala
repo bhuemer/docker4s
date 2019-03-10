@@ -29,7 +29,7 @@ import io.netty.util.AttributeKey
 import scala.concurrent.{Future, Promise}
 
 /**
-  *
+  * Netty handler that will turn HTTP response objects from the HTTP client codec into futures and streams.
   */
 private[unix] final class ResponseHandler extends SimpleChannelInboundHandler[HttpObject] with LazyLogging {
 
@@ -37,6 +37,9 @@ private[unix] final class ResponseHandler extends SimpleChannelInboundHandler[Ht
 
   // -------------------------------------------- SimpleChannelInboundHandler methods
 
+  /**
+    * Consumes each message of type [[HttpObject]] produced by the HTTP client codec in the channel pipeline.
+    */
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpObject): Unit = {
     val state = ctx.channel().attr(stateKey)
 
@@ -73,6 +76,9 @@ private[unix] final class ResponseHandler extends SimpleChannelInboundHandler[Ht
     }
   }
 
+  /**
+    * Gets called if a [[Throwable]] was thrown.
+    */
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
     val state = ctx.channel().attr(stateKey)
     state.get() match {

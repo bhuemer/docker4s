@@ -34,7 +34,7 @@ import scala.language.higherKinds
 trait System[F[_]] {
 
   /**
-    * Returns system-wide information. Similar to the `docker system info` command.
+    * Returns system-wide information. Similar to the `docker info` or `docker system info` command.
     */
   def info: F[Info]
 

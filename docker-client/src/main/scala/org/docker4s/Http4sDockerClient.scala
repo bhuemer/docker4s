@@ -29,7 +29,7 @@ import io.circe.Decoder
 import org.docker4s.api.Images
 import org.docker4s.models.system.{Event, Info}
 import org.docker4s.models.Version
-import org.docker4s.models.images.ImageSummary
+import org.docker4s.models.images.{Image, ImageSummary}
 import org.docker4s.transport.Client
 import org.http4s.{Header, Method, Request, Uri}
 
@@ -79,6 +79,11 @@ private[docker4s] class Http4sDockerClient[F[_]: ConcurrentEffect](private val c
     override def list: F[List[ImageSummary]] = {
       implicit val decoder: Decoder[ImageSummary] = ImageSummary.decoder
       client.expect[List[ImageSummary]](GET.withUri(uri.withPath("/images/json")))
+    }
+
+    /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
+    override def inspect(id: Image.Id): F[Image] = {
+      client.expect[Image](GET.withUri(uri.withPath(s"/images/${id.value}/json")))(Image.decoder)
     }
 
   }

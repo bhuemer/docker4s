@@ -49,8 +49,14 @@ trait DockerClient[F[_]] {
     */
   def version: F[Version]
 
+  /**
+    * Returns an object for inspecting the system on the server.
+    */
   def system: System[F]
 
+  /**
+    * Returns an object for managing images on the server.
+    */
   def images: Images[F]
 
 }

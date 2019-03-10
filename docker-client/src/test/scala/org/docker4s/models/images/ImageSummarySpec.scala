@@ -28,7 +28,7 @@ import org.scalatest.{FlatSpec, Matchers}
 /**
   * Contains test cases related to parsing images from JSON response bodies.
   */
-class ImageSpec extends FlatSpec with Matchers {
+class ImageSummarySpec extends FlatSpec with Matchers {
 
   /** Makes sure the decoder is not overly restrictive wrt/ `null` vs empty objects/maps. */
   "Decoding JSON into images" should "cope with `null` labels" in {
@@ -51,7 +51,7 @@ class ImageSpec extends FlatSpec with Matchers {
       |}""".stripMargin)
 
     image should be(
-      Image(
+      ImageSummary(
         id = "sha256:353d7641c769b651ecaf0d72aca46b886372e3ccf15ab2a6ce8be857bae85daa",
         parentId = "",
         createdAt = ZonedDateTime.parse("2018-07-03T02:52:05Z"),
@@ -83,7 +83,7 @@ class ImageSpec extends FlatSpec with Matchers {
       |}""".stripMargin)
 
     image should be(
-      Image(
+      ImageSummary(
         id = "sha256:dd1db67e5b51500664f82a4770cfad56a1abb24fafdc8de2035a9265b992f0ba",
         parentId = "sha256:8faa0e5ae99c35ace7eb793e1fa62f7e3de2a5aed8a724d59215fc98b91627f3",
         createdAt = ZonedDateTime.parse("2018-12-08T16:48:07Z"),
@@ -116,7 +116,7 @@ class ImageSpec extends FlatSpec with Matchers {
       |}""".stripMargin)
 
     image should be(
-      Image(
+      ImageSummary(
         id = "sha256:ecad69f6c9e8313706fdbe26d4306c3bf04feb7f7af2615f18afe5c5d47f695c",
         parentId = "sha256:73aab8755cc5c2db2459090735451c57843796733a2c836b3a0b629f8a0ceae2",
         createdAt = ZonedDateTime.parse("2018-12-08T16:08:56Z"),
@@ -129,10 +129,10 @@ class ImageSpec extends FlatSpec with Matchers {
 
   // -------------------------------------------- Utility methods
 
-  /** Decodes the given string as an [[Image]] or throws an exception if something goes wrong. */
-  private def decodeImage(str: String): Image = {
+  /** Decodes the given string as an [[ImageSummary]] or throws an exception if something goes wrong. */
+  private def decodeImage(str: String): ImageSummary = {
     val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(Image.decoder).fold(throw _, Predef.identity)
+    json.as(ImageSummary.decoder).fold(throw _, Predef.identity)
   }
 
 }

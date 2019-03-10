@@ -25,7 +25,7 @@ import java.time.{Instant, ZoneId, ZonedDateTime}
 
 import io.circe.Decoder
 
-case class Image(
+case class ImageSummary(
     id: String,
     parentId: String,
     createdAt: ZonedDateTime,
@@ -52,11 +52,11 @@ case class Image(
 
 }
 
-object Image {
+object ImageSummary {
 
   // -------------------------------------------- Circe decoders
 
-  val decoder: Decoder[Image] = Decoder.instance({ c =>
+  val decoder: Decoder[ImageSummary] = Decoder.instance({ c =>
     for {
       containers <- c.downField("Containers").as[Int].right
       created <- c.downField("Created").as[Long].right
@@ -66,7 +66,7 @@ object Image {
       repoDigests <- c.downField("RepoDigests").as[Option[List[String]]].right
       repoTags <- c.downField("RepoTags").as[Option[List[String]]].right
     } yield
-      Image(
+      ImageSummary(
         id = id,
         parentId = parentId,
         createdAt = Instant.ofEpochSecond(created).atZone(ZoneId.of("Z")),

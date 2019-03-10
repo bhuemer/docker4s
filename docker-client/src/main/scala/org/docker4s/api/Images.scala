@@ -21,13 +21,17 @@
  */
 package org.docker4s.api
 
-import org.docker4s.models.images.Image
+import org.docker4s.models.images.ImageSummary
 
 import scala.language.higherKinds
 
+/**
+  * Docker client methods related to managing images on the server. Similar to `docker image ...` commands.
+  * @tparam F the effect type for evaluations, e.g. `IO`
+  */
 trait Images[F[_]] {
 
   /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
-  def list: F[List[Image]]
+  def list: F[List[ImageSummary]]
 
 }

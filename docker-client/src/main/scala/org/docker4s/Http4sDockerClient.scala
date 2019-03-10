@@ -26,9 +26,7 @@ import java.time.ZonedDateTime
 import cats.effect.ConcurrentEffect
 import fs2.Stream
 import io.circe.Decoder
-import org.docker4s.api.Images
-import org.docker4s.models.system.{Event, Info}
-import org.docker4s.models.Version
+import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images.{Image, ImageSummary}
 import org.docker4s.transport.Client
 import org.http4s.{Header, Method, Request, Uri}
@@ -37,18 +35,6 @@ import scala.language.higherKinds
 
 private[docker4s] class Http4sDockerClient[F[_]: ConcurrentEffect](private val client: Client[F], private val uri: Uri)
     extends DockerClient[F] {
-
-  /**
-    * Returns system-wide information. Similar to the `docker info` command.
-    */
-  override def info: F[Info] = system.info
-
-  /**
-    * Returns version information from the server. Similar to the `docker version` command.
-    */
-  override def version: F[Version] = {
-    client.expect[Version](GET.withUri(uri.withPath("/version")))(Version.decoder)
-  }
 
   override def system: api.System[F] = new api.System[F] {
 
@@ -71,9 +57,17 @@ private[docker4s] class Http4sDockerClient[F[_]: ConcurrentEffect](private val c
             .withOptionQueryParam("until", until.map(_.toInstant.getEpochSecond)))
       )(Event.decoder)
     }
+
+    /**
+      * Returns version information from the server. Similar to the `docker version` command.
+      */
+    override def version: F[Version] = {
+      client.expect[Version](GET.withUri(uri.withPath("/version")))(Version.decoder)
+    }
+
   }
 
-  override def images: api.Images[F] = new Images[F] {
+  override def images: api.Images[F] = new api.Images[F] {
 
     /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
     override def list: F[List[ImageSummary]] = {

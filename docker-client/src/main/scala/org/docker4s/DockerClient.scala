@@ -24,8 +24,6 @@ package org.docker4s
 import cats.effect.{ConcurrentEffect, Resource}
 import io.netty.channel.unix.DomainSocketAddress
 import org.docker4s.api.{Images, System}
-import org.docker4s.models.Version
-import org.docker4s.models.system.Info
 import org.docker4s.transport.Client
 import org.docker4s.transport.unix.DomainSocketClient
 import org.http4s.Uri
@@ -38,16 +36,6 @@ import scala.language.higherKinds
   * @tparam F the effect type for evaluations, e.g. `IO`
   */
 trait DockerClient[F[_]] {
-
-  /**
-    * Returns system-wide information. Similar to the `docker info` command.
-    */
-  def info: F[Info]
-
-  /**
-    * Returns version information from the server. Similar to the `docker version` command.
-    */
-  def version: F[Version]
 
   /**
     * Returns an object for inspecting the system on the server.

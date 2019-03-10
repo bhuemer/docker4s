@@ -24,7 +24,7 @@ package org.docker4s.api
 import java.time.ZonedDateTime
 
 import fs2.Stream
-import org.docker4s.models.system.{Event, Info}
+import org.docker4s.models.system.{Event, Info, Version}
 
 import scala.language.higherKinds
 
@@ -42,6 +42,11 @@ trait System[F[_]] {
     * Streams real-time events from the server. Similar to the `docker system events` command.
     */
   def events(since: Option[ZonedDateTime] = None, until: Option[ZonedDateTime] = None): Stream[F, Event]
+
+  /**
+    * Returns version information from the server. Similar to the `docker version` command.
+    */
+  def version: F[Version]
 
 }
 

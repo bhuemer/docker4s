@@ -37,7 +37,8 @@ object DockerHost {
     */
   case class Unix(socketPath: Path, certificatePath: Option[Path]) extends DockerHost
 
-  case class Npipe()
+  // TODO: Npipe/Windows channels still need to be implemented
+  case class Npipe(socketPath: Path, certificatePath: Option[Path]) extends DockerHost
 
   /**
     * Connects via TCP to the given docker host.

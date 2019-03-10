@@ -111,7 +111,6 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
 
   private def asHttp4sResponse(response: HttpResponse): F[Response[F]] = {
     import org.http4s.{Header, Headers, HttpVersion, Status}
-
     import scala.collection.JavaConverters._
 
     for {
@@ -172,17 +171,14 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
 
 object DomainSocketClient extends LazyLogging {
 
-  private val defaultSocketAddress: DomainSocketAddress = new DomainSocketAddress("/var/run/docker.sock")
-
   /**
     * Creates a new http4s client that will use the given UNIX socket path for communication.
     *
     * Note that the execution context will never be used for blocking calls (the client's backend is implemented
     * in a non-blocking way), but it allows you to off-load response processing from Netty's event loop thread.
     */
-  def apply[F[_]](address: DomainSocketAddress = defaultSocketAddress)(
-      implicit F: ConcurrentEffect[F],
-      ec: ExecutionContext): Resource[F, Client[F]] = {
+  def apply[F[_]](
+      address: DomainSocketAddress)(implicit F: ConcurrentEffect[F], ec: ExecutionContext): Resource[F, Client[F]] = {
     val eventLoopResource = Resource.make(
       F.fromTry(DomainSocketEventLoop(
         (channel: DomainSocketChannel) => {

@@ -19,7 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.models
+package org.docker4s.models.system
 
 import java.time.ZonedDateTime
 
@@ -122,6 +122,7 @@ class EventSpec extends FlatSpec with Matchers {
 
   // -------------------------------------------- Utility methods
 
+  /** Decodes the given string as an [[Event]] or throws an exception if something goes wrong. */
   private def decodeEvent(str: String): Event = {
     val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
     json.as(Event.decoder).fold(throw _, Predef.identity)

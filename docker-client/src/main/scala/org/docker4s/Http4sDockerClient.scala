@@ -25,7 +25,11 @@ import java.time.ZonedDateTime
 
 import cats.effect.ConcurrentEffect
 import fs2.Stream
-import org.docker4s.models.{Event, Info, Version}
+import io.circe.Decoder
+import org.docker4s.api.Images
+import org.docker4s.models.system.{Event, Info}
+import org.docker4s.models.Version
+import org.docker4s.models.images.Image
 import org.docker4s.transport.Client
 import org.http4s.{Header, Method, Request, Uri}
 
@@ -67,6 +71,16 @@ private[docker4s] class Http4sDockerClient[F[_]: ConcurrentEffect](private val c
             .withOptionQueryParam("until", until.map(_.toInstant.getEpochSecond)))
       )(Event.decoder)
     }
+  }
+
+  override def images: api.Images[F] = new Images[F] {
+
+    /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
+    override def list: F[List[Image]] = {
+      implicit val decoder: Decoder[Image] = Image.decoder
+      client.expect[List[Image]](GET.withUri(uri.withPath("/images/json")))
+    }
+
   }
 
   private def GET: Request[F] =

@@ -19,7 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.models
+package org.docker4s.models.system
 
 import java.time.{Instant, ZoneId, ZonedDateTime}
 

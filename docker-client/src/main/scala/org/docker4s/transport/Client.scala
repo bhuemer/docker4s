@@ -22,10 +22,12 @@
 package org.docker4s.transport
 
 import cats.effect.ConcurrentEffect
+import cats.syntax.all._
 import fs2.Stream
 import io.circe.{Decoder, Json}
+import org.docker4s.errors.DockerApiException
 import org.http4s.{EntityDecoder, Request, Response}
-import org.http4s.Status.{ClientError, ServerError, Successful}
+import org.http4s.Status.Successful
 
 import scala.language.higherKinds
 
@@ -49,10 +51,10 @@ object Client {
 
     override def expect[A](request: Request[F])(implicit decoder: Decoder[A]): F[A] =
       client.fetch[A](request)({
-        case Successful(response) => response.as(F, accumulatingJsonOf(decoder))
+        case Successful(response) =>
+          response.as(F, accumulatingJsonOf(decoder))
 
-        case ClientError(response) => onError(request, response)
-        case ServerError(response) => onError(request, response)
+        case response => handleError(request, response)
       })
 
     /**
@@ -66,8 +68,7 @@ object Client {
             implicit val facade: org.typelevel.jawn.RawFacade[Json] = io.circe.jawn.CirceSupportParser.facade
             response.body.chunks.through(jawnfs2.parseJsonStream)
 
-          case ClientError(response) => Stream.eval(onError(request, response))
-          case ServerError(response) => Stream.eval(onError(request, response))
+          case response => Stream.eval(handleError(request, response))
         })
         .evalMap(json =>
           json
@@ -75,8 +76,25 @@ object Client {
             .fold(error => F.raiseError[A](error), value => F.delay[A](value)))
     }
 
-    protected def onError[A](request: Request[F], response: Response[F]): F[A] = {
-      F.raiseError(new IllegalStateException("Error occurred"))
+    /**
+      * Extracts the error message from the given response and lifts it, with some additional information, into `F`.
+      */
+    protected def handleError[A](request: Request[F], response: Response[F]): F[A] = {
+      response
+        .as(F, accumulatingJsonOf(Decoder.instance({ c =>
+          for {
+            message <- c.downField("message").as[String].right
+          } yield message
+        })))
+        // If the response cannot be parsed as error message JSON, continue anyway as we would otherwise lose
+        // the information about the request and the response that we have anyway (status codes, URIs, ..).
+        .recoverWith({
+          case ex => F.delay(s"Unknown error message. Cannot decode the error response due to ${ex.getMessage}: $ex")
+        })
+        .flatMap({ errorMessage =>
+          F.raiseError(new DockerApiException(
+            s"Error occurred while evaluating request $request. The response was $response with the error message '$errorMessage'."))
+        })
     }
 
     // Partially applied version of `accumulatingJsonOf` that doesn't require evidence for the effect type any more.

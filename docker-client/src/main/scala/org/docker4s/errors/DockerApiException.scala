@@ -19,30 +19,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.api
+package org.docker4s.errors
 
-import java.time.ZonedDateTime
-
-import fs2.Stream
-import org.docker4s.models.system.{Event, Info}
-
-import scala.language.higherKinds
-
-/**
-  * Docker client methods related to the system endpoint, i.e. similar to `docker system ..` commands.
-  */
-trait System[F[_]] {
-
-  /**
-    * Returns system-wide information. Similar to the `docker system info` command.
-    */
-  def info: F[Info]
-
-  /**
-    * Streams real-time events from the server. Similar to the `docker system events` command.
-    */
-  def events(since: Option[ZonedDateTime] = None, until: Option[ZonedDateTime] = None): Stream[F, Event]
-
-}
-
-object System {}
+class DockerApiException(message: String) extends Exception(message) {}

@@ -23,7 +23,9 @@ package org.docker4s
 
 import cats.effect.{ConcurrentEffect, Resource}
 import io.netty.channel.unix.DomainSocketAddress
-import org.docker4s.models.{Info, Version}
+import org.docker4s.api.{Images, System}
+import org.docker4s.models.Version
+import org.docker4s.models.system.Info
 import org.docker4s.transport.Client
 import org.docker4s.transport.unix.DomainSocketClient
 import org.http4s.Uri
@@ -47,7 +49,9 @@ trait DockerClient[F[_]] {
     */
   def version: F[Version]
 
-  def system: api.System[F]
+  def system: System[F]
+
+  def images: Images[F]
 
 }
 

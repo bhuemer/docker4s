@@ -16,13 +16,12 @@ object DockerClientTest {
     DockerClient
       .fromEnvironment(cf, global)
       .use({ client =>
-        val stream = for {
-          event <- client.system.events(until = Some(ZonedDateTime.now().plusSeconds(60)))
+        for {
+          images <- client.images.list
         } yield {
-          println(s"[${Thread.currentThread().getName}] Event: $event")
+          println("Images: ")
+          images.foreach(println)
         }
-
-        stream.compile.drain
       })
       .unsafeRunSync()
   }

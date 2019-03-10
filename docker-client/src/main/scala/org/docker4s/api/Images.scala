@@ -21,28 +21,13 @@
  */
 package org.docker4s.api
 
-import java.time.ZonedDateTime
-
-import fs2.Stream
-import org.docker4s.models.system.{Event, Info}
+import org.docker4s.models.images.Image
 
 import scala.language.higherKinds
 
-/**
-  * Docker client methods related to the system endpoint, i.e. similar to `docker system ..` commands.
-  */
-trait System[F[_]] {
+trait Images[F[_]] {
 
-  /**
-    * Returns system-wide information. Similar to the `docker system info` command.
-    */
-  def info: F[Info]
-
-  /**
-    * Streams real-time events from the server. Similar to the `docker system events` command.
-    */
-  def events(since: Option[ZonedDateTime] = None, until: Option[ZonedDateTime] = None): Stream[F, Event]
+  /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
+  def list: F[List[Image]]
 
 }
-
-object System {}

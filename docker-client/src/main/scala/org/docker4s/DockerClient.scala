@@ -22,7 +22,6 @@
 package org.docker4s
 
 import cats.effect.{ConcurrentEffect, Resource}
-import io.netty.channel.unix.DomainSocketAddress
 import org.docker4s.api.{Images, System}
 import org.docker4s.transport.Client
 import org.docker4s.transport.unix.DomainSocketClient
@@ -67,7 +66,7 @@ object DockerClient {
       implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
     dockerHost match {
       case DockerHost.Unix(socketPath, _) =>
-        DomainSocketClient(new DomainSocketAddress(socketPath.toFile.getAbsolutePath)).map({ client =>
+        DomainSocketClient(socketPath).map({ client =>
           new Http4sDockerClient[F](Client.from(client), uri = Uri.unsafeFromString("http://localhost"))
         })
 

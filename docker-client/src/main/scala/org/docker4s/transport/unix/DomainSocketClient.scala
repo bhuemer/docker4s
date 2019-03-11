@@ -21,6 +21,8 @@
  */
 package org.docker4s.transport.unix
 
+import java.nio.file.Path
+
 import cats.effect.Effect.ops.toAllEffectOps
 import cats.effect.{ConcurrentEffect, IO, Resource}
 import cats.syntax.all._
@@ -201,6 +203,10 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
 }
 
 object DomainSocketClient extends LazyLogging {
+
+  def apply[F[_]](socketPath: Path)(implicit F: ConcurrentEffect[F], ec: ExecutionContext): Resource[F, Client[F]] = {
+    apply(new DomainSocketAddress(socketPath.toFile.getAbsolutePath))
+  }
 
   /**
     * Creates a new http4s client that will use the given UNIX socket path for communication.

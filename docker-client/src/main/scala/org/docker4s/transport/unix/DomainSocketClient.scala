@@ -37,7 +37,6 @@ import org.http4s.{Request, Response}
 
 import scala.concurrent.{CancellationException, ExecutionContext, Future}
 import scala.language.higherKinds
-import scala.util.{Failure, Success}
 
 private[unix] final class DomainSocketClient[F[_]](private val eventLoop: DomainSocketEventLoop)(
     implicit F: Effect[F],
@@ -194,19 +193,12 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
     */
   private def async[T](f: => Future[T]): F[T] =
     F.async({ cb =>
-      f.onComplete({
-        case Success(value) => cb(Right(value))
-        case Failure(error) => cb(Left(error))
-      })
+      f.onComplete(result => cb(result.toEither))
     })
 
 }
 
 object DomainSocketClient extends LazyLogging {
-
-  def apply[F[_]](socketPath: Path)(implicit F: Effect[F], ec: ExecutionContext): Resource[F, Client[F]] = {
-    apply(new DomainSocketAddress(socketPath.toFile.getAbsolutePath))
-  }
 
   /**
     * Creates a new http4s client that will use the given UNIX socket path for communication.
@@ -214,7 +206,7 @@ object DomainSocketClient extends LazyLogging {
     * Note that the execution context will never be used for blocking calls (the client's backend is implemented
     * in a non-blocking way), but it allows you to off-load response processing from Netty's event loop thread.
     */
-  def apply[F[_]](address: DomainSocketAddress)(implicit F: Effect[F], ec: ExecutionContext): Resource[F, Client[F]] = {
+  def apply[F[_]](socketPath: Path)(implicit F: Effect[F], ec: ExecutionContext): Resource[F, Client[F]] = {
     val eventLoopResource = Resource.make(
       F.fromTry(DomainSocketEventLoop(
         (channel: DomainSocketChannel) => {
@@ -223,11 +215,16 @@ object DomainSocketClient extends LazyLogging {
           p.addLast(new io.netty.handler.codec.http.HttpContentDecompressor)
           p.addLast(new ResponseHandler)
         },
-        address
+        new DomainSocketAddress(socketPath.toFile.getAbsolutePath)
       )))({ eventLoop =>
-      F.delay({
-        logger.info(s"Closing the domain socket event loop.")
-        eventLoop.close()
+      F.async({ cb =>
+        logger.debug("Closing the domain socket event loop.")
+        eventLoop
+          .close()
+          .onComplete({ result =>
+            logger.info("Closed the domain socket event loop.")
+            cb(result.toEither)
+          })
       })
     })
 

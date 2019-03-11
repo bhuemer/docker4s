@@ -23,7 +23,6 @@ package org.docker4s.transport.unix
 
 import java.nio.file.Path
 
-import cats.effect.Effect.ops.toAllEffectOps
 import cats.effect.{Effect, IO, Resource}
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
@@ -56,14 +55,14 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
         channel.writeAndFlush(asNettyRequest(request))
 
         // Start enqueuing the write operations for all the various chunks of the request body.
-        asNettyRequestStream(request)
-          .evalTap({ content =>
-            channel.writeAndFlush(content)
-            F.unit
-          })
-          .compile
-          .drain
-          .runAsync(_ => IO.unit)
+        F.runAsync(
+            asNettyRequestStream(request)
+              .evalTap({ content =>
+                channel.writeAndFlush(content)
+                F.unit
+              })
+              .compile
+              .drain)(_ => IO.unit)
           .unsafeRunSync()
 
         future

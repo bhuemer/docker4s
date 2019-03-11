@@ -1,6 +1,7 @@
 package org.docker4s
 
 import cats.effect.{Effect, IO}
+import org.docker4s.api.Images
 
 object DockerClientTest {
 
@@ -22,7 +23,7 @@ object DockerClientTest {
 
   private def main(client: DockerClient[IO]): IO[Unit] = {
     for {
-      images <- client.images.list
+      images <- client.images.list(Images.ListImage.hideDangling)
     } yield {
       println(s"Images: ")
       images.foreach(println)

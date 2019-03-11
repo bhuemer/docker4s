@@ -26,10 +26,11 @@ import java.time.ZonedDateTime
 import cats.effect.Effect
 import fs2.Stream
 import io.circe.Decoder
+import org.docker4s.api.Images
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images.{Image, ImageSummary}
 import org.docker4s.transport.Client
-import org.http4s.{Header, Method, Request, Uri}
+import org.http4s.{Header, Method, Query, Request, Uri}
 
 import scala.language.higherKinds
 
@@ -67,12 +68,12 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
 
   }
 
-  override def images: api.Images[F] = new api.Images[F] {
+  override def images: Images[F] = new Images[F] {
 
     /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
-    override def list: F[List[ImageSummary]] = {
+    override def list(criteria: Criterion[Images.ListImage]*): F[List[ImageSummary]] = {
       implicit val decoder: Decoder[ImageSummary] = ImageSummary.decoder
-      client.expect[List[ImageSummary]](GET.withUri(uri.withPath("/images/json")))
+      client.expect[List[ImageSummary]](GET.withUri(uri.withPath("/images/json").withCriteria(criteria)))
     }
 
     /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
@@ -86,5 +87,13 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
     Request[F]()
       .withMethod(Method.GET)
       .withHeaders(Header("Host", uri.host.map(_.value).getOrElse("localhost")))
+
+  private implicit class UriOps(private val uri: Uri) {
+
+    def withCriteria(criteria: Seq[Criterion[_]]): Uri = {
+      uri.copy(query = Query.fromMap(Criterion.build(criteria)))
+    }
+
+  }
 
 }

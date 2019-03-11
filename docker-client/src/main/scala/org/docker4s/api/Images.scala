@@ -21,6 +21,8 @@
  */
 package org.docker4s.api
 
+import org.docker4s.Criterion
+import org.docker4s.api.Images.ListImage
 import org.docker4s.models.images.{Image, ImageSummary}
 
 import scala.language.higherKinds
@@ -32,9 +34,41 @@ import scala.language.higherKinds
 trait Images[F[_]] {
 
   /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
-  def list: F[List[ImageSummary]]
+  def list(criteria: Criterion[ListImage]*): F[List[ImageSummary]]
 
   /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
   def inspect(id: Image.Id): F[Image]
+
+}
+
+object Images {
+
+  // type tag for criteria used in the `list` method
+  sealed trait ListImage
+
+  object ListImage {
+
+    /**
+      * Show all images. Only images from a final layer (no children) are shown by default.
+      */
+    def showAll: Criterion[ListImage] = Criterion.Query("all", "true")
+
+    /**
+      * Show digest information as `RepoDigests` field on each image.
+      */
+    def showDigests: Criterion[ListImage] = Criterion.Query("digests", "true")
+
+    def hideDigests: Criterion[ListImage] = Criterion.Query("digests", "false")
+
+    /**
+      * Show dangling images only, i.e. images without a repository name.
+      *
+      * By default both dangling and non-dangling images will be shown.
+      */
+    def showDangling: Criterion[ListImage] = Criterion.Filter("dangling", "true")
+
+    def hideDangling: Criterion[ListImage] = Criterion.Filter("dangling", "false")
+
+  }
 
 }

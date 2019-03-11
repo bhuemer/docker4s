@@ -120,7 +120,7 @@ class ImageSummarySpec extends FlatSpec with Matchers {
 
     image should be(
       ImageSummary(
-        id = Image.Id("sha257:ecad69f6c9e8313706fdbe26d4306c3bf04feb7f7af2615f18afe5c5d47f695c"),
+        id = Image.Id("sha256:ecad69f6c9e8313706fdbe26d4306c3bf04feb7f7af2615f18afe5c5d47f695c"),
         parentId = Image.Id("sha256:73aab8755cc5c2db2459090735451c57843796733a2c836b3a0b629f8a0ceae2"),
         createdAt = ZonedDateTime.parse("2018-12-08T16:08:56Z"),
         containers = -1,

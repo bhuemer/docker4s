@@ -37,6 +37,7 @@ class CriterionSpec extends FlatSpec with Matchers {
       Criterion.Query("all", "true"),
       Criterion.Query("digests", "false"),
       Criterion.Filter("dangling", "true"),
+      Criterion.Filter("before", "image-name")
     ) should be(
       "all=true&digests=false&filters=%7B%22dangling%22%3A%5B%22true%22%5D%2C%22before%22%3A%5B%22image-name%22%5D%7D")
   }

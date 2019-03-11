@@ -21,7 +21,7 @@
  */
 package org.docker4s.transport
 
-import cats.effect.ConcurrentEffect
+import cats.effect.Effect
 import cats.syntax.all._
 import fs2.Stream
 import io.circe.{Decoder, Json}
@@ -44,9 +44,9 @@ object Client {
   /**
     *
     */
-  def from[F[_]: ConcurrentEffect](client: org.http4s.client.Client[F]): Client[F] = new Http4sClient[F](client)
+  def from[F[_]: Effect](client: org.http4s.client.Client[F]): Client[F] = new Http4sClient[F](client)
 
-  private class Http4sClient[F[_]](private val client: org.http4s.client.Client[F])(implicit F: ConcurrentEffect[F])
+  private class Http4sClient[F[_]](private val client: org.http4s.client.Client[F])(implicit F: Effect[F])
       extends Client[F] {
 
     override def expect[A](request: Request[F])(implicit decoder: Decoder[A]): F[A] =

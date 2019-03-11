@@ -1,7 +1,6 @@
 package org.docker4s
 
-import cats.effect.{ConcurrentEffect, IO}
-import org.docker4s.models.images.Image
+import cats.effect.{Effect, IO}
 
 object DockerClientTest {
 
@@ -11,7 +10,7 @@ object DockerClientTest {
 
     implicit val cs: ContextShift[IO] = IO.contextShift(global)
     implicit val timer: Timer[IO] = IO.timer(global)
-    val cf: ConcurrentEffect[IO] = implicitly[ConcurrentEffect[IO]]
+    val cf: Effect[IO] = implicitly[Effect[IO]]
 
     DockerClient
       .fromEnvironment(cf, global)
@@ -23,9 +22,10 @@ object DockerClientTest {
 
   private def main(client: DockerClient[IO]): IO[Unit] = {
     for {
-      info <- client.system.info
+      images <- client.images.list
     } yield {
-      println(s"Info: $info")
+      println(s"Images: ")
+      images.foreach(println)
     }
   }
 

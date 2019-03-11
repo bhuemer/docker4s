@@ -24,7 +24,7 @@ package org.docker4s.transport.unix
 import java.nio.file.Path
 
 import cats.effect.Effect.ops.toAllEffectOps
-import cats.effect.{ConcurrentEffect, IO, Resource}
+import cats.effect.{Effect, IO, Resource}
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
@@ -40,7 +40,7 @@ import scala.language.higherKinds
 import scala.util.{Failure, Success}
 
 private[unix] final class DomainSocketClient[F[_]](private val eventLoop: DomainSocketEventLoop)(
-    implicit F: ConcurrentEffect[F],
+    implicit F: Effect[F],
     ec: ExecutionContext)
     extends LazyLogging {
 
@@ -204,7 +204,7 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
 
 object DomainSocketClient extends LazyLogging {
 
-  def apply[F[_]](socketPath: Path)(implicit F: ConcurrentEffect[F], ec: ExecutionContext): Resource[F, Client[F]] = {
+  def apply[F[_]](socketPath: Path)(implicit F: Effect[F], ec: ExecutionContext): Resource[F, Client[F]] = {
     apply(new DomainSocketAddress(socketPath.toFile.getAbsolutePath))
   }
 
@@ -214,8 +214,7 @@ object DomainSocketClient extends LazyLogging {
     * Note that the execution context will never be used for blocking calls (the client's backend is implemented
     * in a non-blocking way), but it allows you to off-load response processing from Netty's event loop thread.
     */
-  def apply[F[_]](
-      address: DomainSocketAddress)(implicit F: ConcurrentEffect[F], ec: ExecutionContext): Resource[F, Client[F]] = {
+  def apply[F[_]](address: DomainSocketAddress)(implicit F: Effect[F], ec: ExecutionContext): Resource[F, Client[F]] = {
     val eventLoopResource = Resource.make(
       F.fromTry(DomainSocketEventLoop(
         (channel: DomainSocketChannel) => {

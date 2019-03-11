@@ -23,7 +23,7 @@ package org.docker4s
 
 import java.time.ZonedDateTime
 
-import cats.effect.ConcurrentEffect
+import cats.effect.Effect
 import fs2.Stream
 import io.circe.Decoder
 import org.docker4s.models.system.{Event, Info, Version}
@@ -33,7 +33,7 @@ import org.http4s.{Header, Method, Request, Uri}
 
 import scala.language.higherKinds
 
-private[docker4s] class Http4sDockerClient[F[_]: ConcurrentEffect](private val client: Client[F], private val uri: Uri)
+private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Client[F], private val uri: Uri)
     extends DockerClient[F] {
 
   override def system: api.System[F] = new api.System[F] {

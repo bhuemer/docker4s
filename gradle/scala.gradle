@@ -13,7 +13,7 @@ dependencies {
 
 // Makes sure that logs appear about test cases being executed.
 test {
-    afterTest { desc, result ->
-        logger.quiet "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
+    testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
     }
 }

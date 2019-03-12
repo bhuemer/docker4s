@@ -26,7 +26,7 @@ import fs2.Stream
 import io.circe.Decoder
 import org.docker4s.api.{Images, System}
 import org.docker4s.models.system.{Event, Info, Version}
-import org.docker4s.models.images.{Image, ImageSummary}
+import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
 import org.docker4s.transport.Client
 import org.http4s.{Header, Method, Query, Request, Uri}
 
@@ -71,6 +71,12 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
     /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
     override def inspect(id: Image.Id): F[Image] = {
       client.expect[Image](GET.withUri(uri.withPath(s"/images/${id.value}/json")))(Image.decoder)
+    }
+
+    /** Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command. */
+    override def history(id: Image.Id): F[List[ImageHistory]] = {
+      implicit val decoder: Decoder[ImageHistory] = ImageHistory.decoder
+      client.expect[List[ImageHistory]](GET.withUri(uri.withPath(s"/images/${id.value}/history")))
     }
 
   }

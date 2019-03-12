@@ -2,6 +2,7 @@ package org.docker4s
 
 import cats.effect.{Effect, IO}
 import org.docker4s.api.{Images, System}
+import org.docker4s.models.images.Image
 import org.docker4s.models.system.Event
 
 object DockerClientTest {
@@ -23,20 +24,21 @@ object DockerClientTest {
   }
 
   private def main(client: DockerClient[IO]): IO[Unit] = {
-//    for {
-//      images <- client.images.list(Images.ListCriterion.hideDangling)
-//    } yield {
-//      println(s"Images: ")
-//      images.foreach(println)
-//    }
-
-    val stream = for {
-      event <- client.system.events(System.EventsCriterion.action(Event.Action.Create))
+    for {
+      layers <- client.images.history(
+        Image.Id("sha256:353d7641c769b651ecaf0d72aca46b886372e3ccf15ab2a6ce8be857bae85daa"))
     } yield {
-      println(s"Event: $event")
+      println(s"Layers: ")
+      layers.foreach(println)
     }
 
-    stream.compile.drain
+//    val stream = for {
+//      event <- client.system.events(System.EventsCriterion.action(Event.Action.Create))
+//    } yield {
+//      println(s"Event: $event")
+//    }
+//
+//    stream.compile.drain
   }
 
 }

@@ -45,8 +45,7 @@ class CriterionSpec extends FlatSpec with Matchers {
   // -------------------------------------------- Utility methods
 
   private def renderQueryString(criteria: Criterion[_]*): String = {
-    val parameters = Criterion.build(criteria.toSeq)
-    Query.fromMap(parameters).renderString
+    Query.fromMap(Criterion.compile(criteria.toSeq)).renderString
   }
 
 }

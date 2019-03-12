@@ -21,12 +21,10 @@
  */
 package org.docker4s
 
-import java.time.ZonedDateTime
-
 import cats.effect.Effect
 import fs2.Stream
 import io.circe.Decoder
-import org.docker4s.api.Images
+import org.docker4s.api.{Images, System}
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images.{Image, ImageSummary}
 import org.docker4s.transport.Client
@@ -37,7 +35,7 @@ import scala.language.higherKinds
 private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Client[F], private val uri: Uri)
     extends DockerClient[F] {
 
-  override def system: api.System[F] = new api.System[F] {
+  override def system: System[F] = new System[F] {
 
     /**
       * Returns system-wide information. Similar to the `docker system info` command.
@@ -49,14 +47,8 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
     /**
       * Streams real-time events from the server. Similar to the `docker system events` command.
       */
-    override def events(since: Option[ZonedDateTime], until: Option[ZonedDateTime]): Stream[F, Event] = {
-      client.stream(
-        GET.withUri(
-          uri
-            .withPath("/events")
-            .withOptionQueryParam("since", since.map(_.toInstant.getEpochSecond))
-            .withOptionQueryParam("until", until.map(_.toInstant.getEpochSecond)))
-      )(Event.decoder)
+    override def events(criteria: Criterion[System.EventsCriterion]*): Stream[F, Event] = {
+      client.stream[Event](GET.withUri(uri.withPath("/events").withCriteria(criteria)))(Event.decoder)
     }
 
     /**
@@ -71,7 +63,7 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
   override def images: Images[F] = new Images[F] {
 
     /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
-    override def list(criteria: Criterion[Images.ListImage]*): F[List[ImageSummary]] = {
+    override def list(criteria: Criterion[Images.ListCriterion]*): F[List[ImageSummary]] = {
       implicit val decoder: Decoder[ImageSummary] = ImageSummary.decoder
       client.expect[List[ImageSummary]](GET.withUri(uri.withPath("/images/json").withCriteria(criteria)))
     }
@@ -83,6 +75,8 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
 
   }
 
+  // -------------------------------------------- Utility methods & classes
+
   private def GET: Request[F] =
     Request[F]()
       .withMethod(Method.GET)
@@ -91,7 +85,7 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
   private implicit class UriOps(private val uri: Uri) {
 
     def withCriteria(criteria: Seq[Criterion[_]]): Uri = {
-      uri.copy(query = Query.fromMap(Criterion.build(criteria)))
+      uri.copy(query = Query.fromMap(Criterion.compile(criteria)))
     }
 
   }

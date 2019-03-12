@@ -22,6 +22,7 @@
 package org.docker4s
 
 import io.circe.Json
+import org.http4s.QueryParamEncoder
 
 /**
   * The Docker API typically allows for two different ways of specifying criteria:
@@ -35,6 +36,11 @@ sealed trait Criterion[T]
 
 object Criterion {
 
+  def query[T, A: QueryParamEncoder](name: String, value: A): Criterion[T] =
+    Query(name, QueryParamEncoder[A].encode(value).value)
+
+  def filter[T](name: String, value: String): Criterion[T] = Filter(name, value)
+
   /**
     * Represents criteria in conditions that are included as query parameters in the URL.
     */
@@ -45,7 +51,7 @@ object Criterion {
     */
   case class Filter[T](name: String, value: String) extends Criterion[T]
 
-  def build(criteria: Seq[Criterion[_]]): Map[String, Seq[String]] = {
+  def compile(criteria: Seq[Criterion[_]]): Map[String, Seq[String]] = {
     // Collect all the criteria that ought to be used as query parameters directly ..
     val queries = criteria
       .collect({

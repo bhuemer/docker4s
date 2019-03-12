@@ -24,6 +24,8 @@ package org.docker4s.api
 import java.time.ZonedDateTime
 
 import fs2.Stream
+import org.docker4s.Criterion
+import org.docker4s.Criterion.{filter, query}
 import org.docker4s.models.system.{Event, Info, Version}
 
 import scala.language.higherKinds
@@ -41,7 +43,7 @@ trait System[F[_]] {
   /**
     * Streams real-time events from the server. Similar to the `docker system events` command.
     */
-  def events(since: Option[ZonedDateTime] = None, until: Option[ZonedDateTime] = None): Stream[F, Event]
+  def events(criteria: Criterion[System.EventsCriterion]*): Stream[F, Event]
 
   /**
     * Returns version information from the server. Similar to the `docker version` command.
@@ -50,4 +52,55 @@ trait System[F[_]] {
 
 }
 
-object System {}
+object System {
+
+  sealed trait EventsCriterion
+
+  object EventsCriterion {
+
+    /**
+      * Show events created since this timestamp then stream new events.
+      */
+    def since(timestamp: ZonedDateTime): Criterion[EventsCriterion] = query("since", timestamp.toInstant.getEpochSecond)
+
+    /**
+      * Show events created until this timestamp then stop streaming.
+      */
+    def until(timestamp: ZonedDateTime): Criterion[EventsCriterion] = query("until", timestamp.toInstant.getEpochSecond)
+
+    /**
+      * Show events related to the given action. For example, `action(Event.Action.Pull)` for pull events.
+      */
+    def action(action: Event.Action): Criterion[EventsCriterion] = filter("event", action.name)
+
+    /**
+      * Show events related to the given config name or ID.
+      */
+    def config(name: String): Criterion[EventsCriterion] = filter("config", name)
+
+    /**
+      * Show events related to the given container name or ID.
+      */
+    def container(name: String): Criterion[EventsCriterion] = filter("container", name)
+
+    /**
+      * Show events related to the given image name or ID.
+      */
+    def image(image: String): Criterion[EventsCriterion] = filter("image", image)
+
+    /**
+      * Show events for scope `local` or `swarm`.
+      */
+    def scope(scope: Event.Scope): Criterion[EventsCriterion] = scope match {
+      case Event.Scope.Local => filter("scope", "local")
+      case Event.Scope.Swarm => filter("scope", "swarm")
+    }
+
+    /**
+      * Show events for objects of the given type.
+      */
+    def `type`(`type`: Event.Type): Criterion[EventsCriterion] = filter("type", `type`.name)
+
+  }
+
+}

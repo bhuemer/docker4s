@@ -84,9 +84,29 @@ object System {
     def container(name: String): Criterion[EventsCriterion] = filter("container", name)
 
     /**
+      * Show events related to the given daemon name or ID.
+      */
+    def daemon(name: String): Criterion[EventsCriterion] = filter("daemon", name)
+
+    /**
       * Show events related to the given image name or ID.
       */
-    def image(image: String): Criterion[EventsCriterion] = filter("image", image)
+    def image(name: String): Criterion[EventsCriterion] = filter("image", name)
+
+    /**
+      * Show events related to the given network name or ID.
+      */
+    def network(name: String): Criterion[EventsCriterion] = filter("network", name)
+
+    /**
+      * Show events related to the given node name or ID.
+      */
+    def node(name: String): Criterion[EventsCriterion] = filter("node", name)
+
+    /**
+      * Show events related to the given plugin name or ID.
+      */
+    def plugin(name: String): Criterion[EventsCriterion] = filter("plugin", name)
 
     /**
       * Show events for scope `local` or `swarm`.
@@ -97,9 +117,24 @@ object System {
     }
 
     /**
+      * Show events related to the given secret name or ID.
+      */
+    def secret(name: String): Criterion[EventsCriterion] = filter("secret", name)
+
+    /**
+      * Show events related to the given service name or ID.
+      */
+    def service(name: String): Criterion[EventsCriterion] = filter("service", name)
+
+    /**
       * Show events for objects of the given type.
       */
     def `type`(`type`: Event.Type): Criterion[EventsCriterion] = filter("type", `type`.name)
+
+    /**
+      * Show events related to the given volume name.
+      */
+    def volume(name: String): Criterion[EventsCriterion] = filter("volume", name)
 
   }
 

@@ -22,6 +22,7 @@
 package org.docker4s.api
 
 import org.docker4s.Criterion
+import org.docker4s.Criterion.{filter, query}
 import org.docker4s.api.Images.ListCriterion
 import org.docker4s.models.images.{Image, ImageSummary}
 
@@ -51,23 +52,23 @@ object Images {
     /**
       * Show all images. Only images from a final layer (no children) are shown by default.
       */
-    def showAll: Criterion[ListCriterion] = Criterion.Query("all", "true")
+    def showAll: Criterion[ListCriterion] = query("all", "true")
 
     /**
       * Show digest information as `RepoDigests` field on each image.
       */
-    def showDigests: Criterion[ListCriterion] = Criterion.Query("digests", "true")
+    def showDigests: Criterion[ListCriterion] = query("digests", "true")
 
-    def hideDigests: Criterion[ListCriterion] = Criterion.Query("digests", "false")
+    def hideDigests: Criterion[ListCriterion] = query("digests", "false")
 
     /**
       * Show dangling images only, i.e. images without a repository name.
       *
       * By default both dangling and non-dangling images will be shown.
       */
-    def showDangling: Criterion[ListCriterion] = Criterion.Filter("dangling", "true")
+    def showDangling: Criterion[ListCriterion] = filter("dangling", "true")
 
-    def hideDangling: Criterion[ListCriterion] = Criterion.Filter("dangling", "false")
+    def hideDangling: Criterion[ListCriterion] = filter("dangling", "false")
 
   }
 

@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 package org.docker4s.models.images
+
 import java.time.{Instant, ZoneId, ZonedDateTime}
 
 import io.circe.Decoder

@@ -32,6 +32,7 @@ import scala.language.higherKinds
 
 /**
   * Docker client methods related to the system endpoint, i.e. similar to `docker system ..` commands.
+  * @tparam F the effect type for evaluations, e.g. `IO`
   */
 trait System[F[_]] {
 

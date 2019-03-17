@@ -22,7 +22,7 @@
 package org.docker4s
 
 import cats.effect.{Effect, Resource}
-import org.docker4s.api.{Images, System}
+import org.docker4s.api.{Images, System, Volumes}
 import org.docker4s.transport.Client
 import org.docker4s.transport.unix.DomainSocketClient
 import org.http4s.Uri
@@ -45,6 +45,11 @@ trait DockerClient[F[_]] {
     * Returns an object for managing images on the server.
     */
   def images: Images[F]
+
+  /**
+    * Returns an object for managing volumes on the server.
+    */
+  def volumes: Volumes[F]
 
 }
 

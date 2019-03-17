@@ -33,7 +33,7 @@ import org.scalatest.{FlatSpec, Matchers}
 @RunWith(classOf[JUnitRunner])
 class VersionSpec extends FlatSpec with Matchers {
 
-  "Decoding a version" should "parse all the essential pieces of information" in {
+  "Decoding JSON into versions" should "extract all the relevant pieces of information" in {
     val version = decodeVersion("""{
         |  "ApiVersion": "1.39",
         |  "Arch": "amd64",

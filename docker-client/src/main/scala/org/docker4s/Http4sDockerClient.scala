@@ -23,12 +23,14 @@ package org.docker4s
 
 import cats.effect.Effect
 import fs2.Stream
-import io.circe.Decoder
-import org.docker4s.api.{Images, System}
+import io.circe.{Decoder, Json}
+import org.docker4s.api.{Images, System, Volumes}
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
+import org.docker4s.models.volumes.{Volume, VolumeList}
 import org.docker4s.transport.Client
 import org.http4s.{Header, Method, Query, Request, Uri}
+import org.http4s.circe.jsonEncoder
 
 import scala.language.higherKinds
 
@@ -81,11 +83,52 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
 
   }
 
+  override def volumes: Volumes[F] = new Volumes[F] {
+
+    /**
+      * Returns volumes currently registered by the docker daemon. Similar to the `docker volume ls` command.
+      */
+    override def list(criteria: Criterion[Volumes.ListCriterion]*): F[VolumeList] = {
+      client.expect[VolumeList](GET.withUri(uri.withPath(s"/volumes").withCriteria(criteria)))(VolumeList.decoder)
+    }
+
+    /**
+      * Creates and registers a named volume. Similar to the `docker volume create` command.
+      */
+    override def create(
+        name: Option[String],
+        driver: String,
+        options: Map[String, String],
+        labels: Map[String, String]): F[Volume] = {
+      client.expect[Volume](
+        POST
+          .withUri(uri.withPath(s"/volumes/create"))
+          .withEntity(
+            Json.obj(
+              "Name" -> name.fold(Json.Null)(Json.fromString),
+              "Driver" -> Json.fromString(driver),
+              "DriverOpts" -> Json.obj(
+                options.mapValues(Json.fromString).toSeq: _*
+              ),
+              "Labels" -> Json.obj(
+                labels.mapValues(Json.fromString).toSeq: _*
+              )
+            )
+          ))(Volume.decoder)
+    }
+
+  }
+
   // -------------------------------------------- Utility methods & classes
 
   private def GET: Request[F] =
     Request[F]()
       .withMethod(Method.GET)
+      .withHeaders(Header("Host", uri.host.map(_.value).getOrElse("localhost")))
+
+  private def POST: Request[F] =
+    Request[F]()
+      .withMethod(Method.POST)
       .withHeaders(Header("Host", uri.host.map(_.value).getOrElse("localhost")))
 
   private implicit class UriOps(private val uri: Uri) {

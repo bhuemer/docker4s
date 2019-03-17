@@ -1,7 +1,7 @@
 package org.docker4s
 
 import cats.effect.{Effect, IO}
-import org.docker4s.api.{Images, System}
+import org.docker4s.api.{Images, System, Volumes}
 import org.docker4s.models.images.Image
 import org.docker4s.models.system.Event
 
@@ -24,12 +24,22 @@ object DockerClientTest {
   }
 
   private def main(client: DockerClient[IO]): IO[Unit] = {
+//    for {
+//      layers <- client.images.history(
+//        Image.Id("sha256:353d7641c769b651ecaf0d72aca46b886372e3ccf15ab2a6ce8be857bae85daa"))
+//    } yield {
+//      println(s"Layers: ")
+//      layers.foreach(println)
+//    }
+
     for {
-      layers <- client.images.history(
-        Image.Id("sha256:353d7641c769b651ecaf0d72aca46b886372e3ccf15ab2a6ce8be857bae85daa"))
+      volumes1 <- client.volumes.list()
+      created <- client.volumes.create()
+      volumes2 <- client.volumes.list()
     } yield {
-      println(s"Layers: ")
-      layers.foreach(println)
+      println("Before: " + volumes1)
+      println("Created: " + created)
+      println("After: " + volumes2)
     }
 
 //    val stream = for {

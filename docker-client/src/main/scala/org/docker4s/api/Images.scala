@@ -23,7 +23,6 @@ package org.docker4s.api
 
 import org.docker4s.Criterion
 import org.docker4s.Criterion.{filter, query}
-import org.docker4s.api.Images.ListCriterion
 import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
 
 import scala.language.higherKinds
@@ -35,7 +34,7 @@ import scala.language.higherKinds
 trait Images[F[_]] {
 
   /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
-  def list(criteria: Criterion[ListCriterion]*): F[List[ImageSummary]]
+  def list(criteria: Criterion[Images.ListCriterion]*): F[List[ImageSummary]]
 
   /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
   def inspect(id: Image.Id): F[Image]

@@ -35,11 +35,6 @@ trait Volumes[F[_]] {
   def list(criteria: Criterion[Volumes.ListCriterion]*): F[VolumeList]
 
   /**
-    * Returns volume information by name. Similar to the `docker volume inspect` command.
-    */
-  def inspect(name: String): F[Volume]
-
-  /**
     * Creates and registers a named volume. Similar to the `docker volume create` command.
     *
     * @param name The new volume's name. If not specified, Docker generates a name.
@@ -55,6 +50,18 @@ trait Volumes[F[_]] {
       driver: String = "local",
       options: Map[String, String] = Map.empty,
       labels: Map[String, String] = Map.empty): F[Volume]
+
+  /**
+    * Returns volume information by name. Similar to the `docker volume inspect` command.
+    */
+  def inspect(name: String): F[Volume]
+
+  /**
+    * Removes the given volume. Similar to the `docker volume rm` command.
+    * @param name Name of the volume to remove
+    * @param force Force the removal of the volume
+    */
+  def remove(name: String, force: Boolean = false): F[Unit]
 
 }
 

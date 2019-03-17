@@ -33,6 +33,8 @@ import scala.language.higherKinds
 
 trait Client[F[_]] {
 
+  def evaluate(request: Request[F]): F[Unit]
+
   def expect[A](request: Request[F])(implicit decoder: Decoder[A]): F[A]
 
   def stream[A](request: Request[F])(implicit decoder: Decoder[A]): Stream[F, A]
@@ -48,6 +50,13 @@ object Client {
 
   private class Http4sClient[F[_]](private val client: org.http4s.client.Client[F])(implicit F: Effect[F])
       extends Client[F] {
+
+    override def evaluate(request: Request[F]): F[Unit] = {
+      client.fetch(request)({
+        case Successful(response) => F.unit
+        case response             => handleError(request, response)
+      })
+    }
 
     override def expect[A](request: Request[F])(implicit decoder: Decoder[A]): F[A] =
       client.fetch[A](request)({

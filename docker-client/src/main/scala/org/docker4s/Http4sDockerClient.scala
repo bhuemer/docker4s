@@ -93,13 +93,6 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
     }
 
     /**
-      * Returns volume information by name. Similar to the `docker volume inspect` command.
-      */
-    override def inspect(name: String): F[Volume] = {
-      client.expect[Volume](GET.withUri(uri.withPath(s"/volumes/$name")))(Volume.decoder)
-    }
-
-    /**
       * Creates and registers a named volume. Similar to the `docker volume create` command.
       */
     override def create(
@@ -124,6 +117,23 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
           ))(Volume.decoder)
     }
 
+    /**
+      * Returns volume information by name. Similar to the `docker volume inspect` command.
+      */
+    override def inspect(name: String): F[Volume] = {
+      client.expect[Volume](GET.withUri(uri.withPath(s"/volumes/$name")))(Volume.decoder)
+    }
+
+    /**
+      * Removes the given volume. Similar to the `docker volume rm` command.
+      *
+      * @param name Name of the volume to remove
+      * @param force Force the removal of the volume
+      */
+    override def remove(name: String, force: Boolean): F[Unit] = {
+      client.evaluate(DELETE.withUri(uri.withPath(s"/volumes/$name").withQueryParam("force", force)))
+    }
+
   }
 
   // -------------------------------------------- Utility methods & classes
@@ -136,6 +146,11 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
   private def POST: Request[F] =
     Request[F]()
       .withMethod(Method.POST)
+      .withHeaders(Header("Host", uri.host.map(_.value).getOrElse("localhost")))
+
+  private def DELETE: Request[F] =
+    Request[F]()
+      .withMethod(Method.DELETE)
       .withHeaders(Header("Host", uri.host.map(_.value).getOrElse("localhost")))
 
   private implicit class UriOps(private val uri: Uri) {

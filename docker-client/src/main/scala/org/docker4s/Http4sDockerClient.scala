@@ -27,7 +27,7 @@ import io.circe.{Decoder, Json}
 import org.docker4s.api.{Images, System, Volumes}
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
-import org.docker4s.models.volumes.{Volume, VolumeList}
+import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
 import org.http4s.{Header, Method, Query, Request, Uri}
 import org.http4s.circe.jsonEncoder
@@ -132,6 +132,13 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
       */
     override def remove(name: String, force: Boolean): F[Unit] = {
       client.evaluate(DELETE.withUri(uri.withPath(s"/volumes/$name").withQueryParam("force", force)))
+    }
+
+    /**
+      * Removes unused volumes. Similar to the `docker volume prune` command.
+      */
+    override def prune(): F[VolumesPruned] = {
+      client.expect[VolumesPruned](POST.withUri(uri.withPath(s"/volumes/prune")))(VolumesPruned.decoder)
     }
 
   }

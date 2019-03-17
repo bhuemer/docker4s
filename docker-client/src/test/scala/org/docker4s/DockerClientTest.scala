@@ -34,13 +34,13 @@ object DockerClientTest {
 
     for {
       volumes1 <- client.volumes.list()
-      _ <- client.volumes.remove(volumes1.volumes.head.name)
-      _ = println(s"Deleted ${volumes1.volumes.head.name}")
-      created <- client.volumes.create()
+      // _ <- client.volumes.remove(volumes1.volumes.head.name)
+      // _ = println(s"Deleted ${volumes1.volumes.head.name}")
+      pruned <- client.volumes.prune()
       volumes2 <- client.volumes.list()
     } yield {
       println("Before: " + volumes1)
-      println("Created: " + created)
+      println("Pruned: " + pruned)
       println("After: " + volumes2)
     }
 

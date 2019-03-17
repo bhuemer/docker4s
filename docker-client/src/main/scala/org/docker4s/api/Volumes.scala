@@ -23,7 +23,7 @@ package org.docker4s.api
 
 import org.docker4s.Criterion
 import org.docker4s.Criterion.filter
-import org.docker4s.models.volumes.{Volume, VolumeList}
+import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 
 import scala.language.higherKinds
 
@@ -62,6 +62,11 @@ trait Volumes[F[_]] {
     * @param force Force the removal of the volume
     */
   def remove(name: String, force: Boolean = false): F[Unit]
+
+  /**
+    * Removes unused volumes. Similar to the `docker volume prune` command.
+    */
+  def prune(): F[VolumesPruned]
 
 }
 

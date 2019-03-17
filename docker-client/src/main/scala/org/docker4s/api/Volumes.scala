@@ -35,7 +35,20 @@ trait Volumes[F[_]] {
   def list(criteria: Criterion[Volumes.ListCriterion]*): F[VolumeList]
 
   /**
+    * Returns volume information by name. Similar to the `docker volume inspect` command.
+    */
+  def inspect(name: String): F[Volume]
+
+  /**
     * Creates and registers a named volume. Similar to the `docker volume create` command.
+    *
+    * @param name The new volume's name. If not specified, Docker generates a name.
+    * @param driver Name of the volume driver to use (`local` by default)
+    * @param options A mapping of driver options and values. These options are passed directly to the driver and are
+    *                driver specific.
+    * @param labels User-defined key/value metadata.
+    *
+    * @return The volume that was created.
     */
   def create(
       name: Option[String] = None,

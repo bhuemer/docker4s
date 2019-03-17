@@ -34,11 +34,15 @@ object DockerClientTest {
 
     for {
       volumes1 <- client.volumes.list()
-      created <- client.volumes.create()
+      detail1 <- client.volumes.inspect(volumes1.volumes.head.name)
+      detail2 <- client.volumes.inspect(volumes1.volumes.last.name)
+//      created <- client.volumes.create()
       volumes2 <- client.volumes.list()
     } yield {
       println("Before: " + volumes1)
-      println("Created: " + created)
+      println("Detail: " + detail1)
+      println("Detail: " + detail2)
+//      println("Created: " + created)
       println("After: " + volumes2)
     }
 

@@ -93,6 +93,13 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
     }
 
     /**
+      * Returns volume information by name. Similar to the `docker volume inspect` command.
+      */
+    override def inspect(name: String): F[Volume] = {
+      client.expect[Volume](GET.withUri(uri.withPath(s"/volumes/$name")))(Volume.decoder)
+    }
+
+    /**
       * Creates and registers a named volume. Similar to the `docker volume create` command.
       */
     override def create(

@@ -4,17 +4,21 @@ import org.scalatest.{FlatSpec, Matchers}
 class DockerHostSpec extends FlatSpec with Matchers {
 
   "Building a docker host" should "detect environment variables" in {
-    println("Environment variables: ")
+    val builder = new StringBuilder()
+
+    builder.append("Environment variables: \n")
     System
       .getenv()
       .forEach({ (key, value) =>
-        System.out.printf(" %25s = %s %n", key, value)
+        builder.append(String.format(" %25s = %s %n", key, value))
       })
 
-    println("System properties: ")
+    builder.append("System properties: \n")
     System.getProperties.forEach({ (key, value) =>
-      System.out.printf(" %25s = %s %n", key, value)
+      builder.append(String.format(" %25s = %s %n", key, value))
     })
+
+    throw new IllegalStateException(builder.toString())
   }
 
 }

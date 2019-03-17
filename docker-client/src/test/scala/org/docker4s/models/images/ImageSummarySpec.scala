@@ -28,7 +28,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
-  * Contains test cases related to parsing images from JSON response bodies.
+  * Contains test cases related to parsing [[ImageSummary]] objects from JSON response bodies.
   */
 @RunWith(classOf[JUnitRunner])
 class ImageSummarySpec extends FlatSpec with Matchers {

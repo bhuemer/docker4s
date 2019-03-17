@@ -21,7 +21,7 @@
  */
 package org.docker4s.models.system
 
-import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 
 import io.circe.Decoder
 
@@ -34,7 +34,7 @@ case class Version(
     os: String,
     arch: String,
     kernelVersion: String,
-    buildTime: OffsetDateTime)
+    buildTime: ZonedDateTime)
 
 object Version {
 
@@ -53,7 +53,7 @@ object Version {
       arch <- c.downField("Arch").as[String].right
       kernelVersion <- c.downField("KernelVersion").as[String].right
 
-      buildTime <- c.downField("BuildTime").as[OffsetDateTime].right
+      buildTime <- c.downField("BuildTime").as[ZonedDateTime].right
     } yield
       Version(
         version = version,

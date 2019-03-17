@@ -18,6 +18,9 @@ jobs:
     steps:
     - checkout
 
+    - setup_remote_docker:
+        docker_layer_caching: true
+
     # Download and cache dependencies
     - restore_cache:
         keys:
@@ -41,5 +44,6 @@ jobs:
           mkdir -p ~/test-results/junit/
           find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/test-results/junit/ \;
         when: always
+
     - store_test_results:
         path: ~/test-results

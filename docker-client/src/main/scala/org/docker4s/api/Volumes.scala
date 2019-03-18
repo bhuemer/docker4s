@@ -47,7 +47,7 @@ trait Volumes[F[_]] {
     */
   def create(
       name: Option[String] = None,
-      driver: String = "local",
+      driver: Option[String] = None,
       options: Map[String, String] = Map.empty,
       labels: Map[String, String] = Map.empty): F[Volume]
 

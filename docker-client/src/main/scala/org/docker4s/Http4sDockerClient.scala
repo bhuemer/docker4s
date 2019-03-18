@@ -37,7 +37,7 @@ import scala.language.higherKinds
 private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Client[F], private val uri: Uri)
     extends DockerClient[F] {
 
-  override def system: System[F] = new System[F] {
+  override val system: System[F] = new System[F] {
 
     /**
       * Returns system-wide information. Similar to the `docker system info` command.
@@ -62,7 +62,7 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
 
   }
 
-  override def images: Images[F] = new Images[F] {
+  override val images: Images[F] = new Images[F] {
 
     /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
     override def list(criteria: Criterion[Images.ListCriterion]*): F[List[ImageSummary]] = {
@@ -83,7 +83,7 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
 
   }
 
-  override def volumes: Volumes[F] = new Volumes[F] {
+  override val volumes: Volumes[F] = new Volumes[F] {
 
     /**
       * Returns volumes currently registered by the docker daemon. Similar to the `docker volume ls` command.
@@ -97,7 +97,7 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
       */
     override def create(
         name: Option[String],
-        driver: String,
+        driver: Option[String],
         options: Map[String, String],
         labels: Map[String, String]): F[Volume] = {
       client.expect[Volume](
@@ -106,7 +106,7 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
           .withEntity(
             Json.obj(
               "Name" -> name.fold(Json.Null)(Json.fromString),
-              "Driver" -> Json.fromString(driver),
+              "Driver" -> Json.fromString(driver.getOrElse("local")),
               "DriverOpts" -> Json.obj(
                 options.mapValues(Json.fromString).toSeq: _*
               ),

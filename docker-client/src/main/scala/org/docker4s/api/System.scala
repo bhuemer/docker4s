@@ -60,12 +60,12 @@ object System {
   object EventsCriterion {
 
     /**
-      * Show events created since this timestamp then stream new events.
+      * Show events created since this timestamp, then stream new events.
       */
     def since(timestamp: ZonedDateTime): Criterion[EventsCriterion] = query("since", timestamp.toInstant.getEpochSecond)
 
     /**
-      * Show events created until this timestamp then stop streaming.
+      * Show events created until this timestamp, then stop streaming.
       */
     def until(timestamp: ZonedDateTime): Criterion[EventsCriterion] = query("until", timestamp.toInstant.getEpochSecond)
 

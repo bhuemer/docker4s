@@ -22,93 +22,152 @@
 package org.docker4s.transport
 
 import cats.effect.Effect
-import cats.syntax.all._
 import fs2.Stream
 import io.circe.{Decoder, Json}
+import org.docker4s.Criterion
 import org.docker4s.errors.DockerApiException
-import org.http4s.{EntityDecoder, Request, Response}
-import org.http4s.Status.Successful
+import org.http4s.{EntityEncoder, Header, Method, QueryParamEncoder, QueryParamKeyLike, Request, Status, Uri}
 
 import scala.language.higherKinds
 
 trait Client[F[_]] {
 
-  def evaluate(request: Request[F]): F[Unit]
+  def get(path: String): Client.RequestBuilder[F]
 
-  def expect[A](request: Request[F])(implicit decoder: Decoder[A]): F[A]
+  def post(path: String): Client.RequestBuilder[F]
 
-  def stream[A](request: Request[F])(implicit decoder: Decoder[A]): Stream[F, A]
+  def delete(path: String): Client.RequestBuilder[F]
 
 }
 
 object Client {
 
+  trait RequestBuilder[F[_]] {
+
+    def body[T](entity: T)(implicit encoder: EntityEncoder[F, T]): Client.RequestBuilder[F]
+
+    def queryParam[T: QueryParamEncoder, K: QueryParamKeyLike](key: K, value: T): Client.RequestBuilder[F]
+
+    /**
+      */
+    def criteria(criteria: Seq[Criterion[_]]): Client.RequestBuilder[F]
+
+    def handleStatusWith(pf: PartialFunction[Status, Throwable]): Client.RequestBuilder[F]
+
+    def execute: F[Unit]
+
+    def expect[A](decoder: Decoder[A]): F[A]
+
+    def expectMany[A](decoder: Decoder[A]): F[List[A]] = expect(Decoder.decodeList(decoder))
+
+    def stream: Stream[F, Byte]
+
+    def stream[A](decoder: Decoder[A]): Stream[F, A]
+
+  }
+
   /**
     *
     */
-  def from[F[_]: Effect](client: org.http4s.client.Client[F]): Client[F] = new Http4sClient[F](client)
+  def from[F[_]: Effect](client: org.http4s.client.Client[F], uri: Uri): Client[F] = new Http4sClient[F](client, uri)
 
-  private class Http4sClient[F[_]](private val client: org.http4s.client.Client[F])(implicit F: Effect[F])
+  private class Http4sClient[F[_]](private val client: org.http4s.client.Client[F], private val uri: Uri)(
+      implicit F: Effect[F])
       extends Client[F] {
 
-    override def evaluate(request: Request[F]): F[Unit] = {
-      client.fetch(request)({
-        case Successful(response) => F.unit
-        case response             => handleError(request, response)
+    override def get(path: String): RequestBuilder[F] = builderFor(Method.GET, path)
+
+    override def post(path: String): RequestBuilder[F] = builderFor(Method.POST, path)
+
+    override def delete(path: String): RequestBuilder[F] = builderFor(Method.DELETE, path)
+
+    private def builderFor(method: org.http4s.Method, path: String): RequestBuilder[F] = {
+      val request = Request[F]()
+        .withMethod(method)
+        .withUri(uri.withPath(path))
+        .withHeaders(
+          Header("Host", uri.host.map(_.value).getOrElse("localhost"))
+        )
+
+      new Http4SClientRequestBuilder[F](client, request, {
+        case status if !status.isSuccess =>
+          new DockerApiException(s"An error occurred while evaluating the request.")
       })
     }
 
-    override def expect[A](request: Request[F])(implicit decoder: Decoder[A]): F[A] =
-      client.fetch[A](request)({
-        case Successful(response) =>
-          response.as(F, accumulatingJsonOf(decoder))
+  }
 
-        case response => handleError(request, response)
+  private class Http4SClientRequestBuilder[F[_]](
+      private val client: org.http4s.client.Client[F],
+      private val request: org.http4s.Request[F],
+      private val statusHandler: PartialFunction[Status, Throwable])(implicit F: Effect[F])
+      extends Client.RequestBuilder[F] {
+
+    override def body[T](entity: T)(implicit encoder: EntityEncoder[F, T]): RequestBuilder[F] =
+      new Http4SClientRequestBuilder(client, request.withEntity(entity), statusHandler)
+
+    override def queryParam[T: QueryParamEncoder, K: QueryParamKeyLike](key: K, value: T): RequestBuilder[F] = {
+      new Http4SClientRequestBuilder(
+        client,
+        request.withUri(uri = request.uri.withQueryParam(key, value).asInstanceOf[org.http4s.Uri]),
+        statusHandler)
+    }
+
+    override def criteria(criteria: Seq[Criterion[_]]): RequestBuilder[F] = {
+      val parameters = Criterion.compile(criteria)
+      val newUri = parameters.foldLeft(request.uri)({
+        case (uri, (parameterName, parameterValues)) =>
+          uri.withQueryParam(parameterName, parameterValues).asInstanceOf[org.http4s.Uri]
       })
 
-    /**
-      *
-      */
-    override def stream[A](request: Request[F])(implicit decoder: Decoder[A]): Stream[F, A] = {
+      new Http4SClientRequestBuilder(client, request.withUri(uri = newUri), statusHandler)
+    }
+
+    override def handleStatusWith(pf: PartialFunction[Status, Throwable]): Client.RequestBuilder[F] =
+      new Http4SClientRequestBuilder(client, request, pf.orElse(statusHandler))
+
+    override def execute: F[Unit] = {
+      client.fetch[Unit](request)({ response =>
+        if (statusHandler.isDefinedAt(response.status)) {
+          F.raiseError(statusHandler.apply(response.status))
+        } else {
+          response.body.compile.drain
+        }
+      })
+    }
+
+    override def expect[A](decoder: Decoder[A]): F[A] = {
+      client.fetch[A](request)({ response =>
+        if (statusHandler.isDefinedAt(response.status)) {
+          F.raiseError(statusHandler.apply(response.status))
+        } else {
+          response.as(F, org.http4s.circe.accumulatingJsonOf(F, decoder))
+        }
+      })
+    }
+
+    override def stream: Stream[F, Byte] = {
       client
         .stream(request)
-        .flatMap({
-          case Successful(response) =>
-            implicit val facade: org.typelevel.jawn.RawFacade[Json] = io.circe.jawn.CirceSupportParser.facade
-            response.body.chunks.through(jawnfs2.parseJsonStream)
-
-          case response => Stream.eval(handleError(request, response))
-        })
-        .evalMap(json =>
-          json
-            .as(decoder)
-            .fold(error => F.raiseError[A](error), value => F.delay[A](value)))
-    }
-
-    /**
-      * Extracts the error message from the given response and lifts it, with some additional information, into `F`.
-      */
-    protected def handleError[A](request: Request[F], response: Response[F]): F[A] = {
-      response
-        .as(F, accumulatingJsonOf(Decoder.instance({ c =>
-          for {
-            message <- c.downField("message").as[String].right
-          } yield message
-        })))
-        // If the response cannot be parsed as error message JSON, continue anyway as we would otherwise lose
-        // the information about the request and the response that we have anyway (status codes, URIs, ..).
-        .recoverWith({
-          case ex => F.delay(s"Unknown error message. Cannot decode the error response due to ${ex.getMessage}: $ex")
-        })
-        .flatMap({ errorMessage =>
-          F.raiseError(new DockerApiException(
-            s"Error occurred while evaluating request $request. The response was $response with the error message '$errorMessage'."))
+        .flatMap({ response =>
+          if (statusHandler.isDefinedAt(response.status)) {
+            Stream.raiseError(statusHandler.apply(response.status))
+          } else {
+            response.body
+          }
         })
     }
 
-    // Partially applied version of `accumulatingJsonOf` that doesn't require evidence for the effect type any more.
-    private def accumulatingJsonOf[T](decoder: Decoder[T]): EntityDecoder[F, T] =
-      org.http4s.circe.accumulatingJsonOf(F, decoder)
+    override def stream[A](decoder: Decoder[A]): Stream[F, A] = {
+      stream.through({ body =>
+        implicit val facade: org.typelevel.jawn.RawFacade[Json] = io.circe.jawn.CirceSupportParser.facade
+        body.chunks
+          .through(jawnfs2.parseJsonStream)
+          .evalMap({ json =>
+            json.as(decoder).fold(error => F.raiseError[A](error), value => F.delay[A](value))
+          })
+      })
+    }
 
   }
 

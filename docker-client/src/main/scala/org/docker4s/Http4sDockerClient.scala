@@ -22,20 +22,55 @@
 package org.docker4s
 
 import cats.effect.Effect
-import fs2.Stream
-import io.circe.{Decoder, Json}
-import org.docker4s.api.{Images, System, Volumes}
+import fs2.{text, Stream}
+import io.circe.Json
+import org.docker4s.api.{Containers, Images, System, Volumes}
+import org.docker4s.errors.{ImageNotFoundException, VolumeNotFoundException}
+import org.docker4s.models.containers.Container
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
-import org.http4s.{Header, Method, Query, Request, Uri}
+import org.http4s.Status
 import org.http4s.circe.jsonEncoder
 
 import scala.language.higherKinds
 
-private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Client[F], private val uri: Uri)
-    extends DockerClient[F] {
+private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Client[F]) extends DockerClient[F] {
+
+  private val LOG_HEADER_STDIN = "\u0000\u0000\u0000\u0000"
+  private val LOG_HEADER_STDOUT = "\u0001\u0000\u0000\u0000"
+  private val LOG_HEADER_STDERR = "\u0002\u0000\u0000\u0000"
+  private val HEADER_SIZE = 8
+
+  override val containers: Containers[F] = new Containers[F] {
+
+    override def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log] = {
+      client
+        .get(s"/containers/${id.value}/logs")
+        .criteria(criteria)
+        .stream
+        // TODO: Implement this properly by decoding the header at a byte level already.
+        .through(text.utf8Decode)
+        .through(text.lines)
+        .map({ line =>
+          // See for example https://docs.docker.com/engine/api/v1.39/#operation/ContainerAttach
+          // for the stream format.
+          if (line.length < 8) {
+            Containers.Log(Containers.Stream.StdOut, line)
+          } else if (line.startsWith(LOG_HEADER_STDIN)) {
+            Containers.Log(Containers.Stream.StdIn, line.substring(HEADER_SIZE))
+          } else if (line.startsWith(LOG_HEADER_STDOUT)) {
+            Containers.Log(Containers.Stream.StdOut, line.substring(HEADER_SIZE))
+          } else if (line.startsWith(LOG_HEADER_STDERR)) {
+            Containers.Log(Containers.Stream.StdErr, line.substring(HEADER_SIZE))
+          } else {
+            Containers.Log(Containers.Stream.StdOut, line)
+          }
+        })
+    }
+
+  }
 
   override val system: System[F] = new System[F] {
 
@@ -43,21 +78,21 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
       * Returns system-wide information. Similar to the `docker system info` command.
       */
     override def info: F[Info] = {
-      client.expect[Info](GET.withUri(uri.withPath("/info")))(Info.decoder)
+      client.get("/info").expect(Info.decoder)
     }
 
     /**
       * Streams real-time events from the server. Similar to the `docker system events` command.
       */
     override def events(criteria: Criterion[System.EventsCriterion]*): Stream[F, Event] = {
-      client.stream[Event](GET.withUri(uri.withPath("/events").withCriteria(criteria)))(Event.decoder)
+      client.get("/events").criteria(criteria).stream(Event.decoder)
     }
 
     /**
       * Returns version information from the server. Similar to the `docker version` command.
       */
     override def version: F[Version] = {
-      client.expect[Version](GET.withUri(uri.withPath("/version")))(Version.decoder)
+      client.get("/version").expect(Version.decoder)
     }
 
   }
@@ -66,19 +101,27 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
 
     /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
     override def list(criteria: Criterion[Images.ListCriterion]*): F[List[ImageSummary]] = {
-      implicit val decoder: Decoder[ImageSummary] = ImageSummary.decoder
-      client.expect[List[ImageSummary]](GET.withUri(uri.withPath("/images/json").withCriteria(criteria)))
+      client
+        .get("/images/json")
+        .criteria(criteria)
+        .expectMany(ImageSummary.decoder)
     }
 
     /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
     override def inspect(id: Image.Id): F[Image] = {
-      client.expect[Image](GET.withUri(uri.withPath(s"/images/${id.value}/json")))(Image.decoder)
+      client
+        .get(s"/images/${id.value}/json")
+        .handleStatusWith({
+          case Status.NotFound => new ImageNotFoundException(id.value, "")
+        })
+        .expect(Image.decoder)
     }
 
     /** Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command. */
     override def history(id: Image.Id): F[List[ImageHistory]] = {
-      implicit val decoder: Decoder[ImageHistory] = ImageHistory.decoder
-      client.expect[List[ImageHistory]](GET.withUri(uri.withPath(s"/images/${id.value}/history")))
+      client
+        .get(s"/images/${id.value}/history")
+        .expectMany(ImageHistory.decoder)
     }
 
   }
@@ -89,7 +132,7 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
       * Returns volumes currently registered by the docker daemon. Similar to the `docker volume ls` command.
       */
     override def list(criteria: Criterion[Volumes.ListCriterion]*): F[VolumeList] = {
-      client.expect[VolumeList](GET.withUri(uri.withPath(s"/volumes").withCriteria(criteria)))(VolumeList.decoder)
+      client.get(s"/volumes").criteria(criteria).expect(VolumeList.decoder)
     }
 
     /**
@@ -100,28 +143,33 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
         driver: Option[String],
         options: Map[String, String],
         labels: Map[String, String]): F[Volume] = {
-      client.expect[Volume](
-        POST
-          .withUri(uri.withPath(s"/volumes/create"))
-          .withEntity(
-            Json.obj(
-              "Name" -> name.fold(Json.Null)(Json.fromString),
-              "Driver" -> Json.fromString(driver.getOrElse("local")),
-              "DriverOpts" -> Json.obj(
-                options.mapValues(Json.fromString).toSeq: _*
-              ),
-              "Labels" -> Json.obj(
-                labels.mapValues(Json.fromString).toSeq: _*
-              )
+      client
+        .post(s"/volumes/create")
+        .body(
+          Json.obj(
+            "Name" -> name.fold(Json.Null)(Json.fromString),
+            "Driver" -> Json.fromString(driver.getOrElse("local")),
+            "DriverOpts" -> Json.obj(
+              options.mapValues(Json.fromString).toSeq: _*
+            ),
+            "Labels" -> Json.obj(
+              labels.mapValues(Json.fromString).toSeq: _*
             )
-          ))(Volume.decoder)
+          )
+        )
+        .expect(Volume.decoder)
     }
 
     /**
       * Returns volume information by name. Similar to the `docker volume inspect` command.
       */
     override def inspect(name: String): F[Volume] = {
-      client.expect[Volume](GET.withUri(uri.withPath(s"/volumes/$name")))(Volume.decoder)
+      client
+        .get(s"/volumes/$name")
+        .handleStatusWith({
+          case Status.NotFound => new VolumeNotFoundException(name, "")
+        })
+        .expect(Volume.decoder)
     }
 
     /**
@@ -131,39 +179,22 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
       * @param force Force the removal of the volume
       */
     override def remove(name: String, force: Boolean): F[Unit] = {
-      client.evaluate(DELETE.withUri(uri.withPath(s"/volumes/$name").withQueryParam("force", force)))
+      client
+        .delete(s"/volumes/$name")
+        .queryParam("force", force)
+        .handleStatusWith({
+          case Status.NotFound => new VolumeNotFoundException(name, "")
+        })
+        .execute
     }
 
     /**
       * Removes unused volumes. Similar to the `docker volume prune` command.
       */
     override def prune(): F[VolumesPruned] = {
-      client.expect[VolumesPruned](POST.withUri(uri.withPath(s"/volumes/prune")))(VolumesPruned.decoder)
-    }
-
-  }
-
-  // -------------------------------------------- Utility methods & classes
-
-  private def GET: Request[F] =
-    Request[F]()
-      .withMethod(Method.GET)
-      .withHeaders(Header("Host", uri.host.map(_.value).getOrElse("localhost")))
-
-  private def POST: Request[F] =
-    Request[F]()
-      .withMethod(Method.POST)
-      .withHeaders(Header("Host", uri.host.map(_.value).getOrElse("localhost")))
-
-  private def DELETE: Request[F] =
-    Request[F]()
-      .withMethod(Method.DELETE)
-      .withHeaders(Header("Host", uri.host.map(_.value).getOrElse("localhost")))
-
-  private implicit class UriOps(private val uri: Uri) {
-
-    def withCriteria(criteria: Seq[Criterion[_]]): Uri = {
-      uri.copy(query = Query.fromMap(Criterion.compile(criteria)))
+      client
+        .post("/volumes/prune")
+        .expect(VolumesPruned.decoder)
     }
 
   }

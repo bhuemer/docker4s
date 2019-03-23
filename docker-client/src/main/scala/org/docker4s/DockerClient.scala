@@ -22,7 +22,7 @@
 package org.docker4s
 
 import cats.effect.{Effect, Resource}
-import org.docker4s.api.{Images, System, Volumes}
+import org.docker4s.api.{Containers, Images, System, Volumes}
 import org.docker4s.transport.Client
 import org.docker4s.transport.unix.DomainSocketClient
 import org.http4s.Uri
@@ -35,6 +35,11 @@ import scala.language.higherKinds
   * @tparam F the effect type for evaluations, e.g. `IO`
   */
 trait DockerClient[F[_]] {
+
+  /**
+    * Returns an object for managing containers on the server.
+    */
+  def containers: Containers[F]
 
   /**
     * Returns an object for inspecting the system on the server.
@@ -71,7 +76,7 @@ object DockerClient {
     dockerHost match {
       case DockerHost.Unix(socketPath, _) =>
         DomainSocketClient(socketPath).map({ client =>
-          new Http4sDockerClient[F](Client.from(client), uri = Uri.unsafeFromString("http://localhost"))
+          new Http4sDockerClient[F](Client.from(client, uri = Uri.unsafeFromString("http://localhost")))
         })
 
       case DockerHost.Tcp(host, port, _) =>

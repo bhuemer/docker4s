@@ -31,10 +31,18 @@ import scala.language.higherKinds
   * Docker client methods related to managing images on the server. Similar to `docker image ...` commands.
   * @tparam F the effect type for evaluations, e.g. `IO`
   */
-trait Images[F[_]] {
+trait Images[F[_]] { self =>
 
   /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
   def list(criteria: Criterion[Images.ListCriterion]*): F[List[ImageSummary]]
+
+  def get(id: Image.Id): ImageRef[F] = new ImageRef[F] {
+
+    override def inspect: F[Image] = self.inspect(id)
+
+    override def history: F[List[ImageHistory]] = self.history(id)
+
+  }
 
   /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
   def inspect(id: Image.Id): F[Image]

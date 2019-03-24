@@ -32,6 +32,7 @@ import scala.language.higherKinds
 /**
   * Docker daemons are prefixing log entries by a header, to determine if the subsequent entry is for `stdout`,
   * `stderr`, etc. and to indicate the length of the entry. This class/object takes care of decoding these log streams.
+  * @see https://docs.docker.com/engine/api/v1.37/#operation/ContainerAttach
   */
 object LogDecoder {
 
@@ -55,8 +56,7 @@ object LogDecoder {
               Containers.Log(Containers.Stream.StdOut, new String(current.toArray, StandardCharsets.UTF_8).trim)
             ) >> Pull.done
 
-          case None =>
-            Pull.done
+          case None => Pull.done
         })
 
       case _ =>
@@ -75,6 +75,8 @@ object LogDecoder {
     *
     * @param stream indicator for the stream (`stderr`, `stdout`, or `stdin`) for which we're decoding this message
     * @param frameSize the number of bytes we should include in this frame
+    * @param current
+    * @param s
     */
   private def decodingFrame[F[_]](
       stream: Containers.Stream,
@@ -121,12 +123,10 @@ object LogDecoder {
         case _    => None
       }
 
-      val result = maybeStream.map({ stream =>
+      maybeStream.map({ stream =>
         val frameSize = ByteBuffer.wrap(header.toArray).getInt(4)
         (stream, frameSize)
       })
-
-      result
     }
   }
 

@@ -176,6 +176,9 @@ object Client {
       })
     }
 
+    /**
+      * Extracts the error message from the given response and lifts it, with some additional information, into `F`.
+      */
     private def raiseError[A](response: Response[F]): F[A] = {
       response
         .as(F, accumulatingJsonOf(F, Decoder.instance({ c =>

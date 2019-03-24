@@ -21,11 +21,14 @@
  */
 package org.docker4s.models.containers
 
+import java.time.ZonedDateTime
+
+import org.docker4s.models.images.Image
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-// @RunWith(classOf[JUnitRunner])
+@RunWith(classOf[JUnitRunner])
 class ContainerSummarySpec extends FlatSpec with Matchers {
 
   "Decoding JSON into container summaries" should "successfully decode hello-world containers" in {
@@ -67,6 +70,77 @@ class ContainerSummarySpec extends FlatSpec with Matchers {
       |  "State": "exited",
       |  "Status": "Exited (0) 6 days ago"
       |}""".stripMargin)
+    println(containerSummary)
+  }
+
+  "Decoding JSON into container summaries" should "successfully decode exposed ports" in {
+    val containerSummary =
+      decodeContainerSummary("""
+      |{
+      |  "Id" : "12a6a4da97dd4c43db609ecdd22ad6dffc95cf2fe9a8a9fe2b84038eba093053",
+      |  "Names" : [
+      |    "/sad_wescoff"
+      |  ],
+      |  "Image" : "jupyter/base-notebook",
+      |  "ImageID" : "sha256:0fe41535dcac2fb8bee08dbb26895aa645ba38109c162b390e5bb45948f8ac35",
+      |  "Command" : "tini -g -- start-notebook.sh",
+      |  "Created" : 1553442354,
+      |  "Ports" : [
+      |    {
+      |      "IP" : "0.0.0.0",
+      |      "PrivatePort" : 8888,
+      |      "PublicPort" : 8888,
+      |      "Type" : "tcp"
+      |    }
+      |  ],
+      |  "Labels" : {
+      |    "maintainer" : "Jupyter Project <jupyter@googlegroups.com>"
+      |  },
+      |  "State" : "running",
+      |  "Status" : "Up 6 seconds",
+      |  "HostConfig" : {
+      |    "NetworkMode" : "default"
+      |  },
+      |  "NetworkSettings" : {
+      |    "Networks" : {
+      |      "bridge" : {
+      |        "IPAMConfig" : null,
+      |        "Links" : null,
+      |        "Aliases" : null,
+      |        "NetworkID" : "8e692c7e924e9ae7351992f2e427c586d5a853ced52e8a50da412fd6399dd5d2",
+      |        "EndpointID" : "0b4cc8afb7a3c17bc93fda25c5349f5a84af1346cb1c2a1449a89733c29bda8a",
+      |        "Gateway" : "172.17.0.1",
+      |        "IPAddress" : "172.17.0.2",
+      |        "IPPrefixLen" : 16,
+      |        "IPv6Gateway" : "",
+      |        "GlobalIPv6Address" : "",
+      |        "GlobalIPv6PrefixLen" : 0,
+      |        "MacAddress" : "02:42:ac:11:00:02",
+      |        "DriverOpts" : null
+      |      }
+      |    }
+      |  },
+      |  "Mounts" : [
+      |  ]
+      |}""".stripMargin)
+
+    containerSummary should be(
+      ContainerSummary(
+        id = Container.Id("12a6a4da97dd4c43db609ecdd22ad6dffc95cf2fe9a8a9fe2b84038eba093053"),
+        names = List("/sad_wescoff"),
+        imageName = "jupyter/base-notebook",
+        imageId = Image.Id("sha256:0fe41535dcac2fb8bee08dbb26895aa645ba38109c162b390e5bb45948f8ac35"),
+        command = "tini -g -- start-notebook.sh",
+        createdAt = ZonedDateTime.parse("2019-03-24T15:45:54Z"),
+        ports = List(
+          PortBinding(Some("0.0.0.0"), 8888, 8888, PortBinding.Type.TCP)
+        ),
+        sizeRw = None,
+        sizeRootFs = None,
+        state = Container.Status.Running,
+        status = "Up 6 seconds"
+      )
+    )
   }
 
   // -------------------------------------------- Utility methods

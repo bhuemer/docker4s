@@ -23,37 +23,21 @@ package org.docker4s.models.containers
 
 import io.circe.Decoder
 
-case class Container()
+case class ContainerExit(statusCode: Int, errorMessage: Option[String])
 
-object Container {
-
-  case class Id(value: String)
-
-  sealed abstract class Status(private val name: String)
-
-  object Status {
-    case object Created extends Status("created")
-    case object Running extends Status("running")
-    case object Paused extends Status("paused")
-    case object Restarting extends Status("restarting")
-    case object Removing extends Status("removing")
-    case object Exited extends Status("exited")
-    case object Dead extends Status("dead")
-
-    private val all: List[Status] =
-      List(Created, Running, Paused, Restarting, Removing, Exited, Dead)
-
-    /**
-      * Returns the relevant status for the given string.
-      */
-    def from(str: String): Option[Status] = all.find(_.name.equalsIgnoreCase(str))
-
-  }
+object ContainerExit {
 
   // -------------------------------------------- Circe decoders
 
-  private[containers] val statusDecoder: Decoder[Status] = Decoder.decodeString.emap({ str =>
-    Status.from(str).toRight(s"Cannot decode $str as a container status.")
+  val decoder: Decoder[ContainerExit] = Decoder.instance({ c =>
+    for {
+      statusCode <- c.downField("StatusCode").as[Int].right
+      errorMessage <- c
+        .downField("Error")
+        .as(
+          Decoder.decodeOption(Decoder.instance(_.downField("Message").as[String]))
+        )
+    } yield ContainerExit(statusCode, errorMessage)
   })
 
 }

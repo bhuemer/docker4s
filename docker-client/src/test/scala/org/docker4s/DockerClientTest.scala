@@ -24,54 +24,31 @@ object DockerClientTest {
     println()
   }
 
-  private def main(client: DockerClient[IO]): IO[List[Containers.Log]] = {
-//    import org.docker4s.api.Containers.LogCriterion._
-//
-//    val container = client.containers.get(Container.Id("c37780dbf336"))
-//
-//    val stream = for {
-//      _ <- Stream.eval(container.start)
-//      _ = println("Started container! Fetching logs now.")
-//
-//      line <- container.logs(stdout, showTimestamps, follow)
-//    } yield {
-//      line.stream match {
-//        case Containers.Stream.StdOut => java.lang.System.out.println(">>> " + line.message)
-//        case Containers.Stream.StdErr => java.lang.System.err.println(">>> " + line.message)
-//        case _                        =>
-//      }
-//    }
-//
-//    stream.compile.drain
-//    for {
-//      layers <- client.images.history(
-//        Image.Id("sha256:353d7641c769b651ecaf0d72aca46b886372e3ccf15ab2a6ce8be857bae85daa"))
-//    } yield {
-//      println(s"Layers: ")
-//      layers.foreach(println)
-//    }
+  private def main(client: DockerClient[IO]): IO[Unit] = {
+    for {
+      containers1 <- client.containers.list()
+      container = containers1.head
 
-//    for {
-//      volumes1 <- client.volumes.list()
-//      // _ <- client.volumes.remove(volumes1.volumes.head.name)
-//      // _ = println(s"Deleted ${volumes1.volumes.head.name}")
-//      pruned <- client.volumes.prune()
-//      volumes2 <- client.volumes.list()
-//    } yield {
-//      println("Before: " + volumes1)
-//      println("Pruned: " + pruned)
-//      println("After: " + volumes2)
-//    }
+      _ <- client.containers.pause(containers1.head.id)
+      _ = println(s"Paused container with the ID ${container.id.value}.")
 
-    import org.docker4s.api.Containers.LogCriterion._
-//
-    val stream = for {
-      line <- client.containers.get(Container.Id("1eba0857d7e0")).logs(showTimestamps)
+      _ <- client.containers.unpause(container.id)
+      _ = println(s"Unpaused container with the ID ${container.id.value}.")
+
+      _ = println(s"Killing container ${container.id.value}.")
+      _ <- client.containers.kill(container.id)
+//      _ = println(s"Waiting until container ${container.id.value} is finished.")
+
+      containers2 <- client.containers.list()
     } yield {
-      line
-    }
+      containers1.foreach({ container =>
+        println(s"Before: $container")
+      })
 
-    stream.compile.toList
+      containers2.foreach({ container =>
+        println(s"After: $container")
+      })
+    }
   }
 
 }

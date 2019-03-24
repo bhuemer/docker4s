@@ -26,7 +26,7 @@ import java.time.ZonedDateTime
 import fs2.Stream
 import org.docker4s.Criterion
 import org.docker4s.Criterion.query
-import org.docker4s.models.containers.Container
+import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary}
 
 import scala.language.higherKinds
 
@@ -35,17 +35,49 @@ trait Containers[F[_]] { self =>
   /**
     * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
     */
-  // def list(): F[List[ContainerSummary]]
+  def list(): F[List[ContainerSummary]]
 
   def get(id: Container.Id): ContainerRef[F] = new ContainerRef[F] {
 
     override def start: F[Unit] = self.start(id)
 
+    override def kill: F[Unit] = self.kill(id)
+
+    override def kill(signal: String): F[Unit] = self.kill(id, signal)
+
+    override def pause: F[Unit] = self.pause(id)
+
+    override def unpause: F[Unit] = self.unpause(id)
+
+    override def await: F[ContainerExit] = self.await(id)
+
     override def logs(criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log] =
       self.logs(id, criteria: _*)
+
   }
 
   def start(id: Container.Id): F[Unit]
+
+  /**
+    * Kills the given docker container by sending a POSIX signal such as SIGKILL.
+    * @param signal Signal to send to the container, e.g. SIGKILL, SIGINT, ..
+    */
+  def kill(id: Container.Id, signal: String = "SIGKILL"): F[Unit]
+
+  /**
+    * Pauses the given docker container. Similar to the `docker container pause` command.
+    */
+  def pause(id: Container.Id): F[Unit]
+
+  /**
+    * Unpauses the given docker container. Similar to the `docker container unpause` command.
+    */
+  def unpause(id: Container.Id): F[Unit]
+
+  /**
+    * Waits until a container stops, then returns the exit code. Similar to the `docker container wait` command.
+    */
+  def await(id: Container.Id): F[ContainerExit]
 
   def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log]
 

@@ -23,12 +23,26 @@ package org.docker4s.api
 
 import fs2.Stream
 import org.docker4s.Criterion
+import org.docker4s.models.containers.ContainerExit
 
 import scala.language.higherKinds
 
 trait ContainerRef[F[_]] {
 
   def start: F[Unit]
+
+  def kill: F[Unit]
+
+  def kill(signal: String): F[Unit]
+
+  def pause: F[Unit]
+
+  def unpause: F[Unit]
+
+  /**
+    * Waits until this container stops, then returns the exit code. Similar to the `docker container wait` command.
+    */
+  def await: F[ContainerExit]
 
   def logs(criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log]
 

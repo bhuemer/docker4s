@@ -21,16 +21,68 @@
  */
 package org.docker4s.models.containers
 
-import io.circe.Decoder
+import java.time.{Instant, ZoneId, ZonedDateTime}
 
-case class ContainerSummary()
+import io.circe.Decoder
+import org.docker4s.models.images.Image
+
+/**
+  *
+  * @param id The ID of this container
+  * @param names The names that this container has been given
+  * @param imageName The name of the image used when creating this container
+  * @param imageId The ID of the image that this container was created from
+  * @param command Command to run when starting the container
+  * @param createdAt When the container was created
+  * @param sizeRw The size of files that have been created or changed by this container
+  * @param sizeRootFs The total size of all the files in this container
+  */
+case class ContainerSummary(
+    id: Container.Id,
+    names: List[String],
+    imageName: String,
+    imageId: Image.Id,
+    command: String,
+    createdAt: ZonedDateTime,
+    ports: List[PortBinding],
+    sizeRw: Option[Long],
+    sizeRootFs: Option[Long],
+    state: Container.Status,
+    status: String)
 
 object ContainerSummary {
 
   // -------------------------------------------- Circe decoders
 
   val decoder: Decoder[ContainerSummary] = Decoder.instance({ c =>
-    ???
+    implicit val portBindingDecoder: Decoder[PortBinding] = PortBinding.decoder
+
+    for {
+      id <- c.downField("Id").as[String].right
+      names <- c.downField("Names").as[List[String]].right
+      image <- c.downField("Image").as[String].right
+      imageId <- c.downField("ImageID").as[String].right
+      command <- c.downField("Command").as[String].right
+      created <- c.downField("Created").as[Long].right
+      ports <- c.downField("Ports").as[Option[List[PortBinding]]].right
+      state <- c.downField("State").as(Container.statusDecoder).right
+      status <- c.downField("Status").as[String].right
+      sizeRw <- c.downField("SizeRw").as[Option[Long]].right
+      sizeRootFs <- c.downField("SizeRootFs").as[Option[Long]].right
+    } yield
+      ContainerSummary(
+        id = Container.Id(id),
+        names = names,
+        imageName = image,
+        imageId = Image.Id(imageId),
+        command = command,
+        createdAt = Instant.ofEpochSecond(created).atZone(ZoneId.of("Z")),
+        ports = ports.getOrElse(List.empty),
+        sizeRw = sizeRw,
+        sizeRootFs = sizeRootFs,
+        state = state,
+        status = status
+      )
   })
 
 }

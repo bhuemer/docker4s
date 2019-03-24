@@ -26,7 +26,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.Json
 import org.docker4s.api.{Containers, Images, System, Volumes}
-import org.docker4s.models.containers.Container
+import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary}
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
@@ -42,6 +42,15 @@ private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(
 
   override val containers: Containers[F] = new Containers[F] {
 
+    /**
+      * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
+      */
+    override def list(): F[List[ContainerSummary]] = {
+      client
+        .get("/containers/json")
+        .expectMany(ContainerSummary.decoder)
+    }
+
     override def start(id: Container.Id): F[Unit] = {
       client
         .post(s"/containers/${id.value}/start")
@@ -49,6 +58,41 @@ private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(
 //          case Status.NotFound => (_, _) => new ContainerNotFoundException(id.value, "")
 //        })
         .execute
+    }
+
+    /**
+      * Kills the given docker container by sending a POSIX signal such as SIGKILL.
+      *
+      * @param signal Signal to send to the container, e.g. SIGKILL, SIGINT, ..
+      */
+    override def kill(id: Container.Id, signal: String): F[Unit] = {
+      client
+        .post(s"/containers/${id.value}/kill")
+        .queryParam("signal", signal)
+        .execute
+    }
+
+    /**
+      * Pauses the given docker container. Similar to the `docker container pause` command.
+      */
+    override def pause(id: Container.Id): F[Unit] = {
+      client.post(s"/containers/${id.value}/pause").execute
+    }
+
+    /**
+      * Unpauses the given docker container. Similar to the `docker container unpause` command.
+      */
+    override def unpause(id: Container.Id): F[Unit] = {
+      client.post(s"/containers/${id.value}/unpause").execute
+    }
+
+    /**
+      * Waits until a container stops, then returns the exit code. Similar to the `docker container wait` command.
+      */
+    override def await(id: Container.Id): F[ContainerExit] = {
+      client
+        .post(s"s/containers/${id.value}/wait")
+        .expect(ContainerExit.decoder)
     }
 
     override def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log] = {

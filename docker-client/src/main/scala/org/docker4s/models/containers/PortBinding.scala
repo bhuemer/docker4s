@@ -23,37 +23,38 @@ package org.docker4s.models.containers
 
 import io.circe.Decoder
 
-case class Container()
+case class PortBinding(ipAddress: Option[String], privatePort: Int, publicPort: Int, `type`: PortBinding.Type)
 
-object Container {
+object PortBinding {
 
-  case class Id(value: String)
+  sealed trait Type
 
-  sealed abstract class Status(private val name: String)
+  object Type {
 
-  object Status {
-    case object Created extends Status("created")
-    case object Running extends Status("running")
-    case object Paused extends Status("paused")
-    case object Restarting extends Status("restarting")
-    case object Removing extends Status("removing")
-    case object Exited extends Status("exited")
-    case object Dead extends Status("dead")
+    case object TCP extends Type
+    case object UDP extends Type
 
-    private val all: List[Status] =
-      List(Created, Running, Paused, Restarting, Removing, Exited, Dead)
-
-    /**
-      * Returns the relevant status for the given string.
-      */
-    def from(str: String): Option[Status] = all.find(_.name.equalsIgnoreCase(str))
+    /** Stream control transmission protocol - widely used as a transport protocol for cellular networks. */
+    case object SCTP extends Type
 
   }
 
   // -------------------------------------------- Circe decoders
 
-  private[containers] val statusDecoder: Decoder[Status] = Decoder.decodeString.emap({ str =>
-    Status.from(str).toRight(s"Cannot decode $str as a container status.")
+  private val typeDecoder: Decoder[Type] = Decoder.decodeString.emap({
+    case "tcp"  => Right(Type.TCP)
+    case "udp"  => Right(Type.UDP)
+    case "sctp" => Right(Type.SCTP)
+    case str    => Left(s"Cannot decode $str as a port binding type.")
+  })
+
+  val decoder: Decoder[PortBinding] = Decoder.instance({ c =>
+    for {
+      ip <- c.downField("IP").as[Option[String]].right
+      privatePort <- c.downField("PrivatePort").as[Int].right
+      publicPort <- c.downField("PublicPort").as[Int].right
+      tpe <- c.downField("Type").as(typeDecoder).right
+    } yield PortBinding(ip, privatePort, publicPort, tpe)
   })
 
 }

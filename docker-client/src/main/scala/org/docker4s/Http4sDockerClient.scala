@@ -22,7 +22,7 @@
 package org.docker4s
 
 import cats.effect.Effect
-import fs2.{text, Stream}
+import fs2.Stream
 import io.circe.Json
 import org.docker4s.api.{Containers, Images, System, Volumes}
 import org.docker4s.errors.{ImageNotFoundException, VolumeNotFoundException}
@@ -31,17 +31,13 @@ import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
+import org.docker4s.util.LogDecoder
 import org.http4s.Status
 import org.http4s.circe.jsonEncoder
 
 import scala.language.higherKinds
 
 private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Client[F]) extends DockerClient[F] {
-
-  private val LOG_HEADER_STDIN = "\u0000\u0000\u0000\u0000"
-  private val LOG_HEADER_STDOUT = "\u0001\u0000\u0000\u0000"
-  private val LOG_HEADER_STDERR = "\u0002\u0000\u0000\u0000"
-  private val HEADER_SIZE = 8
 
   override val containers: Containers[F] = new Containers[F] {
 
@@ -50,24 +46,7 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
         .get(s"/containers/${id.value}/logs")
         .criteria(criteria)
         .stream
-        // TODO: Implement this properly by decoding the header at a byte level already.
-        .through(text.utf8Decode)
-        .through(text.lines)
-        .map({ line =>
-          // See for example https://docs.docker.com/engine/api/v1.39/#operation/ContainerAttach
-          // for the stream format.
-          if (line.length < 8) {
-            Containers.Log(Containers.Stream.StdOut, line)
-          } else if (line.startsWith(LOG_HEADER_STDIN)) {
-            Containers.Log(Containers.Stream.StdIn, line.substring(HEADER_SIZE))
-          } else if (line.startsWith(LOG_HEADER_STDOUT)) {
-            Containers.Log(Containers.Stream.StdOut, line.substring(HEADER_SIZE))
-          } else if (line.startsWith(LOG_HEADER_STDERR)) {
-            Containers.Log(Containers.Stream.StdErr, line.substring(HEADER_SIZE))
-          } else {
-            Containers.Log(Containers.Stream.StdOut, line)
-          }
-        })
+        .through(LogDecoder.decode)
     }
 
   }

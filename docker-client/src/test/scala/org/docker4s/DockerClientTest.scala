@@ -47,11 +47,11 @@ object DockerClientTest {
     import org.docker4s.api.Containers.LogCriterion._
 
     val stream = for {
-      line <- client.containers.get(Container.Id("c6367d153505")).logs(stdout, stderr, showTimestamps, follow)
+      line <- client.containers.get(Container.Id("12f1e1e9aff4")).logs(stdout, stderr, follow, showTimestamps)
     } yield {
       line.stream match {
-        case Containers.Stream.StdOut => java.lang.System.out.println(line.message)
-        case Containers.Stream.StdErr => java.lang.System.err.println(line.message)
+        case Containers.Stream.StdOut => java.lang.System.out.println(">>> " + line.message)
+        case Containers.Stream.StdErr => java.lang.System.err.println(">>> " + line.message)
         case _                        =>
       }
 

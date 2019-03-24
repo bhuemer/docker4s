@@ -26,7 +26,7 @@ import java.time.ZonedDateTime
 import fs2.Stream
 import org.docker4s.Criterion
 import org.docker4s.Criterion.query
-import org.docker4s.models.containers.{Container, ContainerSummary}
+import org.docker4s.models.containers.Container
 
 import scala.language.higherKinds
 
@@ -38,9 +38,14 @@ trait Containers[F[_]] { self =>
   // def list(): F[List[ContainerSummary]]
 
   def get(id: Container.Id): ContainerRef[F] = new ContainerRef[F] {
+
+    override def start: F[Unit] = self.start(id)
+
     override def logs(criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log] =
       self.logs(id, criteria: _*)
   }
+
+  def start(id: Container.Id): F[Unit]
 
   def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log]
 

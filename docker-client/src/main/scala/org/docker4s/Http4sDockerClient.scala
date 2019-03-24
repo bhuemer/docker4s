@@ -25,7 +25,7 @@ import cats.effect.Effect
 import fs2.Stream
 import io.circe.Json
 import org.docker4s.api.{Containers, Images, System, Volumes}
-import org.docker4s.errors.{ImageNotFoundException, VolumeNotFoundException}
+import org.docker4s.errors.{ContainerNotFoundException, ImageNotFoundException, VolumeNotFoundException}
 import org.docker4s.models.containers.Container
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
@@ -40,6 +40,15 @@ import scala.language.higherKinds
 private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Client[F]) extends DockerClient[F] {
 
   override val containers: Containers[F] = new Containers[F] {
+
+    override def start(id: Container.Id): F[Unit] = {
+      client
+        .post(s"/containers/${id.value}/start")
+        .handleStatusWith({
+          case Status.NotFound => new ContainerNotFoundException(id.value, "")
+        })
+        .execute
+    }
 
     override def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log] = {
       client

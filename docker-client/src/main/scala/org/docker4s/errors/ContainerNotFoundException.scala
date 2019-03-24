@@ -19,17 +19,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.api
+package org.docker4s.errors
 
-import fs2.Stream
-import org.docker4s.Criterion
-
-import scala.language.higherKinds
-
-trait ContainerRef[F[_]] {
-
-  def start: F[Unit]
-
-  def logs(criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log]
-
-}
+class ContainerNotFoundException(val container: String, message: String) extends Exception(message) {}

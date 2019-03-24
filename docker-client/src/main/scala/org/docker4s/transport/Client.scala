@@ -22,11 +22,12 @@
 package org.docker4s.transport
 
 import cats.effect.Effect
+import cats.syntax.all._
 import fs2.Stream
 import io.circe.{Decoder, Json}
 import org.docker4s.Criterion
 import org.docker4s.errors.DockerApiException
-import org.http4s.{EntityEncoder, Header, Method, QueryParamEncoder, QueryParamKeyLike, Request, Status, Uri}
+import org.http4s.{EntityEncoder, Header, Method, QueryParamEncoder, QueryParamKeyLike, Request, Response, Status, Uri}
 
 import scala.language.higherKinds
 
@@ -91,7 +92,7 @@ object Client {
 
       new Http4SClientRequestBuilder[F](client, request, {
         case status if !status.isSuccess =>
-          new DockerApiException(s"An error occurred while evaluating the request.")
+          new DockerApiException(s"An error occurred while evaluating the request: $status.")
       })
     }
 
@@ -151,7 +152,7 @@ object Client {
         .stream(request)
         .flatMap({ response =>
           if (statusHandler.isDefinedAt(response.status)) {
-            Stream.raiseError(statusHandler.apply(response.status))
+            Stream.eval(raiseError(response))
           } else {
             response.body
           }
@@ -167,6 +168,15 @@ object Client {
             json.as(decoder).fold(error => F.raiseError[A](error), value => F.delay[A](value))
           })
       })
+    }
+
+    private def raiseError[A](response: Response[F]): F[A] = {
+      response
+        .as[String]
+        .flatMap({ message =>
+          System.err.println(s"Message: $message")
+          F.raiseError[A](statusHandler(response.status))
+        })
     }
 
   }

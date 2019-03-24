@@ -26,7 +26,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.Json
 import org.docker4s.api.{Containers, Images, System, Volumes}
-import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary}
+import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary, ContainersPruned}
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
@@ -34,6 +34,7 @@ import org.docker4s.transport.Client
 import org.docker4s.util.LogDecoder
 import org.http4s.circe.jsonEncoder
 
+import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 
 private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(implicit F: Effect[F])
@@ -57,6 +58,30 @@ private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(
 //        .handleStatusWith({
 //          case Status.NotFound => (_, _) => new ContainerNotFoundException(id.value, "")
 //        })
+        .execute
+    }
+
+    /**
+      * Stops the given container. Similar to the `docker stop` command.
+      *
+      * @param timeout Amount of time to give the container to stop before killing it. Defaults to 10 seconds.
+      */
+    override def stop(id: Container.Id, timeout: FiniteDuration): F[Unit] = {
+      client
+        .post(s"/containers/${id.value}/stop")
+        .queryParam("t", timeout.toSeconds)
+        .execute
+    }
+
+    /**
+      * Restart the given container. Similar to the `docker restart` command.
+      *
+      * @param timeout Amount of time to give the container to stop before killing it. Defaults to 10 seconds.
+      */
+    override def restart(id: Container.Id, timeout: FiniteDuration): F[Unit] = {
+      client
+        .post(s"/containers/${id.value}/restart")
+        .queryParam("t", timeout.toSeconds)
         .execute
     }
 
@@ -95,12 +120,28 @@ private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(
         .expect(ContainerExit.decoder)
     }
 
+    /**
+      * Removes the given container. Similar to the `docker rm` command.
+      */
+    override def remove(id: Container.Id): F[Unit] = {
+      client.delete(s"/containers/${id.value}").execute
+    }
+
     override def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log] = {
       client
         .get(s"/containers/${id.value}/logs")
         .criteria(criteria)
         .stream
         .through(LogDecoder.decode)
+    }
+
+    /**
+      * Delete stopped containers. Similar to the `docker container prune` command.
+      */
+    override def prune(): F[ContainersPruned] = {
+      client
+        .post("/containers/prune")
+        .expect(ContainersPruned.decoder)
     }
 
   }

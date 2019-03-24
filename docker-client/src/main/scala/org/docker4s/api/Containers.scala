@@ -26,20 +26,24 @@ import java.time.ZonedDateTime
 import fs2.Stream
 import org.docker4s.Criterion
 import org.docker4s.Criterion.query
-import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary}
+import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary, ContainersPruned}
 
+import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 
 trait Containers[F[_]] { self =>
 
-  /**
-    * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
-    */
-  def list(): F[List[ContainerSummary]]
-
   def get(id: Container.Id): ContainerRef[F] = new ContainerRef[F] {
 
     override def start: F[Unit] = self.start(id)
+
+    override def stop: F[Unit] = self.stop(id)
+
+    override def stop(timeout: FiniteDuration): F[Unit] = self.stop(id, timeout)
+
+    override def restart: F[Unit] = self.restart(id)
+
+    override def restart(timeout: FiniteDuration): F[Unit] = self.restart(id, timeout)
 
     override def kill: F[Unit] = self.kill(id)
 
@@ -51,26 +55,47 @@ trait Containers[F[_]] { self =>
 
     override def await: F[ContainerExit] = self.await(id)
 
+    override def remove: F[Unit] = self.remove(id)
+
     override def logs(criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log] =
       self.logs(id, criteria: _*)
 
   }
 
+  /**
+    * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
+    */
+  def list(): F[List[ContainerSummary]]
+
+  def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log]
+
   def start(id: Container.Id): F[Unit]
 
   /**
-    * Kills the given docker container by sending a POSIX signal such as SIGKILL.
+    * Stops the given container. Similar to the `docker stop` command.
+    * @param timeout Amount of time to give the container to stop before killing it. Defaults to 10 seconds.
+    */
+  def stop(id: Container.Id, timeout: FiniteDuration = FiniteDuration(10, "s")): F[Unit]
+
+  /**
+    * Restart the given container. Similar to the `docker restart` command.
+    * @param timeout Amount of time to give the container to stop before killing it. Defaults to 10 seconds.
+    */
+  def restart(id: Container.Id, timeout: FiniteDuration = FiniteDuration(10, "s")): F[Unit]
+
+  /**
+    * Kills the given docker container. Similar to the `docker kill` or `docker container kill` command.
     * @param signal Signal to send to the container, e.g. SIGKILL, SIGINT, ..
     */
   def kill(id: Container.Id, signal: String = "SIGKILL"): F[Unit]
 
   /**
-    * Pauses the given docker container. Similar to the `docker container pause` command.
+    * Pauses the given docker container. Similar to the `docker pause` or `docker container pause` commands.
     */
   def pause(id: Container.Id): F[Unit]
 
   /**
-    * Unpauses the given docker container. Similar to the `docker container unpause` command.
+    * Unpauses the given docker container. Similar to the `docker unpause` or `docker container unpause` commands.
     */
   def unpause(id: Container.Id): F[Unit]
 
@@ -79,7 +104,15 @@ trait Containers[F[_]] { self =>
     */
   def await(id: Container.Id): F[ContainerExit]
 
-  def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log]
+  /**
+    * Removes the given container. Similar to the `docker rm` command.
+    */
+  def remove(id: Container.Id): F[Unit]
+
+  /**
+    * Delete stopped containers. Similar to the `docker container prune` command.
+    */
+  def prune(): F[ContainersPruned]
 
 }
 

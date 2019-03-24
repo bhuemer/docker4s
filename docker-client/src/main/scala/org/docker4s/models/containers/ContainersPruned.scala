@@ -19,42 +19,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.api
+package org.docker4s.models.containers
 
-import fs2.Stream
-import org.docker4s.Criterion
-import org.docker4s.models.containers.ContainerExit
+import io.circe.Decoder
 
-import scala.concurrent.duration.FiniteDuration
-import scala.language.higherKinds
+/**
+  * Information about containers that were pruned / removed because they were stopped.
+  * @param containers Container IDs that were deleted
+  * @param spaceReclaimed Disk space reclaimed in bytes
+  */
+case class ContainersPruned(containers: List[Container.Id], spaceReclaimed: Long)
 
-trait ContainerRef[F[_]] {
+object ContainersPruned {
 
-  def start: F[Unit]
+  // -------------------------------------------- Circe decoders
 
-  def stop: F[Unit]
-
-  def stop(timeout: FiniteDuration): F[Unit]
-
-  def restart: F[Unit]
-
-  def restart(timeout: FiniteDuration): F[Unit]
-
-  def kill: F[Unit]
-
-  def kill(signal: String): F[Unit]
-
-  def pause: F[Unit]
-
-  def unpause: F[Unit]
-
-  /**
-    * Waits until this container stops, then returns the exit code. Similar to the `docker container wait` command.
-    */
-  def await: F[ContainerExit]
-
-  def remove: F[Unit]
-
-  def logs(criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log]
+  val decoder: Decoder[ContainersPruned] = Decoder.instance({ c =>
+    for {
+      containers <- c.downField("ContainersDeleted").as[List[String]].right
+      reclaimed <- c.downField("SpaceReclaimed").as[Long].right
+    } yield ContainersPruned(containers.map(Container.Id), reclaimed)
+  })
 
 }

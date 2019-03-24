@@ -22,31 +22,32 @@
 package org.docker4s
 
 import cats.effect.Effect
+import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.Json
 import org.docker4s.api.{Containers, Images, System, Volumes}
-import org.docker4s.errors.{ContainerNotFoundException, ImageNotFoundException, VolumeNotFoundException}
 import org.docker4s.models.containers.Container
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
 import org.docker4s.util.LogDecoder
-import org.http4s.Status
 import org.http4s.circe.jsonEncoder
 
 import scala.language.higherKinds
 
-private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Client[F]) extends DockerClient[F] {
+private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(implicit F: Effect[F])
+    extends DockerClient[F]
+    with LazyLogging {
 
   override val containers: Containers[F] = new Containers[F] {
 
     override def start(id: Container.Id): F[Unit] = {
       client
         .post(s"/containers/${id.value}/start")
-        .handleStatusWith({
-          case Status.NotFound => new ContainerNotFoundException(id.value, "")
-        })
+//        .handleStatusWith({
+//          case Status.NotFound => (_, _) => new ContainerNotFoundException(id.value, "")
+//        })
         .execute
     }
 
@@ -99,9 +100,9 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
     override def inspect(id: Image.Id): F[Image] = {
       client
         .get(s"/images/${id.value}/json")
-        .handleStatusWith({
-          case Status.NotFound => new ImageNotFoundException(id.value, "")
-        })
+//        .handleStatusWith({
+//          case Status.NotFound => (_, _) => new ImageNotFoundException(id.value, "")
+//        })
         .expect(Image.decoder)
     }
 
@@ -154,9 +155,9 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
     override def inspect(name: String): F[Volume] = {
       client
         .get(s"/volumes/$name")
-        .handleStatusWith({
-          case Status.NotFound => new VolumeNotFoundException(name, "")
-        })
+//        .handleStatusWith({
+//          case Status.NotFound => (_, _) => new VolumeNotFoundException(name, "")
+//        })
         .expect(Volume.decoder)
     }
 
@@ -170,9 +171,9 @@ private[docker4s] class Http4sDockerClient[F[_]: Effect](private val client: Cli
       client
         .delete(s"/volumes/$name")
         .queryParam("force", force)
-        .handleStatusWith({
-          case Status.NotFound => new VolumeNotFoundException(name, "")
-        })
+//        .handleStatusWith({
+//          case Status.NotFound => (_, _) => new VolumeNotFoundException(name, "")
+//        })
         .execute
     }
 

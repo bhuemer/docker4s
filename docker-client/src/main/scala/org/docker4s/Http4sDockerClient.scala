@@ -28,7 +28,7 @@ import io.circe.Json
 import org.docker4s.api.{Containers, Images, System, Volumes}
 import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary, ContainersPruned}
 import org.docker4s.models.system.{Event, Info, Version}
-import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
+import org.docker4s.models.images.{Image, ImageHistory, ImageSummary, PullEvent}
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
 import org.docker4s.util.LogDecoder
@@ -189,6 +189,17 @@ private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(
 //          case Status.NotFound => (_, _) => new ImageNotFoundException(id.value, "")
 //        })
         .expect(Image.decoder)
+    }
+
+    /**
+      * Pulls the given docker container image.
+      */
+    override def pull(name: String, tag: Option[String]): Stream[F, PullEvent] = {
+      client
+        .post("/images/create")
+        .queryParam("fromImage", name)
+        .queryParam("tag", tag.getOrElse("latest"))
+        .stream(PullEvent.decoder)
     }
 
     /** Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command. */

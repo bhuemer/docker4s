@@ -27,37 +27,44 @@ object DockerClientTest {
   }
 
   private def main(client: DockerClient[IO])(implicit timer: Timer[IO]): IO[Unit] = {
-    for {
-      containers1 <- client.containers.list()
-      container = containers1.head
-
-      _ <- client.containers.pause(containers1.head.id)
-      _ = println(s"Paused container with the ID ${container.id.value}.")
-
-      _ <- client.containers.unpause(container.id)
-      _ = println(s"Unpaused container with the ID ${container.id.value}.")
-
-      _ = println(s"Restarting container ${container.id.value}.")
-      _ <- client.containers.restart(container.id)
-      _ = println(s"Restarted container ${container.id.value}.")
-//      _ = println(s"Waiting until container ${container.id.value} is finished.")
-
-      // _ <- IO.sleep(FiniteDuration(5, "s"))
-
-      containers2 <- client.containers.list()
-
-      pruned <- client.containers.prune()
+    val stream = for {
+      event <- client.images.pull("couchbase")
     } yield {
-      containers1.foreach({ container =>
-        println(s"Before: $container")
-      })
-
-      containers2.foreach({ container =>
-        println(s"After: $container")
-      })
-
-      println(s"Pruned: $pruned")
+      println(event)
     }
+
+    stream.compile.drain
+//    for {
+//      containers1 <- client.containers.list()
+//      container = containers1.head
+//
+//      _ <- client.containers.pause(containers1.head.id)
+//      _ = println(s"Paused container with the ID ${container.id.value}.")
+//
+//      _ <- client.containers.unpause(container.id)
+//      _ = println(s"Unpaused container with the ID ${container.id.value}.")
+//
+//      _ = println(s"Restarting container ${container.id.value}.")
+//      _ <- client.containers.restart(container.id)
+//      _ = println(s"Restarted container ${container.id.value}.")
+////      _ = println(s"Waiting until container ${container.id.value} is finished.")
+//
+//      // _ <- IO.sleep(FiniteDuration(5, "s"))
+//
+//      containers2 <- client.containers.list()
+//
+//      pruned <- client.containers.prune()
+//    } yield {
+//      containers1.foreach({ container =>
+//        println(s"Before: $container")
+//      })
+//
+//      containers2.foreach({ container =>
+//        println(s"After: $container")
+//      })
+//
+//      println(s"Pruned: $pruned")
+//    }
   }
 
 }

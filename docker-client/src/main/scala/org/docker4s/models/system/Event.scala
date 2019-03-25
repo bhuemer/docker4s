@@ -26,7 +26,8 @@ import java.time.{Instant, ZoneId, ZonedDateTime}
 import io.circe.Decoder
 
 /**
-  * @see https://docs.docker.com/engine/api/v1.37/#operation/SystemEvents
+  *
+  * @see [[https://docs.docker.com/engine/api/v1.37/#operation/SystemEvents Docker Engine API]]
   */
 case class Event(
     `type`: Event.Type,

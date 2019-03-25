@@ -21,9 +21,11 @@
  */
 package org.docker4s.api
 
+import fs2.Stream
+import fs2.compress
 import org.docker4s.Criterion
 import org.docker4s.Criterion.{filter, query}
-import org.docker4s.models.images.{Image, ImageHistory, ImageSummary}
+import org.docker4s.models.images.{Image, ImageHistory, ImageSummary, PullEvent}
 
 import scala.language.higherKinds
 
@@ -46,6 +48,11 @@ trait Images[F[_]] { self =>
 
   /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
   def inspect(id: Image.Id): F[Image]
+
+  /**
+    * Pulls the given docker container image.
+    */
+  def pull(name: String, tag: Option[String] = None): Stream[F, PullEvent]
 
   /** Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command. */
   def history(id: Image.Id): F[List[ImageHistory]]

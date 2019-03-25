@@ -25,6 +25,7 @@ import io.circe.Decoder
 
 /**
   * Information about containers that were pruned / removed because they were stopped.
+  * @see [[https://docs.docker.com/engine/api/v1.37/#operation/ContainerPrune Docker Engine API]]
   * @param containers Container IDs that were deleted
   * @param spaceReclaimed Disk space reclaimed in bytes
   */

@@ -23,6 +23,12 @@ package org.docker4s.models.volumes
 
 import io.circe.Decoder
 
+/**
+  * Information about volumes that were pruned / removed because they were unused.
+  * @see [[https://docs.docker.com/engine/api/v1.37/#operation/VolumePrune Docker Engine API]]
+  * @param volumes Volumes that were deleted
+  * @param spaceReclaimed Disk space reclaimed in bytes
+  */
 case class VolumesPruned(volumes: List[String], spaceReclaimed: Long)
 
 object VolumesPruned {

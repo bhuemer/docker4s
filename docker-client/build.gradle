@@ -16,6 +16,8 @@ dependencies {
     compileOnly 'io.netty:netty-transport-native-epoll:4.1.33.Final'
     compileOnly 'io.netty:netty-transport-native-kqueue:4.1.33.Final'
 
+    implementation 'org.apache.commons:commons-compress:1.18'
+
     testImplementation 'io.netty:netty-transport-native-kqueue:4.1.33.Final:osx-x86_64'
 
     implementation 'org.slf4j:slf4j-simple:1.7.25'

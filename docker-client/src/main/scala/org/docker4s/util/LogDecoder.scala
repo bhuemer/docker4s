@@ -45,6 +45,7 @@ object LogDecoder {
     */
   private def decodingHeader[F[_]](current: Chunk[Byte], s: Stream[F, Byte]): Pull[F, Containers.Log, Unit] = {
     current.size match {
+      // Do we have enough bytes already to actually attempt decoding a header? If not, continue consuming.
       case size if size < 8 =>
         s.pull.uncons.flatMap[F, Containers.Log, Unit]({
           case Some((hd, tail)) =>

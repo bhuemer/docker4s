@@ -21,11 +21,12 @@
  */
 package org.docker4s
 
-import cats.effect.{Effect, Resource}
+import cats.effect.{ConcurrentEffect, Effect, Resource}
 import org.docker4s.api.{Containers, Images, System, Volumes}
 import org.docker4s.transport.Client
 import org.docker4s.transport.unix.DomainSocketClient
 import org.http4s.Uri
+import org.http4s.client.blaze.BlazeClientBuilder
 
 import scala.concurrent.ExecutionContext
 import scala.language.higherKinds
@@ -68,11 +69,12 @@ object DockerClient {
     *  - '''DOCKER_TLS_VERIFY''' - verify the host against a CA certificate
     *  - '''DOCKER_CERT_PATH''' - path to a directory containing TLS certificates to use when connecting
     */
-  def fromEnvironment[F[_]: Effect](implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
+  def fromEnvironment[F[_]: ConcurrentEffect](implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
     fromHost(DockerHost.fromEnvironment)
   }
 
-  def fromHost[F[_]: Effect](dockerHost: DockerHost)(implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
+  def fromHost[F[_]: ConcurrentEffect](dockerHost: DockerHost)(
+      implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
     dockerHost match {
       case DockerHost.Unix(socketPath, _) =>
         DomainSocketClient(socketPath).map({ client =>
@@ -80,7 +82,10 @@ object DockerClient {
         })
 
       case DockerHost.Tcp(host, port, _) =>
-        ???
+        BlazeClientBuilder[F](ec).resource.map({ client =>
+          new Http4sDockerClient[F](Client.from(client, uri = Uri.unsafeFromString(s"$host:$port")))
+        })
+
     }
   }
 

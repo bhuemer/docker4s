@@ -2,7 +2,7 @@ package org.docker4s
 
 import java.io.{File, FileOutputStream}
 
-import cats.effect.{ContextShift, Effect, IO, Timer}
+import cats.effect._
 import org.docker4s.models.images.Image
 
 import scala.concurrent.ExecutionContext
@@ -15,7 +15,7 @@ object DockerClientTest {
 
     implicit val cs: ContextShift[IO] = IO.contextShift(global)
     implicit val timer: Timer[IO] = IO.timer(global)
-    val cf: Effect[IO] = implicitly[Effect[IO]]
+    val cf: ConcurrentEffect[IO] = implicitly[ConcurrentEffect[IO]]
 
     DockerClient
       .fromEnvironment(cf, global)

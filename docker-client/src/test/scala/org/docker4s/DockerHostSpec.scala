@@ -4,8 +4,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-// Disable this for now
-//@RunWith(classOf[JUnitRunner])
+@RunWith(classOf[JUnitRunner])
 class DockerHostSpec extends FlatSpec with Matchers {
 
   "Building a docker host" should "detect environment variables" in {

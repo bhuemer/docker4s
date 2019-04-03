@@ -28,7 +28,7 @@ import io.circe.Json
 import org.docker4s.api.{Containers, Images, System, Volumes}
 import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary, ContainersPruned}
 import org.docker4s.models.system.{Event, Info, Version}
-import org.docker4s.models.images.{Image, ImageHistory, ImageSummary, PullEvent}
+import org.docker4s.models.images._
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
 import org.docker4s.util.LogDecoder
@@ -235,6 +235,15 @@ private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(
       client
         .get(s"/images/${id.value}/history")
         .expectMany(ImageHistory.decoder)
+    }
+
+    /**
+      * Removes all dangling images.
+      */
+    override def prune(): F[ImagesPruned] = {
+      client
+        .post("/images/prune")
+        .expect(ImagesPruned.decoder)
     }
 
   }

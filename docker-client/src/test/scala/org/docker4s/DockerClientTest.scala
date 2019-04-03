@@ -27,12 +27,12 @@ object DockerClientTest {
   }
 
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
-    val stream = client.images.save(Image.Id("bhuemer/test"), Image.Id("busybox"))
+    client.images
+      .prune()
+      .map({ pruned =>
+        println(s"Pruned $pruned")
+      })
 
-    stream
-      .through(fs2.io.writeOutputStream[IO](IO(new FileOutputStream(new File("busybox.tar"))), ExecutionContext.global))
-      .compile
-      .drain
 //    for {
 //      containers1 <- client.containers.list()
 //      container = containers1.head

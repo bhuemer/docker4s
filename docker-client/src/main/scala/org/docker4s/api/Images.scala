@@ -25,7 +25,7 @@ import fs2.Stream
 import fs2.compress
 import org.docker4s.Criterion
 import org.docker4s.Criterion.{filter, query}
-import org.docker4s.models.images.{Image, ImageHistory, ImageSummary, PullEvent}
+import org.docker4s.models.images._
 
 import scala.language.higherKinds
 
@@ -66,6 +66,12 @@ trait Images[F[_]] { self =>
 
   /** Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command. */
   def history(id: Image.Id): F[List[ImageHistory]]
+
+  /**
+    * Removes all dangling images.
+    */
+  // TODO: Allow filtering of what to prune.
+  def prune(): F[ImagesPruned]
 
 }
 

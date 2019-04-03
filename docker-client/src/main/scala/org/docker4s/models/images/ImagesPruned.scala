@@ -19,27 +19,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.models.volumes
+package org.docker4s.models.images
 
 import io.circe.Decoder
 
 /**
-  * Information about volumes that were pruned / removed because they were unused.
-  * @see [[https://docs.docker.com/engine/api/v1.37/#operation/VolumePrune Docker Engine API]]
-  * @param volumes Volumes that were deleted
+  * Information about images that were pruned / removed because they were unused.
+  *
+  * @see [[https://docs.docker.com/engine/reference/commandline/image_prune/ Docker CLI]]
+  * @param images Images that were deleted or untagged
   * @param spaceReclaimed Disk space reclaimed in bytes
   */
-case class VolumesPruned(volumes: List[String], spaceReclaimed: Long)
+case class ImagesPruned(images: List[ImagesPruned.Ref], spaceReclaimed: Long)
 
-object VolumesPruned {
+object ImagesPruned {
+
+  sealed trait Ref
+
+  object Ref {
+    case class Deleted(id: Image.Id) extends Ref
+    case class Untagged(name: String) extends Ref
+  }
 
   // -------------------------------------------- Circe decoders
 
-  val decoder: Decoder[VolumesPruned] = Decoder.instance({ c =>
+  implicit private val refDecoder: Decoder[ImagesPruned.Ref] = {
+    def decode(key: String, f: String => ImagesPruned.Ref): Decoder[ImagesPruned.Ref] =
+      Decoder.instance(_.downField(key).as[String].map(f))
+
+    List(
+      decode("Deleted", ref => ImagesPruned.Ref.Deleted(Image.Id(ref))),
+      decode("Untagged", ref => ImagesPruned.Ref.Untagged(ref))
+    ).reduceLeft(_.or(_))
+  }
+
+  val decoder: Decoder[ImagesPruned] = Decoder.instance({ c =>
     for {
-      volumes <- c.downField("VolumesDeleted").as[Option[List[String]]].right
-      reclaimed <- c.downField("SpaceReclaimed").as[Long].right
-    } yield VolumesPruned(volumes.getOrElse(List.empty), reclaimed)
+      images <- c.downField("ImagesDeleted").as[Option[List[ImagesPruned.Ref]]].right
+      spaceReclaimed <- c.downField("SpaceReclaimed").as[Long]
+    } yield ImagesPruned(images.getOrElse(List.empty), spaceReclaimed)
   })
 
 }

@@ -45,6 +45,20 @@ class VolumesPrunedSpec extends FlatSpec with Matchers {
       ))
   }
 
+  "Decoding JSON into volumes pruned" should "cope with empty lists" in {
+    decodeVolumesPruned("""{
+        |  "VolumesDeleted": null,
+        |  "SpaceReclaimed": 0
+        |}
+     """.stripMargin) should be(VolumesPruned(volumes = List.empty, spaceReclaimed = 0L))
+
+    decodeVolumesPruned("""{
+        |  "VolumesDeleted": [],
+        |  "SpaceReclaimed": 0
+        |}
+     """.stripMargin) should be(VolumesPruned(volumes = List.empty, spaceReclaimed = 0L))
+  }
+
   // -------------------------------------------- Utility methods
 
   /** Decodes the given string as a [[VolumesPruned]] or throws an exception if something goes wrong. */

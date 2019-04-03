@@ -37,9 +37,9 @@ object ContainersPruned {
 
   val decoder: Decoder[ContainersPruned] = Decoder.instance({ c =>
     for {
-      containers <- c.downField("ContainersDeleted").as[List[String]].right
+      containers <- c.downField("ContainersDeleted").as[Option[List[String]]].right
       reclaimed <- c.downField("SpaceReclaimed").as[Long].right
-    } yield ContainersPruned(containers.map(Container.Id), reclaimed)
+    } yield ContainersPruned(containers.getOrElse(List.empty).map(Container.Id), reclaimed)
   })
 
 }

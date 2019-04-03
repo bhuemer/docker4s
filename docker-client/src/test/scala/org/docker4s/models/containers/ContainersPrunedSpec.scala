@@ -21,11 +21,13 @@
  */
 package org.docker4s.models.containers
 
-import org.docker4s.models.volumes.VolumesPruned
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
+/**
+  * Contains test cases related to parsing [[ContainersPruned]] objects from JSON response bodies.
+  */
 @RunWith(classOf[JUnitRunner])
 class ContainersPrunedSpec extends FlatSpec with Matchers {
 
@@ -46,14 +48,28 @@ class ContainersPrunedSpec extends FlatSpec with Matchers {
           Container.Id("b088c99e83f6370491e298963e23d7c0ba14637ccf482330703bc58a4a3247dc"),
           Container.Id("fc4545ec82606c93070e69c5bc758430324f0490fc1742bdaa06b958b34d1768")
         ),
-        spaceReclaimed = 166468
+        spaceReclaimed = 166468L
       )
     )
   }
 
+  "Decoding JSON into containers pruned" should "cope with empty lists" in {
+    decodeContainersPruned("""{
+        |  "ContainersDeleted": null,
+        |  "SpaceReclaimed": 0
+        |}
+     """.stripMargin) should be(ContainersPruned(containers = List.empty, spaceReclaimed = 0L))
+
+    decodeContainersPruned("""{
+        |  "ContainersDeleted": [],
+        |  "SpaceReclaimed": 0
+        |}
+     """.stripMargin) should be(ContainersPruned(containers = List.empty, spaceReclaimed = 0L))
+  }
+
   // -------------------------------------------- Utility methods
 
-  /** Decodes the given string as a [[VolumesPruned]] or throws an exception if something goes wrong. */
+  /** Decodes the given string as a [[ContainersPruned]] or throws an exception if something goes wrong. */
   private def decodeContainersPruned(str: String): ContainersPruned = {
     val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
     json.as(ContainersPruned.decoder).fold(throw _, Predef.identity)

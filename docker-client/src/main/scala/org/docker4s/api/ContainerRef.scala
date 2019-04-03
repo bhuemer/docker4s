@@ -30,6 +30,8 @@ import scala.language.higherKinds
 
 trait ContainerRef[F[_]] {
 
+  def rename(name: String): F[Unit]
+
   def start: F[Unit]
 
   def stop: F[Unit]

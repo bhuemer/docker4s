@@ -50,6 +50,8 @@ object Client {
 
     def queryParam[T: QueryParamEncoder, K: QueryParamKeyLike](key: K, value: T): Client.RequestBuilder[F]
 
+    def queryParam[T: QueryParamEncoder, K: QueryParamKeyLike](key: K, values: Seq[T]): Client.RequestBuilder[F]
+
     /**
       */
     def criteria(criteria: Seq[Criterion[_]]): Client.RequestBuilder[F]
@@ -116,6 +118,13 @@ object Client {
       new Http4SClientRequestBuilder(
         client,
         request.withUri(uri = request.uri.withQueryParam(key, value).asInstanceOf[org.http4s.Uri]),
+        statusHandler)
+    }
+
+    override def queryParam[T: QueryParamEncoder, K: QueryParamKeyLike](key: K, values: Seq[T]): RequestBuilder[F] = {
+      new Http4SClientRequestBuilder(
+        client,
+        request.withUri(uri = request.uri.withQueryParam(key, values).asInstanceOf[org.http4s.Uri]),
         statusHandler)
     }
 

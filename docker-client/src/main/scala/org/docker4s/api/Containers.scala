@@ -35,6 +35,8 @@ trait Containers[F[_]] { self =>
 
   def get(id: Container.Id): ContainerRef[F] = new ContainerRef[F] {
 
+    override def rename(name: String): F[Unit] = self.rename(id, name)
+
     override def start: F[Unit] = self.start(id)
 
     override def stop: F[Unit] = self.stop(id)
@@ -68,6 +70,11 @@ trait Containers[F[_]] { self =>
   def list(): F[List[ContainerSummary]]
 
   def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log]
+
+  /**
+    * Renames the given Docker container.
+    */
+  def rename(id: Container.Id, newName: String): F[Unit]
 
   def start(id: Container.Id): F[Unit]
 

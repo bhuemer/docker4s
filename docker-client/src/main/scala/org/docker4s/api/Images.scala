@@ -46,6 +46,16 @@ trait Images[F[_]] { self =>
 
   }
 
+  /**
+    * Saves one or more images to a TAR archive. Similar to the `docker image save` command.
+    */
+  def save(id: Image.Id, ids: Image.Id*): Stream[F, Byte] = save(Seq(id) ++ ids.toSeq)
+
+  /**
+    * Saves one or more images to a TAR archive. Similar to the `docker image save` command.
+    */
+  def save(id: Seq[Image.Id]): Stream[F, Byte]
+
   /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
   def inspect(id: Image.Id): F[Image]
 

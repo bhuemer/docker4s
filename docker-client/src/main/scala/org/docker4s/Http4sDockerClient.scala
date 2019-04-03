@@ -52,6 +52,16 @@ private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(
         .expectMany(ContainerSummary.decoder)
     }
 
+    /**
+      * Renames the given Docker container.
+      */
+    override def rename(id: Container.Id, name: String): F[Unit] = {
+      client
+        .post(s"/containers/${id.value}/rename")
+        .queryParam("name", name)
+        .execute
+    }
+
     override def start(id: Container.Id): F[Unit] = {
       client
         .post(s"/containers/${id.value}/start")
@@ -179,6 +189,24 @@ private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(
         .get("/images/json")
         .criteria(criteria)
         .expectMany(ImageSummary.decoder)
+    }
+
+    /**
+      * Saves one or more images to a TAR archive. Similar to the `docker image save` command.
+      */
+    override def save(ids: Seq[Image.Id]): Stream[F, Byte] = {
+      // TODO: Error handling: 404 when one of the images cannot be found ("No such image: busybox")
+      // TODO: Authenatication
+      ids match {
+        case Seq(id) =>
+          client.get(s"/images/${id.value}/get").stream
+
+        case _ =>
+          client
+            .get(s"/images/get")
+            .queryParam("names", ids.map(_.value))
+            .stream
+      }
     }
 
     /** Returns low-level information about an image. Similar to the `docker image inspect` command. */

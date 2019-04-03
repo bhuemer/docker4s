@@ -1,11 +1,11 @@
 package org.docker4s
 
-import fs2.Stream
-import cats.effect.{Effect, IO, Timer}
-import org.docker4s.api.Containers
-import org.docker4s.models.containers.Container
+import java.io.{File, FileOutputStream}
 
-import scala.concurrent.duration.FiniteDuration
+import cats.effect.{ContextShift, Effect, IO, Timer}
+import org.docker4s.models.images.Image
+
+import scala.concurrent.ExecutionContext
 
 object DockerClientTest {
 
@@ -17,7 +17,7 @@ object DockerClientTest {
     implicit val timer: Timer[IO] = IO.timer(global)
     val cf: Effect[IO] = implicitly[Effect[IO]]
 
-    val lines = DockerClient
+    DockerClient
       .fromEnvironment(cf, global)
       .use({ client =>
         main(client)
@@ -26,14 +26,13 @@ object DockerClientTest {
     println()
   }
 
-  private def main(client: DockerClient[IO])(implicit timer: Timer[IO]): IO[Unit] = {
-    val stream = for {
-      event <- client.images.pull("couchbase")
-    } yield {
-      println(event)
-    }
+  private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
+    val stream = client.images.save(Image.Id("bhuemer/test"), Image.Id("busybox"))
 
-    stream.compile.drain
+    stream
+      .through(fs2.io.writeOutputStream[IO](IO(new FileOutputStream(new File("busybox.tar"))), ExecutionContext.global))
+      .compile
+      .drain
 //    for {
 //      containers1 <- client.containers.list()
 //      container = containers1.head

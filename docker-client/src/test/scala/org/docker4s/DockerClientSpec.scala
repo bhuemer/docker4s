@@ -17,6 +17,13 @@ class DockerClientSpec extends FlatSpec with Matchers {
     val builder = new StringBuilder()
 
     val clientResource = DockerClient.fromEnvironment(implicitly[ConcurrentEffect[IO]], global)
+    clientResource
+      .use({ client =>
+        client.images.pull("busybox").compile.drain
+      })
+      .unsafeRunSync()
+    builder.append("Pulled busybox").append("\n")
+
     val images = clientResource
       .use({ client =>
         client.images.list()

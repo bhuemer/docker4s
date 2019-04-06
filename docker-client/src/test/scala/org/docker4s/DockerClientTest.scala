@@ -25,12 +25,9 @@ object DockerClientTest {
 
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
     client.containers
-      .logs(Container.Id("01076bf6717e51f3fac194ea0b69064305132fb9287ce4097fb3aff64ba9605a"),
-            Containers.LogCriterion.stdout)
-      .compile
-      .toList
-      .map({ logs =>
-        logs.foreach(println)
+      .await(Container.Id("01076bf6717e51f3fac194ea0b6242345132fb9287ce4097fb3aff64ba9605a"))
+      .map({ response =>
+        println(s"Response $response")
       })
   }
 

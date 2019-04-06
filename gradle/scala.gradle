@@ -24,10 +24,8 @@ sourceSets {
         compileClasspath += sourceSets.main.output + sourceSets.test.output
         runtimeClasspath += sourceSets.main.output + sourceSets.test.output
 
-        scala {
-            srcDir file('src/integration-test/scala')
-        }
-        resources.srcDir file('src/integration-test/resources')
+        scala.srcDir file('src/it/scala')
+        resources.srcDir file('src/it/resources')
     }
 }
 
@@ -42,8 +40,8 @@ configurations {
 
 idea {
     module {
-        testSourceDirs += file('src/integration-test/scala')
-        testResourceDirs += file('src/integration-test/resources')
+        testSourceDirs += file('src/it/scala')
+        testResourceDirs += file('src/it/resources')
 
         scopes.TEST.plus += configurations.integrationTestCompile
         scopes.TEST.plus += configurations.integrationTestRuntime

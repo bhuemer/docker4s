@@ -1,7 +1,5 @@
 # Scala CircleCI 2.0 configuration file
 #
-# Check https://circleci.com/docs/2.0/sample-config/ for more details
-#
 
 job_defaults: &job_defaults
   docker:
@@ -14,48 +12,30 @@ job_defaults: &job_defaults
     JVM_OPTS: -Xmx3200m
 
 commands:
-  run_integration_test:
-    description: "Runs integration tests against a Docker version and stores the results"
 
-    parameters:
-      docker_version:
-        type: string
+  restore_cache: &restore_cache
+    keys:
+    - v1-dependencies-{{ checksum "build.gradle" }}
+    # fallback to using the latest cache if no exact match is found
+    - v1-dependencies-
 
-    steps:
-    - checkout
+  save_cache: &save_cache
+    paths:
+    - ~/.gradle
+    key: v1-dependencies--{{ checksum "build.gradle" }}
 
-    # Download and cache dependencies
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ checksum "build.gradle" }}
-        # fallback to using the latest cache if no exact match is found
-        - v1-dependencies-
+  save_test_results: &save_test_results
+    name: Save test results
+    command: |
+      mkdir -p ~/test-results/junit/
+      find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/test-results/junit/ \;
+    when: always
 
-    - run: gradle dependencies
+  store_test_results: &store_test_results
+    path: ~/test-results
 
-    - save_cache:
-        paths:
-        - ~/.gradle
-        key: v1-dependencies--{{ checksum "build.gradle" }}
-
-    - setup_remote_docker:
-        version: << parameters.docker_version >>
-        docker_layer_caching: true
-
-    - run: gradle integrationTest
-
-    - run:
-        name: Save test results
-        command: |
-          mkdir -p ~/test-results/junit/
-          find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/test-results/junit/ \;
-        when: always
-
-    - store_test_results:
-        path: ~/test-results
-
-    - store_artifacts:
-        path: ~/test-results/junit
+  store_artifacts: &store_artifacts
+    path: ~/test-results/junit
 
 version: 2
 
@@ -64,48 +44,40 @@ jobs:
     <<: *job_defaults
     steps:
     - checkout
-
-    # Download and cache dependencies
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ checksum "build.gradle" }}
-        # fallback to using the latest cache if no exact match is found
-        - v1-dependencies-
-
-    - run: gradle dependencies
-
-    - save_cache:
-        paths:
-        - ~/.gradle
-        key: v1-dependencies--{{ checksum "build.gradle" }}
-
-    # run tests!
+    - restore_cache: *restore_cache
+    - save_cache: *save_cache
     - run: gradle test
-
-    - run:
-        name: Save test results
-        command: |
-          mkdir -p ~/test-results/junit/
-          find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/test-results/junit/ \;
-        when: always
-
-    - store_test_results:
-        path: ~/test-results
-
-    - store_artifacts:
-        path: ~/test-results/junit
+    - run: *save_test_results
+    - store_test_results: *store_test_results
+    - store_artifacts: *store_artifacts
 
   integration_test_18060ce:
     <<: *job_defaults
     steps:
-    - run_integration_test:
-        docker_version: 18.06.0-ce
+    - checkout
+    - restore_cache: *restore_cache
+    - save_cache: *save_cache
+    - setup_remote_docker:
+        version: 18.06.0-ce
+        docker_layer_caching: true
+    - run: gradle integrationTest
+    - run: *save_test_results
+    - store_test_results: *store_test_results
+    - store_artifacts: *store_artifacts
 
   integration_test_17030ce:
     <<: *job_defaults
     steps:
-    - run_integration_test:
-        docker_version: 17.03.0-ce
+    - checkout
+    - restore_cache: *restore_cache
+    - save_cache: *save_cache
+    - setup_remote_docker:
+        version: 17.03.0-ce
+        docker_layer_caching: true
+    - run: gradle integrationTest
+    - run: *save_test_results
+    - store_test_results: *store_test_results
+    - store_artifacts: *store_artifacts
 
 workflows:
   version: 2

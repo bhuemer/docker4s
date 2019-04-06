@@ -30,9 +30,10 @@ sealed trait DockerHost
 object DockerHost {
 
   def fromEnvironment: DockerHost = {
+    // TODO: Implement this properly
     val dockerHost = System.getenv("DOCKER_HOST")
     if (dockerHost == null) {
-      throw new IllegalStateException("DOCKER_HOST not available.")
+      DockerHost.Unix(Paths.get("/var/run/docker.sock"), None)
     } else if (dockerHost.startsWith("tcp://")) {
       val Array(host, port) = dockerHost.substring("tcp://".length).split(":")
 
@@ -43,11 +44,8 @@ object DockerHost {
 
       DockerHost.Tcp(host, port.toInt, sslContext)
     } else {
-      throw new IllegalArgumentException(s"Unknown docker host $dockerHost")
+      DockerHost.Unix(Paths.get("/var/run/docker.sock"), None)
     }
-
-    // TODO: Implement this properly
-    // DockerHost.Unix(Paths.get("/var/run/docker.sock"), None)
   }
 
   /**

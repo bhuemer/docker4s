@@ -1,10 +1,13 @@
 package org.docker4s
 
 import cats.effect.{ConcurrentEffect, ContextShift, IO, Timer}
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.ExecutionContext.global
 
+@RunWith(classOf[JUnitRunner])
 class DockerClientSpec extends FlatSpec with Matchers {
 
   implicit val cs: ContextShift[IO] = IO.contextShift(global)

@@ -12,7 +12,6 @@ job_defaults: &job_defaults
     JVM_OPTS: -Xmx3200m
 
 commands:
-
   restore_cache: &restore_cache
     keys:
     - v1-dependencies-{{ checksum "build.gradle" }}

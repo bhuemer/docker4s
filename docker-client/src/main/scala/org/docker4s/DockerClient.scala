@@ -86,7 +86,8 @@ object DockerClient {
           .withSslContextOption(sslContext)
           .resource
           .map({ client =>
-            new Http4sDockerClient[F](Client.from(client, uri = Uri.unsafeFromString(s"$host:$port")))
+            val scheme = if (sslContext.isDefined) "https" else "http"
+            new Http4sDockerClient[F](Client.from(client, uri = Uri.unsafeFromString(s"$scheme://$host:$port")))
           })
 
     }

@@ -38,7 +38,6 @@ class ContainersSpec extends ClientSpec with Matchers {
       before <- client.containers.logs(created.id, stdout).compile.toList
 
       _ <- client.containers.start(created.id)
-      _ <- client.containers.await(created.id)
 
       after <- client.containers.logs(created.id, stdout).compile.toList
     } yield {

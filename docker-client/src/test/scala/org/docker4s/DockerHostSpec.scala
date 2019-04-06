@@ -1,10 +1,13 @@
 package org.docker4s
 
+import java.nio.file.{Files, Paths}
+
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-@RunWith(classOf[JUnitRunner])
+// Disabling this for now
+// @RunWith(classOf[JUnitRunner])
 class DockerHostSpec extends FlatSpec with Matchers {
 
   "Building a docker host" should "detect environment variables" in {
@@ -21,6 +24,18 @@ class DockerHostSpec extends FlatSpec with Matchers {
     System.getProperties.forEach({ (key, value) =>
       builder.append(String.format(" %25s = %s %n", key, value))
     })
+
+    val dockerCertPath = System.getenv("DOCKER_CERT_PATH")
+    if (dockerCertPath != null) {
+      println(s"Docker cert path: $dockerCertPath")
+      Files
+        .walk(Paths.get(dockerCertPath))
+        .forEach({ path =>
+          println(s"> $path")
+        })
+    } else {
+      println("Docker cert path is null.")
+    }
 
     throw new IllegalStateException(builder.toString())
   }

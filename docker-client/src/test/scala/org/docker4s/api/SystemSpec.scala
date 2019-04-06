@@ -34,6 +34,9 @@ class SystemSpec extends ClientSpec with Matchers with LazyLogging {
       version <- client.system.version
     } yield {
       logger.info(s"Version: $version")
+      logger.info(s"Docker version: ${version.version}")
+      logger.info(s"API version: ${version.apiVersion}")
+      logger.info(s"Min API version: ${version.minApiVersion}")
     }
   }
 

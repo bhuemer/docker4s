@@ -54,7 +54,7 @@ object LogDecoder {
           // Drain the buffer as normal stdout log entries, if we couldn't even consume enough bytes for the header.
           case None if !current.isEmpty =>
             Pull.output1(
-              Containers.Log(Containers.Stream.StdOut, new String(current.toArray, StandardCharsets.UTF_8).trim)
+              Containers.Log(Containers.Stream.StdOut, rtrim(new String(current.toArray, StandardCharsets.UTF_8)))
             ) >> Pull.done
 
           case None => Pull.done
@@ -92,7 +92,7 @@ object LogDecoder {
 
           case None if !current.isEmpty =>
             Pull.output1(
-              Containers.Log(stream, new String(current.toArray, StandardCharsets.UTF_8).trim)
+              Containers.Log(stream, rtrim(new String(current.toArray, StandardCharsets.UTF_8)))
             ) >> Pull.done
 
           case None => Pull.done
@@ -101,7 +101,7 @@ object LogDecoder {
       case _ =>
         val (frame, next) = current.splitAt(frameSize)
         val output: Containers.Log =
-          Containers.Log(stream, new String(frame.toArray, StandardCharsets.UTF_8).trim)
+          Containers.Log(stream, rtrim(new String(frame.toArray, StandardCharsets.UTF_8)))
         Pull.output1(output) >> decodingHeader(next, s)
 
     }
@@ -146,6 +146,14 @@ object LogDecoder {
       })
       .pull
       .echo
+  }
+
+  private def rtrim(str: String): String = {
+    var i = str.length - 1
+    while (i >= 0 && Character.isWhitespace(str.charAt(i))) {
+      i -= 1
+    }
+    str.substring(0, i + 1)
   }
 
 }

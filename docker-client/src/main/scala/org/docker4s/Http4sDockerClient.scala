@@ -26,7 +26,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.Json
 import org.docker4s.api.{Containers, Criterion, Images, System, Volumes}
-import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary, ContainersPruned}
+import org.docker4s.models.containers._
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images._
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
@@ -60,6 +60,13 @@ private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(
         .post(s"/containers/${id.value}/rename")
         .queryParam("name", name)
         .execute
+    }
+
+    override def create(image: Option[String]): F[ContainerCreated] = {
+      client
+        .post(s"/containers/create")
+        .body(Json.obj("image" -> image.fold(Json.Null)(Json.fromString)))
+        .expect(ContainerCreated.decoder)
     }
 
     override def start(id: Container.Id): F[Unit] = {

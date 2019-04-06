@@ -25,7 +25,7 @@ import java.time.ZonedDateTime
 
 import fs2.Stream
 import org.docker4s.api.Criterion.query
-import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary, ContainersPruned}
+import org.docker4s.models.containers._
 
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
@@ -74,6 +74,8 @@ trait Containers[F[_]] { self =>
     * Renames the given Docker container.
     */
   def rename(id: Container.Id, newName: String): F[Unit]
+
+  def create(image: Option[String]): F[ContainerCreated]
 
   def start(id: Container.Id): F[Unit]
 

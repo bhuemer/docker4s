@@ -98,3 +98,9 @@ jobs:
 
     - store_artifacts:
         path: ~/test-results2/junit
+workflows:
+  version: 2
+  workflow:
+    jobs:
+    - build
+    - build_17030_ce

@@ -17,7 +17,7 @@ dependencies {
     compileOnly 'io.netty:netty-transport-native-kqueue:4.1.33.Final'
 
     implementation 'org.apache.commons:commons-compress:1.18'
-    implementation 'org.bouncycastle:bcpkix-jdk15on:1.60'
+    compile 'org.bouncycastle:bcpkix-jdk15on:1.60'
 
     testImplementation 'io.netty:netty-transport-native-kqueue:4.1.33.Final:osx-x86_64'
 

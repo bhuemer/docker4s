@@ -21,8 +21,7 @@
  */
 package org.docker4s.api
 
-import org.docker4s.Criterion
-import org.docker4s.Criterion.filter
+import org.docker4s.api.Criterion.filter
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 
 import scala.language.higherKinds

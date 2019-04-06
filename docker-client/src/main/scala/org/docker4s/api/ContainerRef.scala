@@ -22,7 +22,6 @@
 package org.docker4s.api
 
 import fs2.Stream
-import org.docker4s.Criterion
 import org.docker4s.models.containers.ContainerExit
 
 import scala.concurrent.duration.FiniteDuration

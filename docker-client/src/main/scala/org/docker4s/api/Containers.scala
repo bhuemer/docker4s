@@ -24,8 +24,7 @@ package org.docker4s.api
 import java.time.ZonedDateTime
 
 import fs2.Stream
-import org.docker4s.Criterion
-import org.docker4s.Criterion.query
+import org.docker4s.api.Criterion.query
 import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary, ContainersPruned}
 
 import scala.concurrent.duration.FiniteDuration

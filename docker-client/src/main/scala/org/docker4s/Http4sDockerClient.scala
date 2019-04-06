@@ -25,7 +25,7 @@ import cats.effect.Effect
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.Json
-import org.docker4s.api.{Containers, Images, System, Volumes}
+import org.docker4s.api.{Containers, Criterion, Images, System, Volumes}
 import org.docker4s.models.containers.{Container, ContainerExit, ContainerSummary, ContainersPruned}
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images._

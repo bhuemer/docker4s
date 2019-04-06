@@ -19,7 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s
+package org.docker4s.api
 
 import io.circe.Json
 import org.http4s.QueryParamEncoder

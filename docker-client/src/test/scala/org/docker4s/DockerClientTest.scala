@@ -18,7 +18,7 @@ object DockerClientTest {
     val cf: ConcurrentEffect[IO] = implicitly[ConcurrentEffect[IO]]
 
     DockerClient
-      .fromEnvironment(cf, global)
+      .fromEnvironment(Environment.Live)(cf, global)
       .use({ client =>
         main(client)
       })

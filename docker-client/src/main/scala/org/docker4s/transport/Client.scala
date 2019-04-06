@@ -25,7 +25,7 @@ import cats.effect.Effect
 import cats.syntax.all._
 import fs2.Stream
 import io.circe.{Decoder, Json}
-import org.docker4s.Criterion
+import org.docker4s.api.Criterion
 import org.docker4s.errors.DockerApiException
 import org.http4s.{EntityEncoder, Header, Method, QueryParamEncoder, QueryParamKeyLike, Request, Response, Status, Uri}
 import org.http4s.circe.accumulatingJsonOf

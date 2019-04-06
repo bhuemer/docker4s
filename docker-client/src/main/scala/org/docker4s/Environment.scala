@@ -21,32 +21,43 @@
  */
 package org.docker4s
 
-import org.docker4s.api.Criterion
-import org.http4s.Query
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{FlatSpec, Matchers}
+import com.typesafe.scalalogging.LazyLogging
 
-@RunWith(classOf[JUnitRunner])
-class CriterionSpec extends FlatSpec with Matchers {
+trait Environment {
 
-  /**
-    * Makes sure that query parameters and JSON encoded filter parameters can be mixed in a single query string.
-    */
-  "Building criteria" should "encode `filters` as JSON" in {
-    renderQueryString(
-      Criterion.Query("all", "true"),
-      Criterion.Query("digests", "false"),
-      Criterion.Filter("dangling", "true"),
-      Criterion.Filter("before", "image-name")
-    ) should be(
-      "all=true&digests=false&filters=%7B%22dangling%22%3A%5B%22true%22%5D%2C%22before%22%3A%5B%22image-name%22%5D%7D")
+  def getProperty(name: String): Option[String] = getProperty(name, None)
+
+  def getProperty(name: String, default: => Option[String]): Option[String]
+
+  def isOsX: Boolean = getProperty("os.name").exists(_.toLowerCase.contains("os x"))
+
+  def isLinux: Boolean = getProperty("os.name").exists(_.equalsIgnoreCase("linux"))
+
+}
+
+object Environment {
+
+  def from(options: (String, String)*): Environment = {
+    val map = options.toMap
+
+    //noinspection ConvertExpressionToSAM
+    new Environment {
+      override def getProperty(name: String, default: => Option[String]): Option[String] =
+        map.get(name).orElse(default)
+    }
   }
 
-  // -------------------------------------------- Utility methods
+  /**
+    * Environment implementation that actually looks up variables and properties in production environments.
+    */
+  object Live extends Environment with LazyLogging {
 
-  private def renderQueryString(criteria: Criterion[_]*): String = {
-    Query.fromMap(Criterion.compile(criteria.toSeq)).renderString
+    override def getProperty(name: String, default: => Option[String]): Option[String] = {
+      Option(System.getenv(name))
+        .orElse(Option(System.getProperty(name)))
+        .orElse(default)
+    }
+
   }
 
 }

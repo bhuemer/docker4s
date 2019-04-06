@@ -31,6 +31,8 @@ class ContainersSpec extends ClientSpec with Matchers {
 
   "Running a `hello-world` container" should "produce logs for it" given { client =>
     for {
+      _ <- client.images.pull("hello-world").compile.drain
+
       created <- client.containers.create(image = Some("hello-world"))
 
       before <- client.containers.logs(created.id, stdout).compile.toList

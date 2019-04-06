@@ -40,6 +40,8 @@ class DockerHostSpec extends FlatSpec with Matchers {
       builder.append("Docker cert path is null.").append("\n")
     }
 
+    builder.append(s"Docker host: ${DockerHost.fromEnvironment}").append("\n")
+
     throw new IllegalStateException(builder.toString())
   }
 

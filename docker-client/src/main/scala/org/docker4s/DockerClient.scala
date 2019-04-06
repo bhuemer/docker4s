@@ -21,7 +21,7 @@
  */
 package org.docker4s
 
-import cats.effect.{ConcurrentEffect, Effect, Resource}
+import cats.effect.{ConcurrentEffect, Resource}
 import org.docker4s.api.{Containers, Images, System, Volumes}
 import org.docker4s.transport.Client
 import org.docker4s.transport.unix.DomainSocketClient
@@ -76,15 +76,18 @@ object DockerClient {
   def fromHost[F[_]: ConcurrentEffect](dockerHost: DockerHost)(
       implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
     dockerHost match {
-      case DockerHost.Unix(socketPath, _) =>
+      case DockerHost.Unix(socketPath, sslContext) =>
         DomainSocketClient(socketPath).map({ client =>
           new Http4sDockerClient[F](Client.from(client, uri = Uri.unsafeFromString("http://localhost")))
         })
 
-      case DockerHost.Tcp(host, port, _) =>
-        BlazeClientBuilder[F](ec).resource.map({ client =>
-          new Http4sDockerClient[F](Client.from(client, uri = Uri.unsafeFromString(s"$host:$port")))
-        })
+      case DockerHost.Tcp(host, port, sslContext) =>
+        BlazeClientBuilder[F](ec)
+          .withSslContextOption(sslContext)
+          .resource
+          .map({ client =>
+            new Http4sDockerClient[F](Client.from(client, uri = Uri.unsafeFromString(s"$host:$port")))
+          })
 
     }
   }

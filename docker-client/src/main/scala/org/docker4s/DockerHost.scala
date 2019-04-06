@@ -23,25 +23,44 @@ package org.docker4s
 
 import java.nio.file.{Path, Paths}
 
+import javax.net.ssl.SSLContext
+
 sealed trait DockerHost
 
 object DockerHost {
 
   def fromEnvironment: DockerHost = {
+    val dockerHost = System.getenv("DOCKER_HOST")
+    if (dockerHost == null) {
+      throw new IllegalStateException("DOCKER_HOST not available.")
+    } else if (dockerHost.startsWith("tcp://")) {
+      val Array(host, port) = dockerHost.substring("tcp://".length).split(":")
+
+      val sslContext = Option(System.getenv("DOCKER_CERT_PATH")) match {
+        case Some(path) => Some(DockerCertificates(Paths.get(path)).sslContext)
+        case _          => None
+      }
+
+      DockerHost.Tcp(host, port.toInt, sslContext)
+    } else {
+      throw new IllegalArgumentException(s"Unknown docker host $dockerHost")
+    }
+
     // TODO: Implement this properly
-    DockerHost.Unix(Paths.get("/var/run/docker.sock"), None)
+    // DockerHost.Unix(Paths.get("/var/run/docker.sock"), None)
   }
 
   /**
     * Connects via UNIX domain sockets to the given docker host.
     */
-  case class Unix(socketPath: Path, certificatePath: Option[Path]) extends DockerHost
+  case class Unix(socketPath: Path, sslContext: Option[SSLContext]) extends DockerHost
 
   // TODO: Npipe/Windows channels still need to be implemented
-  case class Npipe(socketPath: Path, certificatePath: Option[Path]) extends DockerHost
+  case class Npipe(socketPath: Path, sslContext: Option[SSLContext]) extends DockerHost
 
   /**
     * Connects via TCP to the given docker host.
     */
-  case class Tcp(host: String, port: Int, certificatePath: Option[Path]) extends DockerHost
+  case class Tcp(host: String, port: Int, sslContext: Option[SSLContext]) extends DockerHost
+
 }

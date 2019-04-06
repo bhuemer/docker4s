@@ -29,7 +29,7 @@ object Container {
 
   case class Id(value: String)
 
-  sealed abstract class Status(private val name: String)
+  sealed abstract class Status(val name: String)
 
   object Status {
     case object Created extends Status("created")

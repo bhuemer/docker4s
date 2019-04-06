@@ -24,7 +24,7 @@ package org.docker4s.api
 import java.time.ZonedDateTime
 
 import fs2.Stream
-import org.docker4s.api.Criterion.query
+import org.docker4s.api.Criterion.{filter, query}
 import org.docker4s.models.containers._
 
 import scala.concurrent.duration.FiniteDuration
@@ -66,7 +66,7 @@ trait Containers[F[_]] { self =>
   /**
     * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
     */
-  def list(): F[List[ContainerSummary]]
+  def list(criteria: Criterion[Containers.ListCriterion]*): F[List[ContainerSummary]]
 
   def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log]
 
@@ -179,6 +179,34 @@ object Containers {
       * Only returns `n` lines from the end of the logs.
       */
     def tail(n: Int): Criterion[LogCriterion] = query("tail", n)
+
+  }
+
+  sealed trait ListCriterion
+
+  object ListCriterion {
+
+    def showAll: Criterion[ListCriterion] = query("all", true)
+
+    /**
+      * Only show containers that exited with the given exit code.
+      */
+    def exited(exitCode: Int): Criterion[ListCriterion] = filter("exited", exitCode.toString)
+
+    /**
+      * Only show containers with the given name (or part of the given name).
+      */
+    def name(name: String): Criterion[ListCriterion] = filter("name", name)
+
+    /**
+      * Only show containers with the given status.
+      */
+    def status(status: Container.Status): Criterion[ListCriterion] = filter("status", status.name)
+
+    /**
+      *
+      */
+    def volume(name: String): Criterion[ListCriterion] = filter("volume", name)
 
   }
 

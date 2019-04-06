@@ -79,7 +79,7 @@ object DockerClient {
     dockerHost match {
       case DockerHost.Unix(socketPath, sslContext) =>
         DomainSocketClient(socketPath).map({ client =>
-          new Http4sDockerClient[F](Client.from(client, uri = Uri.unsafeFromString("http://localhost")))
+          new DefaultDockerClient[F](Client.from(client, uri = Uri.unsafeFromString("http://localhost")))
         })
 
       case DockerHost.Tcp(host, port, sslContext) =>
@@ -88,7 +88,7 @@ object DockerClient {
           .resource
           .map({ client =>
             val scheme = if (sslContext.isDefined) "https" else "http"
-            new Http4sDockerClient[F](Client.from(client, uri = Uri.unsafeFromString(s"$scheme://$host:$port")))
+            new DefaultDockerClient[F](Client.from(client, uri = Uri.unsafeFromString(s"$scheme://$host:$port")))
           })
 
     }

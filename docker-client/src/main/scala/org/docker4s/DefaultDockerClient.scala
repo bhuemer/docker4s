@@ -37,7 +37,7 @@ import org.http4s.circe.jsonEncoder
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 
-private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(implicit F: Effect[F])
+private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])(implicit F: Effect[F])
     extends DockerClient[F]
     with LazyLogging {
 
@@ -46,9 +46,10 @@ private[docker4s] class Http4sDockerClient[F[_]](private val client: Client[F])(
     /**
       * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
       */
-    override def list(): F[List[ContainerSummary]] = {
+    override def list(criteria: Criterion[Containers.ListCriterion]*): F[List[ContainerSummary]] = {
       client
         .get("/containers/json")
+        .criteria(criteria)
         .expectMany(ContainerSummary.decoder)
     }
 

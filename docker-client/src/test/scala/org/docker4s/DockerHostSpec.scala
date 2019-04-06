@@ -27,14 +27,14 @@ class DockerHostSpec extends FlatSpec with Matchers {
 
     val dockerCertPath = System.getenv("DOCKER_CERT_PATH")
     if (dockerCertPath != null) {
-      println(s"Docker cert path: $dockerCertPath")
+      builder.append(s"Docker cert path: $dockerCertPath")
       Files
         .walk(Paths.get(dockerCertPath))
         .forEach({ path =>
-          println(s"> $path")
+          builder.append(s"> $path")
         })
     } else {
-      println("Docker cert path is null.")
+      builder.append("Docker cert path is null.")
     }
 
     throw new IllegalStateException(builder.toString())

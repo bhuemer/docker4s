@@ -19,9 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s
+package org.docker4s.api
 
-import org.docker4s.api.Criterion
 import org.http4s.Query
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner

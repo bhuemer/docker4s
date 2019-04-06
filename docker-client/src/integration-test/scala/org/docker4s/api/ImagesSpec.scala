@@ -24,8 +24,8 @@ package org.docker4s.api
 import cats.effect.IO
 import org.docker4s.models.images.{ImageSummary, PullEvent}
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.Matchers
+import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class ImagesSpec extends ClientSpec with Matchers {

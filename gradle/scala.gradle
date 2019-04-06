@@ -1,4 +1,5 @@
 apply plugin: 'scala'
+apply plugin: 'idea'
 
 repositories {
     jcenter()
@@ -16,4 +17,43 @@ test {
     testLogging {
         events "passed", "skipped", "failed", "standardOut", "standardError"
     }
+}
+
+sourceSets {
+    integrationTest {
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+
+        scala {
+            srcDir file('src/integration-test/scala')
+        }
+        resources.srcDir file('src/integration-test/resources')
+    }
+}
+
+configurations {
+    integrationTestCompile.extendsFrom testCompile
+
+    integrationTestImplementation.extendsFrom testImplementation
+
+    integrationTestRuntime.extendsFrom testRuntime
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+idea {
+    module {
+        testSourceDirs += file('src/integration-test/scala')
+        testResourceDirs += file('src/integration-test/resources')
+
+        scopes.TEST.plus += configurations.integrationTestCompile
+        scopes.TEST.plus += configurations.integrationTestRuntime
+    }
+}
+
+task integrationTest(type: Test) {
+    description = 'Runs the integration tests.'
+    group = 'verification'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    mustRunAfter test
 }

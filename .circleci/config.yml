@@ -71,6 +71,41 @@ jobs:
     environment:
       # Customize the JVM maximum heap limit
       JVM_OPTS: -Xmx3200m
+    steps:
+    - checkout
+
+    # Download and cache dependencies
+    - restore_cache:
+        keys:
+        - v1-dependencies-{{ checksum "build.gradle" }}
+        # fallback to using the latest cache if no exact match is found
+        - v1-dependencies-
+
+    - run: gradle dependencies
+
+    - save_cache:
+        paths:
+        - ~/.gradle
+        key: v1-dependencies--{{ checksum "build.gradle" }}
+
+    - setup_remote_docker:
+        version: 17.03.0-ce
+        docker_layer_caching: true
+
+    - run: gradle integrationTest
+
+    - run:
+        name: Save test results
+        command: |
+          mkdir -p ~/test-results/junit/
+          find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/test-results/junit/ \;
+        when: always
+
+    - store_test_results:
+        path: ~/test-results
+
+    - store_artifacts:
+        path: ~/test-results/junit
 
   integration_test_17030ce:
     steps:
@@ -94,8 +129,7 @@ jobs:
         version: 17.03.0-ce
         docker_layer_caching: true
 
-    # run tests!
-    - run: gradle test
+    - run: gradle integrationTest
 
     - run:
         name: Save test results

@@ -84,5 +84,9 @@ workflows:
   workflow:
     jobs:
     - build
-    - integration_test_17030ce
-    - integration_test_18060ce
+    - integration_test_17030ce:
+      requires:
+      - build
+    - integration_test_18060ce:
+      requires:
+      - build

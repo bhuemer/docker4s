@@ -21,22 +21,24 @@
  */
 package org.docker4s.models.volumes
 
-import io.circe.Decoder
+import org.scalatest.{FlatSpec, Matchers}
 
-case class VolumeList(volumes: List[Volume], warnings: List[String])
+class VolumeListTest extends FlatSpec with Matchers {
 
-object VolumeList {
+  "Decoding JSON into volume lists" should "support empty responses from 1.26 APIs" in {
+    val volumeList = decodeVolumeList("""{
+      |  "Volumes" : null,
+      |  "Warnings" : null
+      |}""".stripMargin)
+    volumeList should be(VolumeList(volumes = List.empty, warnings = List.empty))
+  }
 
-  // -------------------------------------------- Circe decoders
+  // -------------------------------------------- Utility methods
 
-  val decoder: Decoder[VolumeList] = Decoder.instance({ c =>
-    // make sure we can construct an implicit decoder for "List[Volume]"
-    implicit val volumeDecoder: Decoder[Volume] = Volume.decoder
-
-    for {
-      volumes <- c.downField("Volumes").as[Option[List[Volume]]].right
-      warnings <- c.downField("Warnings").as[Option[List[String]]].right
-    } yield VolumeList(volumes.getOrElse(List.empty), warnings.getOrElse(List.empty))
-  })
+  /** Decodes the given string as a [[VolumeList]] or throws an exception if something goes wrong. */
+  private def decodeVolumeList(str: String): VolumeList = {
+    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
+    json.as(VolumeList.decoder).fold(throw _, Predef.identity)
+  }
 
 }

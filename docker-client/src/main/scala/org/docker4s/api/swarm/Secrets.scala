@@ -19,8 +19,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.api
+package org.docker4s.api.swarm
 
+import org.docker4s.api.Criterion
 import org.docker4s.api.Criterion.filter
 import org.docker4s.models.secrets.Secret
 

@@ -25,10 +25,12 @@ import cats.effect.Effect
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.Json
-import org.docker4s.api.{Containers, Criterion, Images, Secrets, System, Volumes}
+import org.docker4s.api.swarm.Secrets
+import org.docker4s.api.{Containers, Criterion, Images, Networks, System, Volumes}
 import org.docker4s.models.containers._
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images._
+import org.docker4s.models.networks.{Network, NetworksPruned}
 import org.docker4s.models.secrets.Secret
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
@@ -354,6 +356,38 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       client
         .post("/volumes/prune")
         .expect(VolumesPruned.decoder)
+    }
+
+  }
+
+  override val networks: Networks[F] = new Networks[F] {
+
+    /**
+      * Returns the list of networks configured in the docker host.
+      */
+    override def list(criteria: Criterion[Networks.ListCriterion]*): F[List[Network]] = {
+      client.get("/networks").criteria(criteria).expectMany(Network.decoder)
+    }
+
+    /**
+      * Returns the information config for the given network.
+      */
+    override def inspect(id: Network.Id): F[Network] = {
+      client.get(s"/networks/${id.value}").expect(Network.decoder)
+    }
+
+    /**
+      * Removes the given network from the docker host.
+      */
+    override def remove(id: Network.Id): F[Unit] = {
+      client.delete(s"/networks/${id.value}").execute
+    }
+
+    /**
+      * Removes unused networks from the docker host.
+      */
+    override def prune(): F[NetworksPruned] = {
+      client.post(s"/networks/prune").expect(NetworksPruned.decoder)
     }
 
   }

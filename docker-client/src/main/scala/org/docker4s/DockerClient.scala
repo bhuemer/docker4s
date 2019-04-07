@@ -22,7 +22,8 @@
 package org.docker4s
 
 import cats.effect.{ConcurrentEffect, Resource}
-import org.docker4s.api.{Containers, Images, Secrets, System, Volumes}
+import org.docker4s.api.swarm.Secrets
+import org.docker4s.api.{Containers, Images, Networks, System, Volumes}
 import org.docker4s.transport.Client
 import org.docker4s.transport.unix.DomainSocketClient
 import org.http4s.Uri
@@ -58,6 +59,11 @@ trait DockerClient[F[_]] {
     * Returns an object for managing volumes on the server.
     */
   def volumes: Volumes[F]
+
+  /**
+    * Returns an object for managing networks on the docker host.
+    */
+  def networks: Networks[F]
 
 }
 

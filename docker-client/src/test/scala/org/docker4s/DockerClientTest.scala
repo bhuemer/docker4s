@@ -24,13 +24,11 @@ object DockerClientTest {
   }
 
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
-    client.containers
-      .logs(Container.Id("47be2cecdac1"), Containers.LogCriterion.stdout, Containers.LogCriterion.stderr)
-      .map({ changes =>
-        println(s"Changes: $changes")
+    client.networks
+      .prune()
+      .map({ pruned =>
+        println(s"Pruned: $pruned")
       })
-      .compile
-      .drain
   }
 
 }

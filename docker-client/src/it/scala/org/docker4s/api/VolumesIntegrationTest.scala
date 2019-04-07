@@ -41,7 +41,7 @@ class VolumesIntegrationTest extends ClientSpec with Matchers {
 
   "The client" should "support pruning unused volumes" given { client =>
     for {
-      volume <- client.volumes.create(name = Some("test-volume-1"))
+      volume <- client.volumes.create(name = Some("test-volume-2"))
 
       volumes1 <- client.volumes.list()
       _ = volumes1.volumes.map(_.name) should contain(volume.name)
@@ -51,6 +51,40 @@ class VolumesIntegrationTest extends ClientSpec with Matchers {
 
       volumes2 <- client.volumes.list()
       _ = volumes2.volumes.map(_.name) shouldNot contain(volume.name)
+    } yield ()
+  }
+
+  "The client" should "support listing volumes by name" given { client =>
+    for {
+      _ <- client.volumes.create(name = Some("test-his-volume-1"))
+      _ <- client.volumes.create(name = Some("test-her-volume-1"))
+
+      // Make sure that it's possible to filter the results by the exact name ..
+      volumes1 <- client.volumes.list(Volumes.ListCriterion.name("test-his-volume-1"))
+      _ = volumes1.volumes.map(_.name) should be(List("test-his-volume-1"))
+
+      // .. or by part of the name.
+      volumes2 <- client.volumes.list(Volumes.ListCriterion.name("his"))
+      _ = volumes2.volumes.map(_.name) should be(List("test-his-volume-1"))
+
+      volumes2 <- client.volumes.list(Volumes.ListCriterion.name("her"))
+      _ = volumes2.volumes.map(_.name) should be(List("test-her-volume-1"))
+
+      _ <- client.volumes.prune()
+    } yield ()
+  }
+
+  "The client" should "support listing dangling/attached volumes" given { client =>
+    for {
+      _ <- client.volumes.create(name = Some("dangling-test-volume"))
+
+      volumes1 <- client.volumes.list(Volumes.ListCriterion.showDangling)
+      _ = volumes1.volumes.map(_.name) should contain("dangling-test-volume")
+
+      volumes2 <- client.volumes.list(Volumes.ListCriterion.hideDangling)
+      _ = volumes2.volumes.map(_.name) shouldNot contain("dangling-test-volume")
+
+      _ <- client.volumes.prune()
     } yield ()
   }
 

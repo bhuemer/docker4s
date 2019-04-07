@@ -100,6 +100,11 @@ object Volumes {
       */
     def label(name: String, value: String): Criterion[ListCriterion] = filter("label", s"$name:$value")
 
+    /**
+      * Show volumes with the given name or part of the given name.
+      */
+    def name(name: String): Criterion[ListCriterion] = filter("name", name)
+
   }
 
 }

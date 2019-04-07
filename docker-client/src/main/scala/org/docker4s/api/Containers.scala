@@ -189,6 +189,13 @@ object Containers {
     def showAll: Criterion[ListCriterion] = query("all", true)
 
     /**
+      * Return this number of most recently created containers, including non-running ones.
+      */
+    def limit(n: Int): Criterion[ListCriterion] = query("limit", n)
+
+    def withSize: Criterion[ListCriterion] = query("size", true)
+
+    /**
       * Only show containers that exited with the given exit code.
       */
     def exited(exitCode: Int): Criterion[ListCriterion] = filter("exited", exitCode.toString)

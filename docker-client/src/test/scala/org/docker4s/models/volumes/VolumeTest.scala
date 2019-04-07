@@ -27,7 +27,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class VolumeTest extends FlatSpec with Matchers {
 
-  "Decoding JSON into volumes" should "extract all the relevant pieces of information" in {
+  "Decoding JSON into volumes" should "work" in {
     val volume = decodeVolume("""{
       |    "CreatedAt": "2019-03-12T22:35:19Z",
       |    "Driver": "local",
@@ -61,9 +61,31 @@ class VolumeTest extends FlatSpec with Matchers {
           "type" -> "tmpfs"
         ),
         scope = Volume.Scope.Local,
-        createdAt = ZonedDateTime.parse("2019-03-12T22:35:19Z")
+        createdAt = Some(ZonedDateTime.parse("2019-03-12T22:35:19Z"))
       )
     )
+  }
+
+  "Decoding JSON into volumes" should "cope with responses from a 1.26 API" in {
+    val volume = decodeVolume("""{
+      |  "Driver" : "local",
+      |  "Labels" : { },
+      |  "Mountpoint" : "/var/lib/docker/volumes/test-volume-1/_data",
+      |  "Name" : "test-volume-1",
+      |  "Options" : { },
+      |  "Scope" : "local"
+      |}""".stripMargin)
+    volume should be(
+      Volume(
+        name = "test-volume-1",
+        driver = "local",
+        mountpoint = "/var/lib/docker/volumes/test-volume-1/_data",
+        status = Map.empty,
+        labels = Map.empty,
+        options = Map.empty,
+        scope = Volume.Scope.Local,
+        createdAt = None
+      ))
   }
 
   // -------------------------------------------- Utility methods

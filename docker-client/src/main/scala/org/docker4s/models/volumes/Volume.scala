@@ -33,7 +33,7 @@ case class Volume(
     labels: Map[String, String],
     options: Map[String, String],
     scope: Volume.Scope,
-    createdAt: ZonedDateTime)
+    createdAt: Option[ZonedDateTime])
 
 object Volume {
 
@@ -61,7 +61,7 @@ object Volume {
       name <- c.downField("Name").as[String].right
       driver <- c.downField("Driver").as[String].right
       mountpoint <- c.downField("Mountpoint").as[String].right
-      createdAt <- c.downField("CreatedAt").as[ZonedDateTime].right
+      createdAt <- c.downField("CreatedAt").as[Option[ZonedDateTime]].right
       status <- c.downField("Status").as[Option[Map[String, String]]].right
       labels <- c.downField("Labels").as[Option[Map[String, String]]].right
       options <- c.downField("Options").as[Option[Map[String, String]]].right

@@ -21,17 +21,18 @@
  */
 package org.docker4s
 
+import java.util.Base64
+
 import cats.effect.Effect
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.Json
-import org.docker4s.api.swarm.Secrets
-import org.docker4s.api.{Containers, Criterion, Images, Networks, System, Volumes}
+import org.docker4s.api.{Containers, Criterion, Images, Networks, Secrets, System, Volumes}
 import org.docker4s.models.containers._
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images._
 import org.docker4s.models.networks.{Network, NetworkCreated, NetworksPruned}
-import org.docker4s.models.secrets.Secret
+import org.docker4s.models.secrets.{Secret, SecretCreated}
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
 import org.docker4s.util.LogDecoder
@@ -176,20 +177,54 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
   override val secrets: Secrets[F] = new Secrets[F] {
 
     /**
-      * Lists all secrets.
+      * Returns secrets configured in the docker host. Similar to the `docker secret ls` command.
       */
     override def list(criteria: Criterion[Secrets.ListCriterion]*): F[List[Secret]] = {
       client.get("/secrets").criteria(criteria).expectMany(Secret.decoder)
     }
 
+    /**
+      * Returns detailed information for the given secret. Similar to the `docker secret inspect` command.
+      */
     override def inspect(id: Secret.Id): F[Secret] = {
       client.get(s"/secrets/${id.value}").expect(Secret.decoder)
     }
 
     /**
-      * Deletes the secret with the given ID.
+      * Creates a new secret with the given data in the docker host. Similar to the `docker secret create` command.
       */
-    override def delete(id: Secret.Id): F[Unit] = {
+    override def create(name: String, data: Array[Byte]): F[SecretCreated] = {
+      client
+        .post("/secrets/create")
+        .body(
+          Json.obj(
+            "Name" -> Json.fromString(name),
+            "Data" -> Json.fromString(
+              Base64.getEncoder.encodeToString(data)
+            )
+          ))
+        .expect(SecretCreated.decoder)
+    }
+
+    /**
+      * Updates a secret in the docker host. Currently only label updates are supported.
+      */
+    override def update(id: Secret.Id, version: Long, name: String, labels: Map[String, String]): F[Unit] = {
+      client
+        .post(s"/secrets/${id.value}/update")
+        .queryParam("version", version)
+        .body(
+          Json.obj(
+            "Name" -> Json.fromString(name),
+            "Labels" -> Json.obj(labels.mapValues(Json.fromString).toSeq: _*)
+          ))
+        .execute
+    }
+
+    /**
+      * Removes the given secret from the docker host. Similar to the `docker secret rm` command.
+      */
+    override def remove(id: Secret.Id): F[Unit] = {
       client.delete(s"/secrets/${id.value}").execute
     }
 
@@ -235,7 +270,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       */
     override def save(ids: Seq[Image.Id]): Stream[F, Byte] = {
       // TODO: Error handling: 404 when one of the images cannot be found ("No such image: busybox")
-      // TODO: Authenatication
+      // TODO: Authentication
       ids match {
         case Seq(id) =>
           client.get(s"/images/${id.value}/get").stream

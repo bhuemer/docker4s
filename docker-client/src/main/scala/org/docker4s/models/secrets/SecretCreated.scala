@@ -19,42 +19,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.api.swarm
+package org.docker4s.models.secrets
 
-import org.docker4s.api.Criterion
-import org.docker4s.api.Criterion.filter
-import org.docker4s.models.secrets.Secret
+import io.circe.Decoder
 
-import scala.language.higherKinds
+/**
+  * Contains the information returned to a client about a secret that was created.
+  *
+  * @param id The unique identifier of the secret
+  */
+case class SecretCreated(id: Secret.Id)
 
-trait Secrets[F[_]] {
+object SecretCreated {
 
-  /**
-    * Lists all secrets.
-    */
-  def list(criteria: Criterion[Secrets.ListCriterion]*): F[List[Secret]]
+  // -------------------------------------------- Circe decoders
 
-  def inspect(id: Secret.Id): F[Secret]
-
-  /**
-    * Deletes the secret with the given ID.
-    */
-  def delete(id: Secret.Id): F[Unit]
-
-}
-
-object Secrets {
-
-  sealed trait ListCriterion
-
-  object ListCriterion {
-
-    def name(name: String): Criterion[ListCriterion] = filter("name", name)
-
-    def label(key: String): Criterion[ListCriterion] = filter("label", key)
-
-    def label(key: String, value: String): Criterion[ListCriterion] = filter("label", s"$key=$value")
-
-  }
+  val decoder: Decoder[SecretCreated] = Decoder.instance({ c =>
+    for {
+      id <- c.downField("ID").as[String].right
+    } yield SecretCreated(Secret.Id(id))
+  })
 
 }

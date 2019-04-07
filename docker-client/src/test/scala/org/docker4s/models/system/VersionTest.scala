@@ -31,7 +31,7 @@ import org.scalatest.{FlatSpec, Matchers}
   * Contains test cases related to parsing [[Version]] objects from JSON response bodies.
   */
 @RunWith(classOf[JUnitRunner])
-class VersionSpec extends FlatSpec with Matchers {
+class VersionTest extends FlatSpec with Matchers {
 
   "Decoding JSON into versions" should "extract all the relevant pieces of information" in {
     val version = decodeVersion("""{

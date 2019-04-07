@@ -28,7 +28,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-class DockerHostSpec extends FlatSpec with Matchers {
+class DockerHostTest extends FlatSpec with Matchers {
 
   "The default endpoints" should "be OS dependent" in {
     DockerHost.fromEnvironment(

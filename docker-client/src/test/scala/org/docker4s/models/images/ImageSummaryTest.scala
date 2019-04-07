@@ -31,7 +31,7 @@ import org.scalatest.{FlatSpec, Matchers}
   * Contains test cases related to parsing [[ImageSummary]] objects from JSON response bodies.
   */
 @RunWith(classOf[JUnitRunner])
-class ImageSummarySpec extends FlatSpec with Matchers {
+class ImageSummaryTest extends FlatSpec with Matchers {
 
   /** Makes sure the decoder is not overly restrictive wrt/ `null` vs empty objects/maps. */
   "Decoding JSON into images" should "cope with `null` labels" in {

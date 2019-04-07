@@ -29,7 +29,7 @@ import org.scalatest.{FlatSpec, Matchers}
   * Contains test cases related to parsing [[ImagesPruned]] objects from JSON response bodies.
   */
 @RunWith(classOf[JUnitRunner])
-class ImagesPrunedSpec extends FlatSpec with Matchers {
+class ImagesPrunedTest extends FlatSpec with Matchers {
 
   "Decoding JSON into images pruned" should "work" in {
     val imagesPruned = decodeImagesPruned(

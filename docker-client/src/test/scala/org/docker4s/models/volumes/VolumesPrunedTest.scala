@@ -26,7 +26,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-class VolumesPrunedSpec extends FlatSpec with Matchers {
+class VolumesPrunedTest extends FlatSpec with Matchers {
 
   "Decoding JSON into volumes pruned" should "work" in {
     val volumesPruned = decodeVolumesPruned("""{

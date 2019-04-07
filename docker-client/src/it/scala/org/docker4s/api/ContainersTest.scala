@@ -27,7 +27,7 @@ import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class ContainersSpec extends ClientSpec with Matchers {
+class ContainersTest extends ClientSpec with Matchers {
 
   "Running a `hello-world` container" should "produce logs for it" given { client =>
     for {

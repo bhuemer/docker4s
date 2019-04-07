@@ -29,7 +29,7 @@ import org.scalatest.{FlatSpec, Matchers}
   * Contains test cases related to parsing [[ContainersPruned]] objects from JSON response bodies.
   */
 @RunWith(classOf[JUnitRunner])
-class ContainersPrunedSpec extends FlatSpec with Matchers {
+class ContainersPrunedTest extends FlatSpec with Matchers {
 
   "Decoding JSON into containers pruned" should "work" in {
     val containersPruned =

@@ -28,7 +28,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-class VolumeSpec extends FlatSpec with Matchers {
+class VolumeTest extends FlatSpec with Matchers {
 
   "Decoding JSON into volumes" should "extract all the relevant pieces of information" in {
     val volume = decodeVolume("""{

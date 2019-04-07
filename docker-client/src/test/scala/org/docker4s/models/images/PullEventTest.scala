@@ -26,7 +26,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-class PullEventSpec extends FlatSpec with Matchers {
+class PullEventTest extends FlatSpec with Matchers {
 
   "Decoding JSON into pull events" should "decode `pulling image` events" in {
     val pullEvent = decodePullEvent("""

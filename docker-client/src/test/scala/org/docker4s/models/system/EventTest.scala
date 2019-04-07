@@ -28,7 +28,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-class EventSpec extends FlatSpec with Matchers {
+class EventTest extends FlatSpec with Matchers {
 
   "Decoding JSON into events" should "decode `container-start` events" in {
     val event = decodeEvent("""{

@@ -27,7 +27,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-class CriterionSpec extends FlatSpec with Matchers {
+class CriterionTest extends FlatSpec with Matchers {
 
   /**
     * Makes sure that query parameters and JSON encoded filter parameters can be mixed in a single query string.

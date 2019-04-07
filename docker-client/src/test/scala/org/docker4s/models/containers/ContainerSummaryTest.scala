@@ -29,7 +29,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-class ContainerSummarySpec extends FlatSpec with Matchers {
+class ContainerSummaryTest extends FlatSpec with Matchers {
 
   "Decoding JSON into container summaries" should "successfully decode hello-world containers" in {
     val containerSummary =

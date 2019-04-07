@@ -21,8 +21,10 @@
  */
 package org.docker4s.api
 
-import org.scalatest.Matchers
+import org.scalatest.{Ignore, Matchers}
 
+// Ignoring for the time being until swarms are supported by this client
+@Ignore
 class SecretsIntegrationTest extends ClientSpec with Matchers {
 
   "The client" should "support creating and removing secrets" given { client =>

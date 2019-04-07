@@ -1,6 +1,7 @@
 package org.docker4s
 
 import cats.effect._
+import org.docker4s.api.Containers
 import org.docker4s.models.containers.Container
 
 object DockerClientTest {
@@ -24,10 +25,12 @@ object DockerClientTest {
 
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
     client.containers
-      .diff(Container.Id("79abd849f4aa"))
+      .logs(Container.Id("47be2cecdac1"), Containers.LogCriterion.stdout, Containers.LogCriterion.stderr)
       .map({ changes =>
         println(s"Changes: $changes")
       })
+      .compile
+      .drain
   }
 
 }

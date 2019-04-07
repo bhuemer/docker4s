@@ -31,7 +31,7 @@ import scala.concurrent.{Future, Promise}
 /**
   * Netty handler that will turn HTTP response objects from the HTTP client codec into futures and streams.
   */
-private[unix] final class ResponseHandler extends SimpleChannelInboundHandler[HttpObject] with LazyLogging {
+final private[unix] class ResponseHandler extends SimpleChannelInboundHandler[HttpObject] with LazyLogging {
 
   import ResponseHandler._
 
@@ -126,7 +126,7 @@ private[unix] object ResponseHandler {
     }
   }
 
-  private sealed trait State
+  sealed private trait State
 
   /**
     * Indicates that we're still waiting for the response to come back with HTTP status, headers, etc. Once we've

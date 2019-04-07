@@ -27,6 +27,9 @@ case class ContainerChange(path: String, kind: ContainerChange.Kind)
 
 object ContainerChange {
 
+  /**
+    * Indicates what kind of change this is: a modification, an addition, or a deletion.
+    */
   sealed trait Kind
 
   object Kind {
@@ -41,6 +44,7 @@ object ContainerChange {
     case 0 => Right(Kind.Modified)
     case 1 => Right(Kind.Added)
     case 2 => Right(Kind.Deleted)
+
     case i => Left(s"Cannot decode $i as a container change kind.")
   })
 

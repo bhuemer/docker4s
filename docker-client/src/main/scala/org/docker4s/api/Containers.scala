@@ -63,6 +63,9 @@ trait Containers[F[_]] { self =>
 
   }
 
+  /**
+    * Returns differences in the given container's file system since it was started.
+    */
   def diff(id: Container.Id): F[List[ContainerChange]]
 
   /**

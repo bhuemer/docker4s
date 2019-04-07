@@ -45,7 +45,7 @@ jobs:
     - checkout
     - restore_cache: *restore_cache
     - save_cache: *save_cache
-    - run: gradle test
+    - run: gradle spec
     - run: *save_test_results
     - store_test_results: *store_test_results
     - store_artifacts: *store_artifacts

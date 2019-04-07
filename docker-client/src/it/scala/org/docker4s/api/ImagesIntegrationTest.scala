@@ -25,7 +25,7 @@ import cats.effect.IO
 import org.docker4s.models.images.{ImageSummary, PullEvent}
 import org.scalatest.Matchers
 
-class ImagesTest extends ClientSpec with Matchers {
+class ImagesIntegrationTest extends ClientSpec with Matchers {
 
   "Pulling images" should "pick the latest image by default" given { client =>
     def pull(name: String): IO[(Option[String], Option[String])] = {

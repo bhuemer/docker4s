@@ -24,7 +24,7 @@ package org.docker4s.api
 import org.docker4s.api.Containers.LogCriterion.stdout
 import org.scalatest.Matchers
 
-class ContainersTest extends ClientSpec with Matchers {
+class ContainersIntegrationTest extends ClientSpec with Matchers {
 
   "Running a `hello-world` container" should "produce logs for it" given { client =>
     for {

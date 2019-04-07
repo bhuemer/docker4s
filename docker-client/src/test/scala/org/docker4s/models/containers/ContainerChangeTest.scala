@@ -21,11 +21,8 @@
  */
 package org.docker4s.models.containers
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-@RunWith(classOf[JUnitRunner])
 class ContainerChangeTest extends FlatSpec with Matchers {
 
   "Decoding JSON into container changes" should "work" in {

@@ -22,11 +22,8 @@
 package org.docker4s.api
 
 import org.docker4s.api.Containers.LogCriterion.stdout
-import org.junit.runner.RunWith
 import org.scalatest.Matchers
-import org.scalatest.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class ContainersTest extends ClientSpec with Matchers {
 
   "Running a `hello-world` container" should "produce logs for it" given { client =>

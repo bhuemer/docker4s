@@ -23,14 +23,11 @@ package org.docker4s.models.images
 
 import java.time.ZonedDateTime
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
   * Contains test cases related to parsing [[ImageSummary]] objects from JSON response bodies.
   */
-@RunWith(classOf[JUnitRunner])
 class ImageSummaryTest extends FlatSpec with Matchers {
 
   /** Makes sure the decoder is not overly restrictive wrt/ `null` vs empty objects/maps. */

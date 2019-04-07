@@ -23,11 +23,8 @@ package org.docker4s.models.secrets
 
 import java.time.ZonedDateTime
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-@RunWith(classOf[JUnitRunner])
 class SecretTest extends FlatSpec with Matchers {
 
   "Decoding JSON into secrets" should "work" in {

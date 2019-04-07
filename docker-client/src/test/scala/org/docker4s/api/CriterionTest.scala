@@ -22,11 +22,8 @@
 package org.docker4s.api
 
 import org.http4s.Query
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-@RunWith(classOf[JUnitRunner])
 class CriterionTest extends FlatSpec with Matchers {
 
   /**

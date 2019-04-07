@@ -24,11 +24,8 @@ package org.docker4s.models.containers
 import java.time.ZonedDateTime
 
 import org.docker4s.models.images.Image
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-@RunWith(classOf[JUnitRunner])
 class ContainerSummaryTest extends FlatSpec with Matchers {
 
   "Decoding JSON into container summaries" should "successfully decode hello-world containers" in {

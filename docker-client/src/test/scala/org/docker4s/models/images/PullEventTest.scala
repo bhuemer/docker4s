@@ -21,11 +21,8 @@
  */
 package org.docker4s.models.images
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-@RunWith(classOf[JUnitRunner])
 class PullEventTest extends FlatSpec with Matchers {
 
   "Decoding JSON into pull events" should "decode `pulling image` events" in {

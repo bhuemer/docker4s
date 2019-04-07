@@ -23,11 +23,8 @@ package org.docker4s.models.volumes
 
 import java.time.ZonedDateTime
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-@RunWith(classOf[JUnitRunner])
 class VolumeTest extends FlatSpec with Matchers {
 
   "Decoding JSON into volumes" should "extract all the relevant pieces of information" in {

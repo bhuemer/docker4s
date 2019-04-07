@@ -21,14 +21,11 @@
  */
 package org.docker4s.models.containers
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
   * Contains test cases related to parsing [[ContainersPruned]] objects from JSON response bodies.
   */
-@RunWith(classOf[JUnitRunner])
 class ContainersPrunedTest extends FlatSpec with Matchers {
 
   "Decoding JSON into containers pruned" should "work" in {

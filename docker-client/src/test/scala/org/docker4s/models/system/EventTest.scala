@@ -23,11 +23,8 @@ package org.docker4s.models.system
 
 import java.time.ZonedDateTime
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-@RunWith(classOf[JUnitRunner])
 class EventTest extends FlatSpec with Matchers {
 
   "Decoding JSON into events" should "decode `container-start` events" in {

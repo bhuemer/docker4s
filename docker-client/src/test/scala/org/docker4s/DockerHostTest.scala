@@ -23,11 +23,8 @@ package org.docker4s
 
 import java.nio.file.Paths
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-@RunWith(classOf[JUnitRunner])
 class DockerHostTest extends FlatSpec with Matchers {
 
   "The default endpoints" should "be OS dependent" in {

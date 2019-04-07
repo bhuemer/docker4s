@@ -59,7 +59,7 @@ jobs:
     - setup_remote_docker:
         version: 18.06.0-ce
         docker_layer_caching: true
-    - run: gradle integrationTest
+    - run: gradle integrationSpec
     - run: *save_test_results
     - store_test_results: *store_test_results
     - store_artifacts: *store_artifacts
@@ -73,7 +73,7 @@ jobs:
     - setup_remote_docker:
         version: 17.03.0-ce
         docker_layer_caching: true
-    - run: gradle integrationTest
+    - run: gradle integrationSpec
     - run: *save_test_results
     - store_test_results: *store_test_results
     - store_artifacts: *store_artifacts

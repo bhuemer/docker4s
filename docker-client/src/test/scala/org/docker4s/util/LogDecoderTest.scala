@@ -27,11 +27,8 @@ import fs2.{Chunk, Stream}
 import org.docker4s.api.Containers
 import org.docker4s.api.Containers.Log
 import org.docker4s.api.Containers.Stream.{StdErr, StdOut}
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
-@RunWith(classOf[JUnitRunner])
 class LogDecoderTest extends FlatSpec with Matchers {
 
   /** Makes sure that we can decode log messages even if the header frame (these initial 8 bytes) aren't included. */

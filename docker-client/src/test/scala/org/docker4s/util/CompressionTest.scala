@@ -29,13 +29,10 @@ import fs2.{Pipe, Stream, io}
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.apache.commons.compress.utils.IOUtils
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.ExecutionContext
 
-@RunWith(classOf[JUnitRunner])
 class CompressionTest extends FlatSpec with Matchers {
 
   "Compression" should "allow you to create simple .tar.gz archives" in {

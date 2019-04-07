@@ -23,14 +23,11 @@ package org.docker4s.models.system
 
 import java.time.ZonedDateTime
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
   * Contains test cases related to parsing [[Version]] objects from JSON response bodies.
   */
-@RunWith(classOf[JUnitRunner])
 class VersionTest extends FlatSpec with Matchers {
 
   "Decoding JSON into versions" should "extract all the relevant pieces of information" in {

@@ -23,11 +23,8 @@ package org.docker4s.api
 
 import cats.effect.IO
 import org.docker4s.models.images.{ImageSummary, PullEvent}
-import org.junit.runner.RunWith
 import org.scalatest.Matchers
-import org.scalatest.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class ImagesTest extends ClientSpec with Matchers {
 
   "Pulling images" should "pick the latest image by default" given { client =>

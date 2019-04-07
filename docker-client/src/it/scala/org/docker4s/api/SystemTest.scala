@@ -22,11 +22,8 @@
 package org.docker4s.api
 
 import com.typesafe.scalalogging.LazyLogging
-import org.junit.runner.RunWith
 import org.scalatest.Matchers
-import org.scalatest.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class SystemTest extends ClientSpec with Matchers with LazyLogging {
 
   "The docker client" should "be able to detect version information" given { client =>

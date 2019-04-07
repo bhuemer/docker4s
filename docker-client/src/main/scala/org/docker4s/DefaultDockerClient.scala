@@ -384,6 +384,33 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
+      * Connects the container to the given network in the docker host.
+      */
+    override def connect(network: Network.Id, container: Container.Id): F[Unit] = {
+      client
+        .post(s"/networks/${network.value}/connect")
+        .body(
+          Json.obj(
+            "Container" -> Json.fromString(container.value)
+          ))
+        .execute
+    }
+
+    /**
+      * Disconnects the container from the given network in the docker host.
+      */
+    override def disconnect(network: Network.Id, container: Container.Id, force: Boolean): F[Unit] = {
+      client
+        .post(s"/networks/${network.value}/disconnect")
+        .body(
+          Json.obj(
+            "Container" -> Json.fromString(container.value),
+            "Force" -> Json.fromBoolean(force)
+          ))
+        .execute
+    }
+
+    /**
       * Removes unused networks from the docker host.
       */
     override def prune(): F[NetworksPruned] = {

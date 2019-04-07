@@ -3,6 +3,7 @@ package org.docker4s
 import cats.effect._
 import org.docker4s.api.Containers
 import org.docker4s.models.containers.Container
+import org.docker4s.models.networks.Network
 
 object DockerClientTest {
 
@@ -24,11 +25,14 @@ object DockerClientTest {
   }
 
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
-    client.networks
-      .prune()
-      .map({ pruned =>
-        println(s"Pruned: $pruned")
-      })
+    for {
+      containers <- client.containers.list()
+      container = containers.head
+
+      _ <- client.networks.connect(Network.Id("837f8e6ae947"), container.id)
+    } yield {
+      println("Connected network!")
+    }
   }
 
 }

@@ -133,6 +133,9 @@ object DockerCertificates extends LazyLogging {
       })
   }
 
+  /**
+    * Loads all PEM objects from the given file.
+    */
   private def loadPem(path: Path): Seq[Object] = {
     val parser = new PEMParser(new InputStreamReader(new FileInputStream(path.toFile), Charset.defaultCharset()))
     try {

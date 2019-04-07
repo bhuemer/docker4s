@@ -23,7 +23,7 @@ package org.docker4s.models.networks
 
 import java.time.ZonedDateTime
 
-import io.circe.Decoder
+import io.circe.{Decoder, KeyDecoder}
 
 case class Network(
     id: Network.Id,
@@ -37,6 +37,7 @@ case class Network(
     attachable: Boolean,
     ingress: Boolean,
     configOnly: Boolean,
+    containers: Map[String, Network.Endpoint],
     options: Map[String, String],
     labels: Map[String, String])
 
@@ -56,6 +57,12 @@ object Network {
 
   object IPAM {
     case class Config(subnet: Option[String], ipRange: Option[String], gateway: Option[String])
+  }
+
+  case class Endpoint(name: String, id: Endpoint.Id, macAddress: String, ipv4Address: String, ipv6Address: String)
+
+  object Endpoint {
+    case class Id(value: String)
   }
 
   // -------------------------------------------- Circe decoders
@@ -83,6 +90,16 @@ object Network {
     } yield IPAM(driver, options.getOrElse(Map.empty), configs.getOrElse(List.empty))
   })
 
+  private val endpointDecoder: Decoder[Endpoint] = Decoder.instance({ c =>
+    for {
+      name <- c.downField("Name").as[String].right
+      id <- c.downField("EndpointID").as[String].right
+      macAddress <- c.downField("MacAddress").as[String].right
+      ipv4Address <- c.downField("IPv4Address").as[String].right
+      ipv6Address <- c.downField("IPv6Address").as[String].right
+    } yield Endpoint(name, Endpoint.Id(id), macAddress, ipv4Address, ipv6Address)
+  })
+
   val decoder: Decoder[Network] = Decoder.instance({ c =>
     for {
       id <- c.downField("Id").as[String].right
@@ -96,6 +113,9 @@ object Network {
       attachable <- c.downField("Attachable").as[Boolean].right
       ingress <- c.downField("Ingress").as[Boolean].right
       configOnly <- c.downField("ConfigOnly").as[Boolean].right
+      containers <- c
+        .downField("Containers")
+        .as(Decoder.decodeOption(Decoder.decodeMap(KeyDecoder.decodeKeyString, endpointDecoder)))
       options <- c.downField("Options").as[Option[Map[String, String]]].right
       labels <- c.downField("Labels").as[Option[Map[String, String]]].right
     } yield
@@ -111,6 +131,7 @@ object Network {
         attachable = attachable,
         ingress = ingress,
         configOnly = configOnly,
+        containers = containers.getOrElse(Map.empty),
         options = options.getOrElse(Map.empty),
         labels = labels.getOrElse(Map.empty)
       )

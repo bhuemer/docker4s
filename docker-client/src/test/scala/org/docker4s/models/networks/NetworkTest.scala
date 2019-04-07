@@ -73,10 +73,89 @@ class NetworkTest extends FlatSpec with Matchers {
         attachable = false,
         ingress = true,
         configOnly = false,
+        containers = Map.empty,
         options = Map(
           "com.docker.network.driver.overlay.vxlanid_list" -> "4096"
         ),
         labels = Map()
+      ))
+  }
+
+  "Decoding JSON into networks" should "decode container endpoints as well" in {
+    val network = decodeNetwork("""{
+      |  "Name": "docker_gwbridge",
+      |  "Id": "286621d9106d66b492ddbd0c22e06574076e2efa8e7c2e6ee3726c04b5d02b7d",
+      |  "Created": "2019-03-12T22:31:50.4414207Z",
+      |  "Scope": "local",
+      |  "Driver": "bridge",
+      |  "EnableIPv6": false,
+      |  "IPAM": {
+      |    "Driver": "default",
+      |    "Options": null,
+      |    "Config": [
+      |      {
+      |        "Subnet": "172.18.0.0/16",
+      |        "Gateway": "172.18.0.1"
+      |      }
+      |    ]
+      |  },
+      |  "Internal": false,
+      |  "Attachable": false,
+      |  "Ingress": false,
+      |  "ConfigFrom": {
+      |    "Network": ""
+      |  },
+      |  "ConfigOnly": false,
+      |  "Containers": {
+      |    "ingress-sbox": {
+      |      "Name": "gateway_ingress-sbox",
+      |      "EndpointID": "13dbdf154f085d974e71d9f548744bad356dc491186366895f06d39da48cbdb6",
+      |      "MacAddress": "02:42:ac:12:00:02",
+      |      "IPv4Address": "172.18.0.2/16",
+      |      "IPv6Address": ""
+      |    }
+      |  },
+      |  "Options": {
+      |    "com.docker.network.bridge.enable_icc": "false",
+      |    "com.docker.network.bridge.enable_ip_masquerade": "true",
+      |    "com.docker.network.bridge.name": "docker_gwbridge"
+      |  },
+      |  "Labels": {}
+      |}""".stripMargin)
+    network should be(
+      Network(
+        id = Network.Id("286621d9106d66b492ddbd0c22e06574076e2efa8e7c2e6ee3726c04b5d02b7d"),
+        name = "docker_gwbridge",
+        createdAt = ZonedDateTime.parse("2019-03-12T22:31:50.4414207Z"),
+        scope = Network.Scope.Local,
+        driver = "bridge",
+        enableIPv6 = false,
+        ipam = Network.IPAM(
+          driver = "default",
+          options = Map.empty,
+          configs = List(
+            Network.IPAM.Config(subnet = Some("172.18.0.0/16"), ipRange = None, gateway = Some("172.18.0.1"))
+          )
+        ),
+        internal = false,
+        attachable = false,
+        ingress = false,
+        configOnly = false,
+        containers = Map(
+          "ingress-sbox" -> Network.Endpoint(
+            id = Network.Endpoint.Id("13dbdf154f085d974e71d9f548744bad356dc491186366895f06d39da48cbdb6"),
+            name = "gateway_ingress-sbox",
+            macAddress = "02:42:ac:12:00:02",
+            ipv4Address = "172.18.0.2/16",
+            ipv6Address = ""
+          )
+        ),
+        options = Map(
+          "com.docker.network.bridge.enable_icc" -> "false",
+          "com.docker.network.bridge.enable_ip_masquerade" -> "true",
+          "com.docker.network.bridge.name" -> "docker_gwbridge"
+        ),
+        labels = Map.empty
       ))
   }
 

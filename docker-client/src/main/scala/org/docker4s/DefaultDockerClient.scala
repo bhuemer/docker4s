@@ -25,10 +25,11 @@ import cats.effect.Effect
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.Json
-import org.docker4s.api.{Containers, Criterion, Images, System, Volumes}
+import org.docker4s.api.{Containers, Criterion, Images, Secrets, System, Volumes}
 import org.docker4s.models.containers._
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images._
+import org.docker4s.models.secrets.Secret
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
 import org.docker4s.util.LogDecoder
@@ -160,6 +161,28 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       client
         .post("/containers/prune")
         .expect(ContainersPruned.decoder)
+    }
+
+  }
+
+  override val secrets: Secrets[F] = new Secrets[F] {
+
+    /**
+      * Lists all secrets.
+      */
+    override def list(criteria: Criterion[Secrets.ListCriterion]*): F[List[Secret]] = {
+      client.get("/secrets").criteria(criteria).expectMany(Secret.decoder)
+    }
+
+    override def inspect(id: Secret.Id): F[Secret] = {
+      client.get(s"/secrets/${id.value}").expect(Secret.decoder)
+    }
+
+    /**
+      * Deletes the secret with the given ID.
+      */
+    override def delete(id: Secret.Id): F[Unit] = {
+      client.delete(s"/secrets/${id.value}").execute
     }
 
   }

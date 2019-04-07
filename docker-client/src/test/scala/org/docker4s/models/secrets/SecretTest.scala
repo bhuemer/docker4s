@@ -49,7 +49,7 @@ class SecretTest extends FlatSpec with Matchers {
         version = 55,
         createdAt = ZonedDateTime.parse("2019-04-07T07:56:58.1931832Z"),
         updatedAt = ZonedDateTime.parse("2019-04-07T07:56:58.1931832Z"),
-        spec = SecretSpec(name = "db_pass", labels = Map.empty)
+        spec = SecretSpec(name = "db_pass", labels = Map.empty, driver = None)
       )
     )
   }

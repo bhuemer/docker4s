@@ -63,6 +63,8 @@ trait Containers[F[_]] { self =>
 
   }
 
+  def diff(id: Container.Id): F[List[ContainerChange]]
+
   /**
     * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
     */

@@ -44,6 +44,12 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
 
   override val containers: Containers[F] = new Containers[F] {
 
+    override def diff(id: Container.Id): F[List[ContainerChange]] = {
+      client
+        .get(s"/containers/${id.value}/changes")
+        .expectMany(ContainerChange.decoder)
+    }
+
     /**
       * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
       */

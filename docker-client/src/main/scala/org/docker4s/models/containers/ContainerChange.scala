@@ -19,31 +19,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.models.secrets
+package org.docker4s.models.containers
 
 import io.circe.Decoder
 
-case class SecretSpec(name: String, labels: Map[String, String], driver: Option[SecretSpec.Driver])
+case class ContainerChange(path: String, kind: ContainerChange.Kind)
 
-object SecretSpec {
+object ContainerChange {
 
-  case class Driver(name: String, options: Map[String, String])
+  sealed trait Kind
+
+  object Kind {
+    case object Added extends Kind
+    case object Deleted extends Kind
+    case object Modified extends Kind
+  }
 
   // -------------------------------------------- Circe decoders
 
-  private val driverDecoder: Decoder[SecretSpec.Driver] = Decoder.instance({ c =>
-    for {
-      name <- c.downField("Name").as[String].right
-      options <- c.downField("Options").as[Option[Map[String, String]]].right
-    } yield Driver(name, options.getOrElse(Map.empty))
+  private val kindDecoder: Decoder[Kind] = Decoder.decodeInt.emap({
+    case 0 => Right(Kind.Modified)
+    case 1 => Right(Kind.Added)
+    case 2 => Right(Kind.Deleted)
+    case i => Left(s"Cannot decode $i as a container change kind.")
   })
 
-  val decoder: Decoder[SecretSpec] = Decoder.instance({ c =>
+  val decoder: Decoder[ContainerChange] = Decoder.instance({ c =>
     for {
-      name <- c.downField("Name").as[String].right
-      labels <- c.downField("Labels").as[Option[Map[String, String]]].right
-      driver <- c.downField("Driver").as(Decoder.decodeOption(driverDecoder)).right
-    } yield SecretSpec(name, labels.getOrElse(Map.empty), driver)
+      path <- c.downField("Path").as[String].right
+      kind <- c.downField("Kind").as(kindDecoder).right
+    } yield ContainerChange(path, kind)
   })
 
 }

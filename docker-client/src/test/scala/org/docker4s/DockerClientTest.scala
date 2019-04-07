@@ -23,10 +23,10 @@ object DockerClientTest {
   }
 
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
-    client.secrets
-      .list()
-      .map({ secrets =>
-        secrets.foreach(println)
+    client.containers
+      .diff(Container.Id("79abd849f4aa"))
+      .map({ changes =>
+        println(s"Changes: $changes")
       })
   }
 

@@ -30,17 +30,17 @@ import scala.language.higherKinds
 trait Networks[F[_]] {
 
   /**
-    * Returns the list of networks configured in the docker host.
+    * Returns the list of networks configured in the docker host. Similar to the `docker network ls` command.
     */
   def list(criteria: Criterion[Networks.ListCriterion]*): F[List[Network]]
 
   /**
-    * Returns the information config for the given network.
+    * Returns the information config for the given network. Similar to the `docker network inspect` command.
     */
   def inspect(id: Network.Id): F[Network]
 
   /**
-    * Removes the given network from the docker host.
+    * Removes the given network from the docker host. Similar to the `docker network rm` command.
     */
   def remove(id: Network.Id): F[Unit]
 
@@ -49,12 +49,13 @@ trait Networks[F[_]] {
   def connect(network: Network.Id, container: Container.Id): F[Unit]
 
   /**
-    * Disconnects the container from the given network in the docker host.
+    * Disconnects the container from the given network in the docker host. Similar to the `docker network disconnect` command.
+    * @param force Force the container to disconnect from a network
     */
   def disconnect(network: Network.Id, container: Container.Id, force: Boolean = false): F[Unit]
 
   /**
-    * Removes unused networks from the docker host.
+    * Removes unused networks from the docker host. Similar to the `docker network prune` command.
     */
   def prune(): F[NetworksPruned]
 

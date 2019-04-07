@@ -29,7 +29,7 @@ import scala.language.higherKinds
 trait Volumes[F[_]] {
 
   /**
-    * Returns volumes currently registered by the docker daemon. Similar to the `docker volume ls` command.
+    * Returns volumes configured in the docker host. Similar to the `docker volume ls` command.
     */
   def list(criteria: Criterion[Volumes.ListCriterion]*): F[VolumeList]
 

@@ -30,7 +30,7 @@ import org.docker4s.api.{Containers, Criterion, Images, Networks, System, Volume
 import org.docker4s.models.containers._
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images._
-import org.docker4s.models.networks.{Network, NetworksPruned}
+import org.docker4s.models.networks.{Network, NetworkCreated, NetworksPruned}
 import org.docker4s.models.secrets.Secret
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
@@ -381,6 +381,16 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       */
     override def remove(id: Network.Id): F[Unit] = {
       client.delete(s"/networks/${id.value}").execute
+    }
+
+    override def create(name: String): F[NetworkCreated] = {
+      client
+        .post("/networks/create")
+        .body(
+          Json.obj(
+            "Name" -> Json.fromString(name)
+          ))
+        .expect(NetworkCreated.decoder)
     }
 
     /**

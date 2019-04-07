@@ -26,12 +26,18 @@ object DockerClientTest {
 
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
     for {
+      created <- client.networks.create("network-2")
+
       containers <- client.containers.list()
       container = containers.head
 
-      _ <- client.networks.connect(Network.Id("837f8e6ae947"), container.id)
+      _ <- client.networks.connect(created.id, container.id)
+      _ = println(s"Connected $container to network ${created.id}.")
+
+      _ <- client.networks.disconnect(created.id, container.id)
+      _ = println(s"Disconnected $container from network ${created.id}.")
     } yield {
-      println("Connected network!")
+      println("Finished everything!")
     }
   }
 

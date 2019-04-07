@@ -23,7 +23,7 @@ package org.docker4s.api
 
 import org.docker4s.api.Criterion.filter
 import org.docker4s.models.containers.Container
-import org.docker4s.models.networks.{Network, NetworksPruned}
+import org.docker4s.models.networks.{Network, NetworkCreated, NetworksPruned}
 
 import scala.language.higherKinds
 
@@ -43,6 +43,8 @@ trait Networks[F[_]] {
     * Removes the given network from the docker host.
     */
   def remove(id: Network.Id): F[Unit]
+
+  def create(name: String): F[NetworkCreated]
 
   def connect(network: Network.Id, container: Container.Id): F[Unit]
 

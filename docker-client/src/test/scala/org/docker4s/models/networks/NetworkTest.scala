@@ -29,31 +29,31 @@ class NetworkTest extends FlatSpec with Matchers {
 
   "Decoding JSON into networks" should "work" in {
     val network = decodeNetwork("""{
-        |  "Name": "ingress",
-        |  "Id": "kjq7p8j3jk731l7cq0z87lvex",
-        |  "Created": "2019-04-07T09:02:35.6838279Z",
-        |  "Scope": "swarm",
-        |  "Driver": "overlay",
-        |  "EnableIPv6": false,
-        |  "IPAM": {
-        |    "Driver": "default",
-        |    "Options": null,
-        |    "Config": [{
-        |      "Subnet": "10.255.0.0/16",
-        |      "Gateway": "10.255.0.1"
-        |    }]
-        |  },
-        |  "Internal": false,
-        |  "Attachable": false,
-        |  "Ingress": true,
-        |  "ConfigFrom": { "Network": "" },
-        |  "ConfigOnly": false,
-        |  "Containers": null,
-        |  "Options": {
-        |    "com.docker.network.driver.overlay.vxlanid_list": "4096"
-        |  },
-        |  "Labels": null
-        |}""".stripMargin)
+      |  "Name": "ingress",
+      |  "Id": "kjq7p8j3jk731l7cq0z87lvex",
+      |  "Created": "2019-04-07T09:02:35.6838279Z",
+      |  "Scope": "swarm",
+      |  "Driver": "overlay",
+      |  "EnableIPv6": false,
+      |  "IPAM": {
+      |    "Driver": "default",
+      |    "Options": null,
+      |    "Config": [{
+      |      "Subnet": "10.255.0.0/16",
+      |      "Gateway": "10.255.0.1"
+      |    }]
+      |  },
+      |  "Internal": false,
+      |  "Attachable": false,
+      |  "Ingress": true,
+      |  "ConfigFrom": { "Network": "" },
+      |  "ConfigOnly": false,
+      |  "Containers": null,
+      |  "Options": {
+      |    "com.docker.network.driver.overlay.vxlanid_list": "4096"
+      |  },
+      |  "Labels": null
+      |}""".stripMargin)
     network should be(
       Network(
         id = Network.Id("kjq7p8j3jk731l7cq0z87lvex"),

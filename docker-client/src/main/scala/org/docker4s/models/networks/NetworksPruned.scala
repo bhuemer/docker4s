@@ -23,6 +23,11 @@ package org.docker4s.models.networks
 
 import io.circe.Decoder
 
+/**
+  * Information about networks that were pruned / removed because they were unused.
+  * @see [[https://docs.docker.com/engine/api/v1.39/#operation/NetworkPrune Docker Engine API]]
+  * @param networks Networks that were deleted
+  */
 case class NetworksPruned(networks: List[String])
 
 object NetworksPruned {

@@ -19,24 +19,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.api
+package org.docker4s.transport
 
-import org.scalatest.Matchers
+import cats.effect.{Effect, Resource}
+import org.http4s.{Request, Response, Uri}
 
-class NetworksTest extends ClientSpec with Matchers {
+import scala.language.higherKinds
 
-  /**
-    */
-  "Newly created, unused networks" should "be pruned" given { client =>
-    for {
-      created <- client.networks.create("temp-network-1")
+object MockClient {
 
-      networks <- client.networks.list()
-      _ = networks.map(_.id) should contain(created.id)
-
-      pruned <- client.networks.prune()
-      _ = pruned.networks should contain("temp-network-1")
-    } yield ()
+  def apply[F[_]: Effect](f: Request[F] => Response[F]): Client[F] = {
+    Client.from(org.http4s.client.Client({ request =>
+      Resource.pure(f(request))
+    }), uri = Uri.unsafeFromString("http://localhost"))
   }
 
 }

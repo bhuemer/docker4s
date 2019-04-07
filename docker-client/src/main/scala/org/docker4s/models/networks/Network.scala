@@ -35,8 +35,8 @@ case class Network(
     ipam: Network.IPAM,
     internal: Boolean,
     attachable: Boolean,
-    ingress: Boolean,
-    configOnly: Boolean,
+    ingress: Option[Boolean],
+    configOnly: Option[Boolean],
     containers: Map[String, Network.Endpoint],
     options: Map[String, String],
     labels: Map[String, String])
@@ -111,8 +111,8 @@ object Network {
       ipam <- c.downField("IPAM").as(ipamDecoder).right
       internal <- c.downField("Internal").as[Boolean].right
       attachable <- c.downField("Attachable").as[Boolean].right
-      ingress <- c.downField("Ingress").as[Boolean].right
-      configOnly <- c.downField("ConfigOnly").as[Boolean].right
+      ingress <- c.downField("Ingress").as[Option[Boolean]].right
+      configOnly <- c.downField("ConfigOnly").as[Option[Boolean]].right
       containers <- c
         .downField("Containers")
         .as(Decoder.decodeOption(Decoder.decodeMap(KeyDecoder.decodeKeyString, endpointDecoder)))

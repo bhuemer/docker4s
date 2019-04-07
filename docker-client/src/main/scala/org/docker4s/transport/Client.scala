@@ -196,7 +196,12 @@ object Client {
         // If the response cannot be parsed as error message JSON, continue anyway as we would otherwise lose
         // the information about the request and the response that we have anyway (status codes, URIs, ..).
         .recoverWith({
-          case ex => F.delay(s"Unknown error message. Cannot decode the error response due to ${ex.getMessage}: $ex")
+          case ex =>
+            response
+              .as[String]
+              .map({ body =>
+                s"Unknown error message. Cannot decode the response '$body' (${response.status})."
+              })
         })
         .flatMap({ errorMessage =>
           val context = s"Request: $request, Response: $response"

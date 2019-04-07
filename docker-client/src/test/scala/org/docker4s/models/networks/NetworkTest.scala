@@ -71,8 +71,8 @@ class NetworkTest extends FlatSpec with Matchers {
         ),
         internal = false,
         attachable = false,
-        ingress = true,
-        configOnly = false,
+        ingress = Some(true),
+        configOnly = Some(false),
         containers = Map.empty,
         options = Map(
           "com.docker.network.driver.overlay.vxlanid_list" -> "4096"
@@ -139,8 +139,8 @@ class NetworkTest extends FlatSpec with Matchers {
         ),
         internal = false,
         attachable = false,
-        ingress = false,
-        configOnly = false,
+        ingress = Some(false),
+        configOnly = Some(false),
         containers = Map(
           "ingress-sbox" -> Network.Endpoint(
             id = Network.Endpoint.Id("13dbdf154f085d974e71d9f548744bad356dc491186366895f06d39da48cbdb6"),
@@ -155,6 +155,49 @@ class NetworkTest extends FlatSpec with Matchers {
           "com.docker.network.bridge.enable_ip_masquerade" -> "true",
           "com.docker.network.bridge.name" -> "docker_gwbridge"
         ),
+        labels = Map.empty
+      ))
+  }
+
+  "Decoding JSON into networks" should "support responses from 1.26 APIs" in {
+    val network = decodeNetwork("""{
+        |  "Name" : "none",
+        |  "Id" : "3596b40db2086e6a9cb1cafcf5346ed75bb1dd50726bb4935127ad205ded5f57",
+        |  "Created" : "2017-03-27T17:05:22.737581275Z",
+        |  "Scope" : "local",
+        |  "Driver" : "null",
+        |  "EnableIPv6" : false,
+        |  "IPAM" : {
+        |    "Driver" : "default",
+        |    "Options" : null,
+        |    "Config" : []
+        |  },
+        |  "Internal" : false,
+        |  "Attachable" : false,
+        |  "Containers" : { },
+        |  "Options" : { },
+        |  "Labels" : { }
+        |}""".stripMargin)
+
+    network should be(
+      Network(
+        id = Network.Id("3596b40db2086e6a9cb1cafcf5346ed75bb1dd50726bb4935127ad205ded5f57"),
+        name = "none",
+        createdAt = ZonedDateTime.parse("2017-03-27T17:05:22.737581275Z"),
+        scope = Network.Scope.Local,
+        driver = "null",
+        enableIPv6 = false,
+        ipam = Network.IPAM(
+          driver = "default",
+          options = Map.empty,
+          configs = List.empty
+        ),
+        internal = false,
+        attachable = false,
+        ingress = None,
+        configOnly = None,
+        containers = Map.empty,
+        options = Map.empty,
         labels = Map.empty
       ))
   }

@@ -23,7 +23,7 @@ package org.docker4s.api
 
 import fs2.Stream
 import org.docker4s.api.Criterion.{filter, query}
-import org.docker4s.models.images.{Image, ImageHistory, ImageSummary, ImagesPruned, PullEvent}
+import org.docker4s.models.images._
 
 import scala.language.higherKinds
 
@@ -61,6 +61,13 @@ trait Images[F[_]] { self =>
     * Pulls the given docker container image.
     */
   def pull(name: String, tag: Option[String] = None): Stream[F, PullEvent]
+
+  /**
+    * Removes the given image, along with any untagged parent images.
+    *
+    * Similar to the `docker image rm` command.
+    */
+  def remove(id: Image.Id, force: Boolean = false, noprune: Boolean = false): F[ImagesRemoved]
 
   /** Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command. */
   def history(id: Image.Id): F[List[ImageHistory]]

@@ -1,11 +1,8 @@
 package org.docker4s
 
-import java.time.{Duration, ZonedDateTime}
+import java.time.ZonedDateTime
 
 import cats.effect._
-import org.docker4s.api.Containers
-import org.docker4s.models.containers.Container
-import org.docker4s.models.networks.Network
 
 object DockerClientTest {
 
@@ -29,8 +26,14 @@ object DockerClientTest {
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
     val before = ZonedDateTime.now()
     for {
-      _ <- client.images.pull(name = "mysql").take(10).map(println).compile.drain
+      _ <- client.images.pull(name = "mysql").map(println).compile.drain
       _ = println("Pulled mysql")
+
+      images <- client.images.list()
+      image = images.filter(image => image.repoDigests.exists(_.contains("mysql"))).head
+
+      _ = println(s"Deleting image $image.")
+      _ <- client.images.remove(image.id)
     } yield {
       println("Finished everything!")
     }

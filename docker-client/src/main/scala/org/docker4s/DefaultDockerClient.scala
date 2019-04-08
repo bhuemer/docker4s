@@ -48,6 +48,11 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
 
   override val containers: Containers[F] = new Containers[F] {
 
+    /**
+      * Returns differences in the given container's file system since it was started.
+      *
+      * Similar to the `docker container diff` command.
+      */
     override def diff(id: Container.Id): F[List[ContainerChange]] = {
       F.delay(logger.info(s"Diffing the container ${id.value}.")) *>
         client
@@ -59,7 +64,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
       */
     override def list(criteria: Criterion[Containers.ListCriterion]*): F[List[ContainerSummary]] = {
-      F.delay(logger.info(s"Listing all containers [criteria: ${Criterion.toDebugString(criteria)}].")) *>
+      F.delay(logger.info(s"Listing containers [criteria: ${Criterion.toDebugString(criteria)}].")) *>
         client
           .get("/containers/json")
           .criteria(criteria)
@@ -169,11 +174,17 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     override def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log] = {
-      client
-        .get(s"/containers/${id.value}/logs")
-        .criteria(criteria)
-        .stream
-        .through(LogDecoder.decode)
+      Stream
+        .eval(
+          F.delay(logger.info(s"Pulling logs for the container ${id.value} " +
+            s"[criteria: ${Criterion.toDebugString(criteria)}].")))
+        .flatMap({ _ =>
+          client
+            .get(s"/containers/${id.value}/logs")
+            .criteria(criteria)
+            .stream
+            .through(LogDecoder.decode)
+        })
     }
 
     /**
@@ -194,52 +205,57 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Returns secrets configured in the docker host. Similar to the `docker secret ls` command.
       */
     override def list(criteria: Criterion[Secrets.ListCriterion]*): F[List[Secret]] = {
-      client.get("/secrets").criteria(criteria).expectMany(Secret.decoder)
+      F.delay(logger.info(s"Listing secrets [criteria: ${Criterion.toDebugString(criteria)}].")) *>
+        client.get("/secrets").criteria(criteria).expectMany(Secret.decoder)
     }
 
     /**
       * Returns detailed information for the given secret. Similar to the `docker secret inspect` command.
       */
     override def inspect(id: Secret.Id): F[Secret] = {
-      client.get(s"/secrets/${id.value}").expect(Secret.decoder)
+      F.delay(logger.info(s"Inspecting secret ${id.value}.")) *>
+        client.get(s"/secrets/${id.value}").expect(Secret.decoder)
     }
 
     /**
       * Creates a new secret with the given data in the docker host. Similar to the `docker secret create` command.
       */
     override def create(name: String, data: Array[Byte]): F[SecretCreated] = {
-      client
-        .post("/secrets/create")
-        .body(
-          Json.obj(
-            "Name" -> Json.fromString(name),
-            "Data" -> Json.fromString(
-              Base64.getEncoder.encodeToString(data)
-            )
-          ))
-        .expect(SecretCreated.decoder)
+      F.delay(logger.info(s"Creating the secret $name.")) *>
+        client
+          .post("/secrets/create")
+          .body(
+            Json.obj(
+              "Name" -> Json.fromString(name),
+              "Data" -> Json.fromString(
+                Base64.getEncoder.encodeToString(data)
+              )
+            ))
+          .expect(SecretCreated.decoder)
     }
 
     /**
       * Updates a secret in the docker host. Currently only label updates are supported.
       */
     override def update(id: Secret.Id, version: Long, name: String, labels: Map[String, String]): F[Unit] = {
-      client
-        .post(s"/secrets/${id.value}/update")
-        .queryParam("version", version)
-        .body(
-          Json.obj(
-            "Name" -> Json.fromString(name),
-            "Labels" -> Json.obj(labels.mapValues(Json.fromString).toSeq: _*)
-          ))
-        .execute
+      F.delay(logger.info(s"Updating the secret ${id.value}.")) *>
+        client
+          .post(s"/secrets/${id.value}/update")
+          .queryParam("version", version)
+          .body(
+            Json.obj(
+              "Name" -> Json.fromString(name),
+              "Labels" -> Json.obj(labels.mapValues(Json.fromString).toSeq: _*)
+            ))
+          .execute
     }
 
     /**
       * Removes the given secret from the docker host. Similar to the `docker secret rm` command.
       */
     override def remove(id: Secret.Id): F[Unit] = {
-      client.delete(s"/secrets/${id.value}").execute
+      F.delay(logger.info(s"Removing the secret ${id.value}.")) *>
+        client.delete(s"/secrets/${id.value}").execute
     }
 
   }
@@ -258,7 +274,13 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Streams real-time events from the server. Similar to the `docker system events` command.
       */
     override def events(criteria: Criterion[System.EventsCriterion]*): Stream[F, Event] = {
-      client.get("/events").criteria(criteria).stream(Event.decoder)
+      Stream
+        .eval(
+          F.delay(logger.info(s"Fetching events from the docker host " +
+            s"[criteria: ${Criterion.toDebugString(criteria)}].")))
+        .flatMap({ _ =>
+          client.get("/events").criteria(criteria).stream(Event.decoder)
+        })
     }
 
     /**
@@ -275,7 +297,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
 
     /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
     override def list(criteria: Criterion[Images.ListCriterion]*): F[List[ImageSummary]] = {
-      F.delay(logger.info(s"Listing all images [criteria: ${Criterion.toDebugString(criteria)}].")) *>
+      F.delay(logger.info(s"Listing images [criteria: ${Criterion.toDebugString(criteria)}].")) *>
         client
           .get("/images/json")
           .criteria(criteria)
@@ -288,7 +310,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     override def save(ids: Seq[Image.Id]): Stream[F, Byte] = {
       // TODO: Error handling: 404 when one of the images cannot be found ("No such image: busybox")
       // TODO: Authentication
-      ids match {
+      val response = ids match {
         case Seq(id) =>
           client.get(s"/images/${id.value}/get").stream
 
@@ -298,6 +320,8 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
             .queryParam("names", ids.map(_.value))
             .stream
       }
+
+      Stream.eval(F.delay(logger.info(s"Saving the images $ids."))).flatMap(_ => response)
     }
 
     /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
@@ -315,18 +339,35 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Pulls the given docker container image.
       */
     override def pull(name: String, tag: Option[String]): Stream[F, PullEvent] = {
-      client
-        .post("/images/create")
-        .queryParam("fromImage", name)
-        .queryParam("tag", tag.getOrElse("latest"))
-        .stream(PullEvent.decoder)
+      Stream
+        .eval(F.delay(logger.info(s"Pulling the image $name.")))
+        .flatMap({ _ =>
+          client
+            .post("/images/create")
+            .queryParam("fromImage", name)
+            .queryParam("tag", tag.getOrElse("latest"))
+            .stream(PullEvent.decoder)
+        })
+    }
+
+    /**
+      * Removes the given image, along with any untagged parent images.
+      *
+      * Similar to the `docker image rm` command.
+      */
+    override def remove(id: Image.Id, force: Boolean = false, noprune: Boolean = false): F[ImagesRemoved] = {
+      F.delay(logger.info(s"Removing the image ${id.value} [force: $force, noprune: $noprune].")) *>
+        client
+          .delete(s"/images/${id.value}")
+          .expect(ImagesRemoved.decoder)
     }
 
     /** Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command. */
     override def history(id: Image.Id): F[List[ImageHistory]] = {
-      client
-        .get(s"/images/${id.value}/history")
-        .expectMany(ImageHistory.decoder)
+      F.delay(logger.info(s"Fetching the history for the image ${id.value}.")) *>
+        client
+          .get(s"/images/${id.value}/history")
+          .expectMany(ImageHistory.decoder)
     }
 
     /**
@@ -347,7 +388,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Returns volumes currently registered by the docker daemon. Similar to the `docker volume ls` command.
       */
     override def list(criteria: Criterion[Volumes.ListCriterion]*): F[VolumeList] = {
-      F.delay(logger.info(s"Listing all volumes [criteria: ${Criterion.toDebugString(criteria)}].")) *>
+      F.delay(logger.info(s"Listing volumes [criteria: ${Criterion.toDebugString(criteria)}].")) *>
         client.get(s"/volumes").criteria(criteria).expect(VolumeList.decoder)
     }
 
@@ -359,21 +400,25 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
         driver: Option[String],
         options: Map[String, String],
         labels: Map[String, String]): F[Volume] = {
-      client
-        .post(s"/volumes/create")
-        .body(
-          Json.obj(
-            "Name" -> name.fold(Json.Null)(Json.fromString),
-            "Driver" -> Json.fromString(driver.getOrElse("local")),
-            "DriverOpts" -> Json.obj(
-              options.mapValues(Json.fromString).toSeq: _*
-            ),
-            "Labels" -> Json.obj(
-              labels.mapValues(Json.fromString).toSeq: _*
+      F.delay({
+        val nameStr = name.getOrElse("with no name")
+        logger.info(s"Creating the volume $nameStr.")
+      }) *>
+        client
+          .post(s"/volumes/create")
+          .body(
+            Json.obj(
+              "Name" -> name.fold(Json.Null)(Json.fromString),
+              "Driver" -> Json.fromString(driver.getOrElse("local")),
+              "DriverOpts" -> Json.obj(
+                options.mapValues(Json.fromString).toSeq: _*
+              ),
+              "Labels" -> Json.obj(
+                labels.mapValues(Json.fromString).toSeq: _*
+              )
             )
           )
-        )
-        .expect(Volume.decoder)
+          .expect(Volume.decoder)
     }
 
     /**
@@ -424,58 +469,66 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Returns the list of networks configured in the docker host.
       */
     override def list(criteria: Criterion[Networks.ListCriterion]*): F[List[Network]] = {
-      client.get("/networks").criteria(criteria).expectMany(Network.decoder)
+      F.delay(logger.info(s"Listing networks [criteria: ${Criterion.toDebugString(criteria)}].")) *>
+        client.get("/networks").criteria(criteria).expectMany(Network.decoder)
     }
 
     /**
       * Returns the information config for the given network.
       */
     override def inspect(id: Network.Id): F[Network] = {
-      client.get(s"/networks/${id.value}").expect(Network.decoder)
+      F.delay(logger.info(s"Inspecting the network ${id.value}.")) *>
+        client.get(s"/networks/${id.value}").expect(Network.decoder)
     }
 
     /**
       * Removes the given network from the docker host.
       */
     override def remove(id: Network.Id): F[Unit] = {
-      client.delete(s"/networks/${id.value}").execute
+      F.delay(logger.info(s"Removing the network ${id.value}.")) *>
+        client.delete(s"/networks/${id.value}").execute
     }
 
     override def create(name: String): F[NetworkCreated] = {
-      client
-        .post("/networks/create")
-        .body(
-          Json.obj(
-            "Name" -> Json.fromString(name)
-          ))
-        .expect(NetworkCreated.decoder)
+      F.delay(logger.info(s"Creating a network with the name $name.")) *>
+        client
+          .post("/networks/create")
+          .body(
+            Json.obj(
+              "Name" -> Json.fromString(name)
+            ))
+          .expect(NetworkCreated.decoder)
     }
 
     /**
       * Connects the container to the given network in the docker host.
       */
     override def connect(network: Network.Id, container: Container.Id): F[Unit] = {
-      client
-        .post(s"/networks/${network.value}/connect")
-        .body(
-          Json.obj(
-            "Container" -> Json.fromString(container.value)
-          ))
-        .execute
+      F.delay(logger.info(s"Connecting the container ${container.value} to the network ${network.value}.")) *>
+        client
+          .post(s"/networks/${network.value}/connect")
+          .body(
+            Json.obj(
+              "Container" -> Json.fromString(container.value)
+            ))
+          .execute
     }
 
     /**
       * Disconnects the container from the given network in the docker host.
       */
     override def disconnect(network: Network.Id, container: Container.Id, force: Boolean): F[Unit] = {
-      client
-        .post(s"/networks/${network.value}/disconnect")
-        .body(
-          Json.obj(
-            "Container" -> Json.fromString(container.value),
-            "Force" -> Json.fromBoolean(force)
-          ))
-        .execute
+      F.delay(
+        logger.info(s"Disconnecting the container ${container.value} " +
+          s"from the network ${network.value} [force: $force].")) *>
+        client
+          .post(s"/networks/${network.value}/disconnect")
+          .body(
+            Json.obj(
+              "Container" -> Json.fromString(container.value),
+              "Force" -> Json.fromBoolean(force)
+            ))
+          .execute
     }
 
     /**

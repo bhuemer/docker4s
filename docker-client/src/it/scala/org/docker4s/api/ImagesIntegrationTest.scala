@@ -21,50 +21,41 @@
  */
 package org.docker4s.api
 
-import cats.effect.IO
-import org.docker4s.models.images.{ImageSummary, PullEvent}
+import com.typesafe.scalalogging.LazyLogging
+import org.docker4s.models.images.ImageSummary
+import org.docker4s.syntax._
 import org.scalatest.Matchers
 
-class ImagesIntegrationTest extends ClientSpec with Matchers {
+class ImagesIntegrationTest extends ClientSpec with Matchers with LazyLogging {
 
   "Pulling images" should "pick the latest image by default" given { client =>
-    def pull(name: String): IO[(Option[String], Option[String])] = {
-      client.images
-        .pull(name)
-        .compile
-        .fold((Option.empty[String], Option.empty[String]))({
-          case ((status, _), PullEvent.Digest(digest)) => (status, Some(digest))
-          case ((_, digest), PullEvent.Status(status)) => (Some(status), digest)
-          case (previous, _)                           => previous
-        })
-    }
-
     def busyboxImage(images: List[ImageSummary]): Option[ImageSummary] =
       images.find(_.repoTags.contains("busybox:latest"))
 
     for {
       imagesBefore <- client.images.list()
 
-      statusAndDigest <- pull("busybox")
+      statusAndDigest <- client.images.pull("busybox").result
+      _ = logger.info(s"Result frm pulling busybox: $statusAndDigest")
 
       imagesAfter <- client.images.list()
     } yield {
       (busyboxImage(imagesBefore), busyboxImage(imagesAfter)) match {
         // Case #1: busybox:latest didn't need to be updated.
         case (Some(busybox1), Some(busybox2)) if busybox1 == busybox2 =>
-          statusAndDigest._1.get should be("Image is up to date for busybox:latest")
-          List(s"busybox@${statusAndDigest._2.get}") should be(busybox1.repoDigests)
-          List(s"busybox@${statusAndDigest._2.get}") should be(busybox2.repoDigests)
+          statusAndDigest.status should be(Some("Image is up to date for busybox:latest"))
+          List(s"busybox@${statusAndDigest.digest.get}") should be(busybox1.repoDigests)
+          List(s"busybox@${statusAndDigest.digest.get}") should be(busybox2.repoDigests)
 
         // Case #2: busybox:latest existed before already but has been updated since.
         case (Some(busybox1), Some(busybox2)) =>
-          statusAndDigest._1.get should be("Downloaded newer image for busybox:latest")
-          List(s"busybox@${statusAndDigest._2.get}") should be(busybox2.repoDigests)
+          statusAndDigest.status should be(Some("Downloaded newer image for busybox:latest"))
+          List(s"busybox@${statusAndDigest.digest.get}") should be(busybox2.repoDigests)
 
         // Case #3: busybox:latest was never downloaded before.
         case (None, Some(busybox2)) =>
-          statusAndDigest._1.get should be("Downloaded newer image for busybox:latest")
-          List(s"busybox@${statusAndDigest._2.get}") should be(busybox2.repoDigests)
+          statusAndDigest.status should be(Some("Downloaded newer image for busybox:latest"))
+          List(s"busybox@${statusAndDigest.digest.get}") should be(busybox2.repoDigests)
       }
     }
   }

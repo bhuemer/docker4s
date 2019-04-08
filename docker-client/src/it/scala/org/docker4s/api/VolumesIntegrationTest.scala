@@ -21,23 +21,26 @@
  */
 package org.docker4s.api
 
+import com.typesafe.scalalogging.LazyLogging
 import org.docker4s.api.Volumes.ListCriterion.{hideDangling, name, showDangling}
-
+import org.docker4s.models.volumes.VolumeList
 import org.scalatest.Matchers
 
-class VolumesIntegrationTest extends ClientSpec with Matchers {
+class VolumesIntegrationTest extends ClientSpec with Matchers with LazyLogging {
 
   "The client" should "support creating and removing volumes" given { client =>
     for {
       volume <- client.volumes.create(name = Some("test-volume-1"))
 
-      volumes1 <- client.volumes.list()
-      _ = volumes1.volumes.map(_.name) should contain(volume.name)
+      volumes <- client.volumes.list()
+      _ = logWarnings(volumes)
+      _ = volumes.volumes.map(_.name) should contain(volume.name)
 
       _ <- client.volumes.remove(volume.name, force = true)
 
-      volumes2 <- client.volumes.list()
-      _ = volumes2.volumes.map(_.name) shouldNot contain(volume.name)
+      volumes <- client.volumes.list()
+      _ = logWarnings(volumes)
+      _ = volumes.volumes.map(_.name) shouldNot contain(volume.name)
     } yield ()
   }
 
@@ -45,14 +48,16 @@ class VolumesIntegrationTest extends ClientSpec with Matchers {
     for {
       volume <- client.volumes.create(name = Some("test-volume-2"))
 
-      volumes1 <- client.volumes.list()
-      _ = volumes1.volumes.map(_.name) should contain(volume.name)
+      volumes <- client.volumes.list()
+      _ = logWarnings(volumes)
+      _ = volumes.volumes.map(_.name) should contain(volume.name)
 
       pruned <- client.volumes.prune()
       _ = pruned.volumes should contain(volume.name)
 
-      volumes2 <- client.volumes.list()
-      _ = volumes2.volumes.map(_.name) shouldNot contain(volume.name)
+      volumes <- client.volumes.list()
+      _ = logWarnings(volumes)
+      _ = volumes.volumes.map(_.name) shouldNot contain(volume.name)
     } yield ()
   }
 
@@ -62,15 +67,18 @@ class VolumesIntegrationTest extends ClientSpec with Matchers {
       _ <- client.volumes.create(name = Some("test-her-volume-1"))
 
       // Make sure that it's possible to filter the results by the exact name ..
-      volumes1 <- client.volumes.list(name("test-his-volume-1"))
-      _ = volumes1.volumes.map(_.name) should be(List("test-his-volume-1"))
+      volumes <- client.volumes.list(name("test-his-volume-1"))
+      _ = logWarnings(volumes)
+      _ = volumes.volumes.map(_.name) should be(List("test-his-volume-1"))
 
       // .. or by part of the name.
-      volumes2 <- client.volumes.list(name("his"))
-      _ = volumes2.volumes.map(_.name) should be(List("test-his-volume-1"))
+      volumes <- client.volumes.list(name("his"))
+      _ = logWarnings(volumes)
+      _ = volumes.volumes.map(_.name) should be(List("test-his-volume-1"))
 
-      volumes2 <- client.volumes.list(name("her"))
-      _ = volumes2.volumes.map(_.name) should be(List("test-her-volume-1"))
+      volumes <- client.volumes.list(name("her"))
+      _ = logWarnings(volumes)
+      _ = volumes.volumes.map(_.name) should be(List("test-her-volume-1"))
 
       _ <- client.volumes.prune()
     } yield ()
@@ -80,14 +88,22 @@ class VolumesIntegrationTest extends ClientSpec with Matchers {
     for {
       _ <- client.volumes.create(name = Some("dangling-test-volume"))
 
-      volumes1 <- client.volumes.list(showDangling)
-      _ = volumes1.volumes.map(_.name) should contain("dangling-test-volume")
+      volumes <- client.volumes.list(showDangling)
+      _ = logWarnings(volumes)
+      _ = volumes.volumes.map(_.name) should contain("dangling-test-volume")
 
-      volumes2 <- client.volumes.list(hideDangling)
-      _ = volumes2.volumes.map(_.name) shouldNot contain("dangling-test-volume")
+      volumes <- client.volumes.list(hideDangling)
+      _ = logWarnings(volumes)
+      _ = volumes.volumes.map(_.name) shouldNot contain("dangling-test-volume")
 
       _ <- client.volumes.prune()
     } yield ()
+  }
+
+  private def logWarnings(volumes: VolumeList): Unit = {
+    volumes.warnings.foreach({ warning =>
+      logger.warn(warning)
+    })
   }
 
 }

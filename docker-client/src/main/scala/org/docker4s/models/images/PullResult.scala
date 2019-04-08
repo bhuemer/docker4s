@@ -21,28 +21,24 @@
  */
 package org.docker4s.models.images
 
-import io.circe.Decoder
+import cats.effect.Effect
+import fs2.Stream
 
-/**
-  * Information about images that were pruned / removed because they were unused.
-  *
-  * @see [[https://docs.docker.com/engine/reference/commandline/image_prune/ Docker CLI]]
-  * @param images Images that were deleted or untagged
-  * @param spaceReclaimed Disk space reclaimed in bytes
-  */
-case class ImagesPruned(images: List[ImagesRemoved.Ref], spaceReclaimed: Long)
+import scala.language.higherKinds
 
-object ImagesPruned {
+case class PullResult(status: Option[String], digest: Option[String])
 
-  // -------------------------------------------- Circe decoders
+object PullResult {
 
-  implicit private val refDecoder: Decoder[ImagesRemoved.Ref] = ImagesRemoved.refDecoder
-
-  val decoder: Decoder[ImagesPruned] = Decoder.instance({ c =>
-    for {
-      images <- c.downField("ImagesDeleted").as[Option[List[ImagesRemoved.Ref]]].right
-      spaceReclaimed <- c.downField("SpaceReclaimed").as[Long]
-    } yield ImagesPruned(images.getOrElse(List.empty), spaceReclaimed)
-  })
+  /**
+    * Evaluates the given stream of pull events, collecting both the status and the digest in the process.
+    */
+  def evaluate[F[_]: Effect](stream: Stream[F, PullEvent]): F[PullResult] = {
+    stream.compile.fold(PullResult(None, None))({
+      case (result, PullEvent.Digest(digest)) => result.copy(digest = Some(digest))
+      case (result, PullEvent.Status(status)) => result.copy(status = Some(status))
+      case (result, _)                        => result
+    })
+  }
 
 }

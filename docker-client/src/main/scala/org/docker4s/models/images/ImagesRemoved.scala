@@ -23,26 +23,29 @@ package org.docker4s.models.images
 
 import io.circe.Decoder
 
-/**
-  * Information about images that were pruned / removed because they were unused.
-  *
-  * @see [[https://docs.docker.com/engine/reference/commandline/image_prune/ Docker CLI]]
-  * @param images Images that were deleted or untagged
-  * @param spaceReclaimed Disk space reclaimed in bytes
-  */
-case class ImagesPruned(images: List[ImagesRemoved.Ref], spaceReclaimed: Long)
+case class ImagesRemoved(images: List[ImagesRemoved.Ref])
 
-object ImagesPruned {
+object ImagesRemoved {
+
+  sealed trait Ref
+
+  object Ref {
+    case class Deleted(id: Image.Id) extends Ref
+    case class Untagged(name: String) extends Ref
+  }
 
   // -------------------------------------------- Circe decoders
 
-  implicit private val refDecoder: Decoder[ImagesRemoved.Ref] = ImagesRemoved.refDecoder
+  private[docker4s] val refDecoder: Decoder[ImagesRemoved.Ref] = {
+    def decode(key: String, f: String => ImagesRemoved.Ref): Decoder[Ref] =
+      Decoder.instance(_.downField(key).as[String].map(f))
 
-  val decoder: Decoder[ImagesPruned] = Decoder.instance({ c =>
-    for {
-      images <- c.downField("ImagesDeleted").as[Option[List[ImagesRemoved.Ref]]].right
-      spaceReclaimed <- c.downField("SpaceReclaimed").as[Long]
-    } yield ImagesPruned(images.getOrElse(List.empty), spaceReclaimed)
-  })
+    List(
+      decode("Deleted", ref => ImagesRemoved.Ref.Deleted(Image.Id(ref))),
+      decode("Untagged", ref => ImagesRemoved.Ref.Untagged(ref))
+    ).reduceLeft(_.or(_))
+  }
+
+  val decoder: Decoder[ImagesRemoved] = Decoder.decodeList(refDecoder).map(ImagesRemoved(_))
 
 }

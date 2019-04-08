@@ -19,30 +19,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.models.images
+package org.docker4s
 
-import io.circe.Decoder
+import cats.effect.Effect
+import fs2.Stream
+import org.docker4s.models.images.{PullEvent, PullResult}
 
-/**
-  * Information about images that were pruned / removed because they were unused.
-  *
-  * @see [[https://docs.docker.com/engine/reference/commandline/image_prune/ Docker CLI]]
-  * @param images Images that were deleted or untagged
-  * @param spaceReclaimed Disk space reclaimed in bytes
-  */
-case class ImagesPruned(images: List[ImagesRemoved.Ref], spaceReclaimed: Long)
+import scala.language.higherKinds
 
-object ImagesPruned {
+package object syntax {
 
-  // -------------------------------------------- Circe decoders
+  implicit class PullEventStreamOps[F[_]: Effect](private val stream: Stream[F, PullEvent]) {
 
-  implicit private val refDecoder: Decoder[ImagesRemoved.Ref] = ImagesRemoved.refDecoder
+    /**
+      * Evaluates the given stream of pull events, collecting both the status and the digest in the process.
+      */
+    def result: F[PullResult] = PullResult.evaluate(stream)
 
-  val decoder: Decoder[ImagesPruned] = Decoder.instance({ c =>
-    for {
-      images <- c.downField("ImagesDeleted").as[Option[List[ImagesRemoved.Ref]]].right
-      spaceReclaimed <- c.downField("SpaceReclaimed").as[Long]
-    } yield ImagesPruned(images.getOrElse(List.empty), spaceReclaimed)
-  })
+  }
 
 }

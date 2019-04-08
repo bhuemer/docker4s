@@ -65,11 +65,15 @@ trait Containers[F[_]] { self =>
 
   /**
     * Returns differences in the given container's file system since it was started.
+    *
+    * Similar to the `docker container diff` command.
     */
   def diff(id: Container.Id): F[List[ContainerChange]]
 
   /**
-    * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
+    * Returns a list of containers.
+    *
+    * Similar to the `docker ps` or `docker container ls` commands.
     */
   def list(criteria: Criterion[Containers.ListCriterion]*): F[List[ContainerSummary]]
 

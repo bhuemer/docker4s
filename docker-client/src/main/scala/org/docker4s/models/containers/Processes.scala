@@ -23,38 +23,17 @@ package org.docker4s.models.containers
 
 import io.circe.Decoder
 
-case class PortBinding(ipAddress: Option[String], privatePort: Int, publicPort: Option[Int], `type`: PortBinding.Type)
+case class Processes(titles: List[String], processes: List[List[String]])
 
-object PortBinding {
-
-  sealed trait Type
-
-  object Type {
-
-    case object TCP extends Type
-    case object UDP extends Type
-
-    /** Stream control transmission protocol - widely used as a transport protocol for cellular networks. */
-    case object SCTP extends Type
-
-  }
+object Processes {
 
   // -------------------------------------------- Circe decoders
 
-  private val typeDecoder: Decoder[Type] = Decoder.decodeString.emap({
-    case "tcp"  => Right(Type.TCP)
-    case "udp"  => Right(Type.UDP)
-    case "sctp" => Right(Type.SCTP)
-    case str    => Left(s"Cannot decode $str as a port binding type.")
-  })
-
-  val decoder: Decoder[PortBinding] = Decoder.instance({ c =>
+  val decoder: Decoder[Processes] = Decoder.instance({ c =>
     for {
-      ip <- c.downField("IP").as[Option[String]].right
-      privatePort <- c.downField("PrivatePort").as[Int].right
-      publicPort <- c.downField("PublicPort").as[Option[Int]].right
-      tpe <- c.downField("Type").as(typeDecoder).right
-    } yield PortBinding(ip, privatePort, publicPort, tpe)
+      titles <- c.downField("Titles").as[List[String]].right
+      processes <- c.downField("Processes").as[List[List[String]]].right
+    } yield Processes(titles, processes)
   })
 
 }

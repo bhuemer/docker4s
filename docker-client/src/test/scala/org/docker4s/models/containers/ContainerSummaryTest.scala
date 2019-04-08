@@ -130,7 +130,7 @@ class ContainerSummaryTest extends FlatSpec with Matchers {
         command = "tini -g -- start-notebook.sh",
         createdAt = ZonedDateTime.parse("2019-03-24T15:45:54Z"),
         ports = List(
-          PortBinding(Some("0.0.0.0"), 8888, 8888, PortBinding.Type.TCP)
+          PortBinding(Some("0.0.0.0"), 8888, Some(8888), PortBinding.Type.TCP)
         ),
         sizeRw = None,
         sizeRootFs = None,

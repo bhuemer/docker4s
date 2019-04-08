@@ -166,6 +166,17 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
+      * List processes running inside a container. Similar to the `docker container ps` command.
+      */
+    def top(id: Container.Id, psArgs: Option[String]): F[Processes] = {
+      F.delay(logger.info(s"Listing processes for container ${id.value}.")) *>
+        client
+          .get(s"/containers/${id.value}/top")
+          .queryParam("ps_args", psArgs)
+          .expect(Processes.decoder)
+    }
+
+    /**
       * Removes the given container. Similar to the `docker rm` command.
       */
     override def remove(id: Container.Id): F[Unit] = {

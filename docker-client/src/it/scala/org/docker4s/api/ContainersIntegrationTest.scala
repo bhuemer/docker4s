@@ -23,6 +23,7 @@ package org.docker4s.api
 
 import org.docker4s.api.Containers.ListCriterion.showAll
 import org.docker4s.api.Containers.LogCriterion.stdout
+import org.docker4s.models.containers.Processes
 import org.scalatest.Matchers
 
 class ContainersIntegrationTest extends ClientSpec with Matchers {
@@ -87,6 +88,24 @@ class ContainersIntegrationTest extends ClientSpec with Matchers {
 
       containers3 <- client.containers.list(showAll)
       _ = containers3.map(_.id) shouldNot contain(created.id)
+    } yield ()
+  }
+
+  "The client" should "support listing processes in a container" given { client =>
+    for {
+      _ <- client.images.pull("nginx").compile.drain
+
+      // Create and start a container for it
+      created <- client.containers.create(image = "nginx")
+      _ <- client.containers.start(created.id)
+
+      processes <- client.containers.top(created.id)
+      _ = processes.titles should be(List("PID", "USER", "TIME", "COMMAND"))
+      _ = processes.processes should have size 2
+      _ = processes.processes(0)(3) should include("nginx")
+      _ = processes.processes(1)(3) should include("nginx")
+
+      _ <- client.containers.kill(created.id)
     } yield ()
   }
 

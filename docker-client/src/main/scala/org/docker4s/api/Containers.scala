@@ -122,6 +122,11 @@ trait Containers[F[_]] { self =>
   def await(id: Container.Id): F[ContainerExit]
 
   /**
+    * List processes running inside a container. Similar to the `docker container ps` command.
+    */
+  def top(id: Container.Id, psArgs: Option[String] = None): F[Processes]
+
+  /**
     * Removes the given container. Similar to the `docker rm` command.
     */
   def remove(id: Container.Id): F[Unit]

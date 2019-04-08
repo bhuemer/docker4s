@@ -1,4 +1,16 @@
+buildscript {
 
-allprojects {
-    apply plugin: 'idea'
+}
+
+plugins {
+    id 'maven-publish'
+    id 'idea'
+}
+
+subprojects {
+    group = "org.docker4s"
+
+    repositories {
+        jcenter()
+    }
 }

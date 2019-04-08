@@ -1,4 +1,5 @@
 apply from: '../gradle/scala.gradle'
+apply from: '../gradle/publish.gradle'
 
 dependencies {
     implementation 'org.typelevel:cats-core_2.12:1.6.0'
@@ -30,4 +31,16 @@ dependencies {
 
     testImplementation 'io.netty:netty-transport-native-kqueue:4.1.33.Final:osx-x86_64'
     testImplementation 'org.slf4j:slf4j-simple:1.7.25'
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'org.docker4s'
+            artifactId = 'docker-client'
+            version = '0.9-SNAPSHOT'
+
+            from components.java
+        }
+    }
 }

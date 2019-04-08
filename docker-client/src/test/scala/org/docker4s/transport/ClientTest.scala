@@ -23,8 +23,10 @@ package org.docker4s.transport
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import io.circe.Json
+import org.docker4s.models.networks.Network
 import org.http4s.{EntityEncoder, Response, Status, Uri}
 import org.http4s.circe.jsonEncoder
+import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.ExecutionContext.global
@@ -42,24 +44,74 @@ class ClientTest extends FlatSpec with Matchers {
     // @formatter:on
 
     val ex = the[Exception] thrownBy client.get("/networks/list").execute.unsafeRunSync()
-    ex.getMessage should include("Something bad happened")
-    ex.getMessage should include("/networks/list")
+    ex should includeInMessage("Something bad happened")
+    ex should includeInMessage("/networks/list")
   }
 
   "Error responses" should "contain the actual bodies if it's not JSON" in {
     val client = newClient(Status.InternalServerError, body = "Some other response")
 
     val ex = the[Exception] thrownBy client.get("/networks/list").execute.unsafeRunSync()
-    ex.getMessage should include("Some other response")
-    ex.getMessage should include("/networks/list")
+    ex should includeInMessage("Some other response")
+    ex should includeInMessage("/networks/list")
   }
 
-  // -------------------------------------------- Utility methods
+  "Error responses" should "contain the actual bodies if it's valid JSON, but we didn't manage to parse it" in {
+    val client = newClient(
+      Status.Ok,
+      body = Json.arr(
+        Json.obj(
+          "Id" -> Json.fromString("123456"),
+          "Name" -> Json.fromString("network-name"),
+          "Created" -> Json.fromString("2019-04-08T12:05:25.185+01:00"),
+          "Scope" -> Json.fromString("invalid-scope")
+        ))
+    )
+
+    val ex = the[Exception] thrownBy client.get("/networks/list").expectMany(Network.decoder).unsafeRunSync()
+
+    ex should includeInMessage(""""Id" : "123456"""")
+    ex should includeInMessage(""""Name" : "network-name"""")
+    ex should includeInMessage(""""Created" : "2019-04-08T12:05:25.185+01:00"""")
+    ex should includeInMessage(""""Scope" : "invalid-scope"""")
+    ex should includeInMessage("Cannot decode invalid-scope as a network scope.")
+
+    // In addition to the details about the JSON, it should also include information about the request that failed.
+    ex should includeInMessage("/networks/list")
+  }
+
+  // -------------------------------------------- Utility methods & classes
 
   private def newClient[T](status: Status, body: T)(implicit encoder: EntityEncoder[IO, T]): Client[IO] = {
     Client.from(org.http4s.client.Client({ _ =>
       Resource.pure(Response[IO]().withStatus(status).withEntity(body))
     }), uri = Uri.unsafeFromString("http://localhost"))
+  }
+
+  private def includeInMessage(message: String): Matcher[Exception] = new MessageMatcher(message)
+
+  private class MessageMatcher(private val message: String) extends Matcher[Exception] {
+
+    override def apply(left: Exception): MatchResult = {
+      val messages = messagesOf(left)
+      MatchResult(
+        messages.exists(_.contains(message)),
+        s"Exception $left did not contain the message '$message' in any of the cause's messages [$messages].",
+        s"Exception $left did contain the message '$message' in one of the cause's messages [$messages]."
+      )
+    }
+
+    /**
+      * Returns all messages that appear anywhere in the given exception.
+      */
+    private def messagesOf(ex: Throwable): List[String] = {
+      ex.getMessage :: (ex.getCause match {
+        case null                 => List()
+        case cause if cause == ex => List()
+        case cause                => messagesOf(cause)
+      })
+    }
+
   }
 
 }

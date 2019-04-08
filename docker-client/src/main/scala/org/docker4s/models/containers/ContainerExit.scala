@@ -29,15 +29,19 @@ object ContainerExit {
 
   // -------------------------------------------- Circe decoders
 
-  val decoder: Decoder[ContainerExit] = Decoder.instance({ c =>
-    for {
-      statusCode <- c.downField("StatusCode").as[Int].right
-      errorMessage <- c
-        .downField("Error")
-        .as(
-          Decoder.decodeOption(Decoder.instance(_.downField("Message").as[String]))
-        )
-    } yield ContainerExit(statusCode, errorMessage)
-  })
+  val decoder: Decoder[ContainerExit] = {
+    val errorMessageDecoder: Decoder[Option[String]] = Decoder
+      .decodeOption(Decoder.instance({ c =>
+        c.downField("Message").as[Option[String]]
+      }))
+      .map(_.flatten)
+
+    Decoder.instance({ c =>
+      for {
+        statusCode <- c.downField("StatusCode").as[Int].right
+        errorMessage <- c.downField("Error").as(errorMessageDecoder).right
+      } yield ContainerExit(statusCode, errorMessage)
+    })
+  }
 
 }

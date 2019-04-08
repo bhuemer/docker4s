@@ -21,4 +21,12 @@
  */
 package org.docker4s.errors
 
-class DockerApiException(message: String) extends Exception(message) {}
+import scala.util.control.NoStackTrace
+
+class DockerApiException(message: String, cause: Throwable) extends Exception(message, cause) with NoStackTrace {
+
+  def this(message: String) {
+    this(message, null)
+  }
+
+}

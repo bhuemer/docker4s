@@ -30,7 +30,7 @@ class ContainersIntegrationTest extends ClientSpec with Matchers {
     for {
       _ <- client.images.pull("hello-world").compile.drain
 
-      created <- client.containers.create(image = Some("hello-world"))
+      created <- client.containers.create(image = "hello-world")
 
       before <- client.containers.logs(created.id, stdout).compile.toList
 

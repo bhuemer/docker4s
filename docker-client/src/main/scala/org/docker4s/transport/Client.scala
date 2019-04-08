@@ -157,7 +157,7 @@ object Client {
         if (statusHandler.isDefinedAt(response.status)) {
           raiseError(response)
         } else {
-          response.as(F, accumulatingJsonOf(F, decoder))
+          safeDecode(response, decoder)
         }
       })
     }
@@ -183,6 +183,16 @@ object Client {
             json.as(decoder).fold(error => F.raiseError[A](error), value => F.delay[A](value))
           })
       })
+    }
+
+    private def safeDecode[A](response: Response[F], decoder: Decoder[A]): F[A] = {
+      response
+        .as(F, accumulatingJsonOf(F, decoder))
+        .recoverWith({
+          case ex =>
+            val context = s"Request: $request, Response: $response"
+            F.raiseError(new DockerApiException(s"Error occurred while decoding the response. $context", ex))
+        })
     }
 
     /**

@@ -73,10 +73,10 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
         .execute
     }
 
-    override def create(image: Option[String]): F[ContainerCreated] = {
+    override def create(image: String): F[ContainerCreated] = {
       client
         .post(s"/containers/create")
-        .body(Json.obj("image" -> image.fold(Json.Null)(Json.fromString)))
+        .body(Json.obj("image" -> Json.fromString(image)))
         .expect(ContainerCreated.decoder)
     }
 

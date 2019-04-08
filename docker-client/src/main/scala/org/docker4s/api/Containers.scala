@@ -80,7 +80,7 @@ trait Containers[F[_]] { self =>
     */
   def rename(id: Container.Id, newName: String): F[Unit]
 
-  def create(image: Option[String]): F[ContainerCreated]
+  def create(image: String): F[ContainerCreated]
 
   def start(id: Container.Id): F[Unit]
 

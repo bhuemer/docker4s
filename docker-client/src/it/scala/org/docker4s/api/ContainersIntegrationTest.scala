@@ -21,6 +21,7 @@
  */
 package org.docker4s.api
 
+import org.docker4s.api.Containers.ListCriterion.showAll
 import org.docker4s.api.Containers.LogCriterion.stdout
 import org.scalatest.Matchers
 
@@ -64,6 +65,29 @@ class ContainersIntegrationTest extends ClientSpec with Matchers {
           | https://docs.docker.com/get-started/
           |""".stripMargin)
     }
+  }
+
+  "The client" should "support pruning unused containers" given { client =>
+    for {
+      _ <- client.images.pull("hello-world").compile.drain
+
+      // Create a temporary container to clean up
+      created <- client.containers.create(image = "hello-world")
+
+      // Given that this container is not running, it shouldn't appear in the list without additional parameters ..
+      containers1 <- client.containers.list()
+      _ = containers1.map(_.id) shouldNot contain(created.id)
+
+      // .. but with the additional parameter `all=true` it should appear.
+      containers2 <- client.containers.list(showAll)
+      _ = containers2.map(_.id) should contain(created.id)
+
+      pruned <- client.containers.prune()
+      _ = pruned.containers should contain(created.id)
+
+      containers3 <- client.containers.list(showAll)
+      _ = containers3.map(_.id) shouldNot contain(created.id)
+    } yield ()
   }
 
 }

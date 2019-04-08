@@ -73,4 +73,26 @@ object Criterion {
     queries + ("filters" -> Seq(filtersJson.noSpaces))
   }
 
+  /**
+    * Formats the given criteria for logging statements.
+    */
+  def toDebugString(criteria: Seq[Criterion[_]]): String = {
+    val criteriaAsMap = criteria
+      .map({
+        case Query(name, value)  => (name, value)
+        case Filter(name, value) => (name, value)
+      })
+      .groupBy(_._1)
+      .mapValues(_.map(_._2))
+
+    Json
+      .obj(
+        criteriaAsMap
+          .mapValues({ values =>
+            Json.arr(values.map(Json.fromString): _*)
+          })
+          .toSeq: _*)
+      .noSpaces
+  }
+
 }

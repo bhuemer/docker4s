@@ -24,6 +24,7 @@ package org.docker4s
 import java.util.Base64
 
 import cats.effect.Effect
+import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.Json
@@ -48,45 +49,50 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
   override val containers: Containers[F] = new Containers[F] {
 
     override def diff(id: Container.Id): F[List[ContainerChange]] = {
-      client
-        .get(s"/containers/${id.value}/changes")
-        .expectMany(ContainerChange.decoder)
+      F.delay(logger.info(s"Diffing the container ${id.value}.")) *>
+        client
+          .get(s"/containers/${id.value}/changes")
+          .expectMany(ContainerChange.decoder)
     }
 
     /**
       * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
       */
     override def list(criteria: Criterion[Containers.ListCriterion]*): F[List[ContainerSummary]] = {
-      client
-        .get("/containers/json")
-        .criteria(criteria)
-        .expectMany(ContainerSummary.decoder)
+      F.delay(logger.info(s"Listing all containers [criteria: ${Criterion.toDebugString(criteria)}].")) *>
+        client
+          .get("/containers/json")
+          .criteria(criteria)
+          .expectMany(ContainerSummary.decoder)
     }
 
     /**
       * Renames the given Docker container.
       */
     override def rename(id: Container.Id, name: String): F[Unit] = {
-      client
-        .post(s"/containers/${id.value}/rename")
-        .queryParam("name", name)
-        .execute
+      F.delay(logger.info(s"Renaming the container ${id.value} to $name.")) *>
+        client
+          .post(s"/containers/${id.value}/rename")
+          .queryParam("name", name)
+          .execute
     }
 
     override def create(image: String): F[ContainerCreated] = {
-      client
-        .post(s"/containers/create")
-        .body(Json.obj("image" -> Json.fromString(image)))
-        .expect(ContainerCreated.decoder)
+      F.delay(logger.info(s"Creating a new container using the image '$image'.")) *>
+        client
+          .post(s"/containers/create")
+          .body(Json.obj("image" -> Json.fromString(image)))
+          .expect(ContainerCreated.decoder)
     }
 
     override def start(id: Container.Id): F[Unit] = {
-      client
-        .post(s"/containers/${id.value}/start")
+      F.delay(logger.info(s"Starting the container ${id.value}.")) *>
+        client
+          .post(s"/containers/${id.value}/start")
 //        .handleStatusWith({
 //          case Status.NotFound => (_, _) => new ContainerNotFoundException(id.value, "")
 //        })
-        .execute
+          .execute
     }
 
     /**
@@ -95,10 +101,11 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * @param timeout Amount of time to give the container to stop before killing it. Defaults to 10 seconds.
       */
     override def stop(id: Container.Id, timeout: FiniteDuration): F[Unit] = {
-      client
-        .post(s"/containers/${id.value}/stop")
-        .queryParam("t", timeout.toSeconds)
-        .execute
+      F.delay(logger.info(s"Stopping the container ${id.value} [timeout: $timeout].")) *>
+        client
+          .post(s"/containers/${id.value}/stop")
+          .queryParam("t", timeout.toSeconds)
+          .execute
     }
 
     /**
@@ -107,10 +114,11 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * @param timeout Amount of time to give the container to stop before killing it. Defaults to 10 seconds.
       */
     override def restart(id: Container.Id, timeout: FiniteDuration): F[Unit] = {
-      client
-        .post(s"/containers/${id.value}/restart")
-        .queryParam("t", timeout.toSeconds)
-        .execute
+      F.delay(logger.info(s"Restarting the container ${id.value} [timeout: $timeout].")) *>
+        client
+          .post(s"/containers/${id.value}/restart")
+          .queryParam("t", timeout.toSeconds)
+          .execute
     }
 
     /**
@@ -119,40 +127,45 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * @param signal Signal to send to the container, e.g. SIGKILL, SIGINT, ..
       */
     override def kill(id: Container.Id, signal: String): F[Unit] = {
-      client
-        .post(s"/containers/${id.value}/kill")
-        .queryParam("signal", signal)
-        .execute
+      F.delay(logger.info(s"Killing the container ${id.value} [signal: $signal].")) *>
+        client
+          .post(s"/containers/${id.value}/kill")
+          .queryParam("signal", signal)
+          .execute
     }
 
     /**
       * Pauses the given docker container. Similar to the `docker container pause` command.
       */
     override def pause(id: Container.Id): F[Unit] = {
-      client.post(s"/containers/${id.value}/pause").execute
+      F.delay(logger.debug(s"Pausing the container ${id.value}.")) *>
+        client.post(s"/containers/${id.value}/pause").execute
     }
 
     /**
       * Unpauses the given docker container. Similar to the `docker container unpause` command.
       */
     override def unpause(id: Container.Id): F[Unit] = {
-      client.post(s"/containers/${id.value}/unpause").execute
+      F.delay(logger.info(s"Unpausing the container ${id.value}.")) *>
+        client.post(s"/containers/${id.value}/unpause").execute
     }
 
     /**
       * Waits until a container stops, then returns the exit code. Similar to the `docker container wait` command.
       */
     override def await(id: Container.Id): F[ContainerExit] = {
-      client
-        .post(s"s/containers/${id.value}/wait")
-        .expect(ContainerExit.decoder)
+      F.delay(logger.info(s"Waiting for the container ${id.value} to stop.")) *>
+        client
+          .post(s"s/containers/${id.value}/wait")
+          .expect(ContainerExit.decoder)
     }
 
     /**
       * Removes the given container. Similar to the `docker rm` command.
       */
     override def remove(id: Container.Id): F[Unit] = {
-      client.delete(s"/containers/${id.value}").execute
+      F.delay(logger.info(s"Removing the container ${id.value}.")) *>
+        client.delete(s"/containers/${id.value}").execute
     }
 
     override def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log] = {
@@ -167,9 +180,10 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Delete stopped containers. Similar to the `docker container prune` command.
       */
     override def prune(): F[ContainersPruned] = {
-      client
-        .post("/containers/prune")
-        .expect(ContainersPruned.decoder)
+      F.delay(logger.info(s"Pruning containers.")) *>
+        client
+          .post("/containers/prune")
+          .expect(ContainersPruned.decoder)
     }
 
   }
@@ -236,7 +250,8 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Returns system-wide information. Similar to the `docker system info` command.
       */
     override def info: F[Info] = {
-      client.get("/info").expect(Info.decoder)
+      F.delay(logger.info("Fetching general information from the docker host.")) *>
+        client.get("/info").expect(Info.decoder)
     }
 
     /**
@@ -250,7 +265,8 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Returns version information from the server. Similar to the `docker version` command.
       */
     override def version: F[Version] = {
-      client.get("/version").expect(Version.decoder)
+      F.delay(logger.info("Fetching version information from the docker host.")) *>
+        client.get("/version").expect(Version.decoder)
     }
 
   }
@@ -259,10 +275,11 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
 
     /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
     override def list(criteria: Criterion[Images.ListCriterion]*): F[List[ImageSummary]] = {
-      client
-        .get("/images/json")
-        .criteria(criteria)
-        .expectMany(ImageSummary.decoder)
+      F.delay(logger.info(s"Listing all images [criteria: ${Criterion.toDebugString(criteria)}].")) *>
+        client
+          .get("/images/json")
+          .criteria(criteria)
+          .expectMany(ImageSummary.decoder)
     }
 
     /**
@@ -285,12 +302,13 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
 
     /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
     override def inspect(id: Image.Id): F[Image] = {
-      client
-        .get(s"/images/${id.value}/json")
+      F.delay(logger.info(s"Inspecting the image ${id.value}.")) *>
+        client
+          .get(s"/images/${id.value}/json")
 //        .handleStatusWith({
 //          case Status.NotFound => (_, _) => new ImageNotFoundException(id.value, "")
 //        })
-        .expect(Image.decoder)
+          .expect(Image.decoder)
     }
 
     /**
@@ -315,9 +333,10 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Removes all dangling images.
       */
     override def prune(): F[ImagesPruned] = {
-      client
-        .post("/images/prune")
-        .expect(ImagesPruned.decoder)
+      F.delay(logger.info("Pruning all images.")) *>
+        client
+          .post("/images/prune")
+          .expect(ImagesPruned.decoder)
     }
 
   }
@@ -328,7 +347,8 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Returns volumes currently registered by the docker daemon. Similar to the `docker volume ls` command.
       */
     override def list(criteria: Criterion[Volumes.ListCriterion]*): F[VolumeList] = {
-      client.get(s"/volumes").criteria(criteria).expect(VolumeList.decoder)
+      F.delay(logger.info(s"Listing all volumes [criteria: ${Criterion.toDebugString(criteria)}].")) *>
+        client.get(s"/volumes").criteria(criteria).expect(VolumeList.decoder)
     }
 
     /**
@@ -360,12 +380,13 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Returns volume information by name. Similar to the `docker volume inspect` command.
       */
     override def inspect(name: String): F[Volume] = {
-      client
-        .get(s"/volumes/$name")
+      F.delay(logger.info(s"Inspecting the volume $name.")) *>
+        client
+          .get(s"/volumes/$name")
 //        .handleStatusWith({
 //          case Status.NotFound => (_, _) => new VolumeNotFoundException(name, "")
 //        })
-        .expect(Volume.decoder)
+          .expect(Volume.decoder)
     }
 
     /**
@@ -375,22 +396,24 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * @param force Force the removal of the volume
       */
     override def remove(name: String, force: Boolean): F[Unit] = {
-      client
-        .delete(s"/volumes/$name")
-        .queryParam("force", force)
+      F.delay(logger.info(s"Removing the volume $name [force: $force].")) *>
+        client
+          .delete(s"/volumes/$name")
+          .queryParam("force", force)
 //        .handleStatusWith({
 //          case Status.NotFound => (_, _) => new VolumeNotFoundException(name, "")
 //        })
-        .execute
+          .execute
     }
 
     /**
       * Removes unused volumes. Similar to the `docker volume prune` command.
       */
     override def prune(): F[VolumesPruned] = {
-      client
-        .post("/volumes/prune")
-        .expect(VolumesPruned.decoder)
+      F.delay(logger.info("Pruning all volumes.")) *>
+        client
+          .post("/volumes/prune")
+          .expect(VolumesPruned.decoder)
     }
 
   }
@@ -459,7 +482,8 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Removes unused networks from the docker host.
       */
     override def prune(): F[NetworksPruned] = {
-      client.post(s"/networks/prune").expect(NetworksPruned.decoder)
+      F.delay(logger.info("Pruning all networks.")) *>
+        client.post(s"/networks/prune").expect(NetworksPruned.decoder)
     }
 
   }

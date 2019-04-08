@@ -221,7 +221,7 @@ object DomainSocketClient extends LazyLogging {
         eventLoop
           .close()
           .onComplete({ result =>
-            logger.info("Closed the domain socket event loop.")
+            logger.debug("Closed the domain socket event loop.")
             cb(result.toEither)
           })
       })

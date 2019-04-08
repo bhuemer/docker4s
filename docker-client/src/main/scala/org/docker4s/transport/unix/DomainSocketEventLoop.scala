@@ -34,7 +34,7 @@ import scala.util.{Failure, Success, Try}
 /**
   * Light-weight wrapper around a Netty event loop that will always connect channels to the given UNIX socket.
   */
-private[unix] final class DomainSocketEventLoop(
+final private[unix] class DomainSocketEventLoop(
     private val bootstrap: Bootstrap,
     private val address: DomainSocketAddress) {
 
@@ -98,7 +98,7 @@ object DomainSocketEventLoop extends LazyLogging {
     })
 
     if (isEpollAvailable) {
-      logger.info(s"Creating a new UNIX domain socket event loop using `epoll` [address: $address].")
+      logger.debug(s"Creating a new UNIX domain socket event loop using `epoll` [address: $address].")
 
       // @formatter:off
       Success(new DomainSocketEventLoop(
@@ -109,7 +109,7 @@ object DomainSocketEventLoop extends LazyLogging {
         , address))
       // @formatter:on
     } else if (isKQueueAvailable) {
-      logger.info(s"Creating a new UNIX domain socket event loop using `kqueue` [address: $address].")
+      logger.debug(s"Creating a new UNIX domain socket event loop using `kqueue` [address: $address].")
 
       // @formatter:off
       Success(new DomainSocketEventLoop(

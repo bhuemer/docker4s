@@ -1,5 +1,7 @@
 package org.docker4s
 
+import java.time.{Duration, ZonedDateTime}
+
 import cats.effect._
 import org.docker4s.api.Containers
 import org.docker4s.models.containers.Container
@@ -25,17 +27,10 @@ object DockerClientTest {
   }
 
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
+    val before = ZonedDateTime.now()
     for {
-      created <- client.networks.create("network-2")
-
-      containers <- client.containers.list()
-      container = containers.head
-
-      _ <- client.networks.connect(created.id, container.id)
-      _ = println(s"Connected $container to network ${created.id}.")
-
-      _ <- client.networks.disconnect(created.id, container.id)
-      _ = println(s"Disconnected $container from network ${created.id}.")
+      _ <- client.images.pull(name = "mysql").take(10).map(println).compile.drain
+      _ = println("Pulled mysql")
     } yield {
       println("Finished everything!")
     }

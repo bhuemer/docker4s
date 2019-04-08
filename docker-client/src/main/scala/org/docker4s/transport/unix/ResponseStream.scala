@@ -29,13 +29,13 @@ import io.netty.buffer.ByteBuf
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 import scala.concurrent.{Future, Promise}
-import scala.util.Try
+import scala.util.{Success, Try}
 
 /**
   * Implements an asynchronous unbounded queue of byte buffers based on Viktor Klang's asynchronous queue from:
   * https://groups.google.com/forum/#!topic/scala-user/lyoAdNs3E1o
   */
-private[unix] final class ResponseStream extends LazyLogging {
+final private[unix] class ResponseStream extends LazyLogging {
 
   import ResponseStream._
 
@@ -133,6 +133,39 @@ private[unix] final class ResponseStream extends LazyLogging {
   }
 
   /**
+    * Drains and releases all available byte buffers.
+    */
+  @tailrec def release(): Unit = {
+    def releaseAll(queue: Queue[Try[ByteBuf]]): Unit = {
+      queue.foreach({
+        case Success(buffer) => buffer.release()
+        case _               =>
+      })
+    }
+
+    state.get() match {
+      case current @ Available(queue) =>
+        if (!state.compareAndSet(current, Closed(Queue.empty))) {
+          release()
+        } else {
+          releaseAll(queue)
+          logger.trace(s"Closed the stream, and drained and released ${queue.size} messages.")
+        }
+
+      case current @ Closed(queue) =>
+        if (!state.compareAndSet(current, Closed(Queue.empty))) {
+          release()
+        } else {
+          releaseAll(queue)
+          logger.trace(s"Drained and released ${queue.size} message in this already-closed stream.")
+        }
+
+      // No buffered messages to release in this case.
+      case _ =>
+    }
+  }
+
+  /**
     * Marks this response stream as closed.
     *
     * Closing this stream is necessary to indicate to downstream subscribers: you shouldn't expect any further chunks.
@@ -164,7 +197,7 @@ private[unix] final class ResponseStream extends LazyLogging {
 
 private[unix] object ResponseStream {
 
-  private sealed trait State
+  sealed private trait State
 
   /**
     * Indicates that one or more calls to `nextChunk` has/have been made.

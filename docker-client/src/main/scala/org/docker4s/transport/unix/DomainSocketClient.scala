@@ -37,7 +37,7 @@ import org.http4s.{Request, Response}
 import scala.concurrent.{CancellationException, ExecutionContext, Future}
 import scala.language.higherKinds
 
-private[unix] final class DomainSocketClient[F[_]](private val eventLoop: DomainSocketEventLoop)(
+final private[unix] class DomainSocketClient[F[_]](private val eventLoop: DomainSocketEventLoop)(
     implicit F: Effect[F],
     ec: ExecutionContext)
     extends LazyLogging {
@@ -138,22 +138,22 @@ private[unix] final class DomainSocketClient[F[_]](private val eventLoop: Domain
 
   private def asHttp4sResponseStream(stream: ResponseStream): Stream[F, Byte] =
     Stream
-      .repeatEval(async { stream.nextChunk() })
-      .takeWhile(_.isDefined)
-      .flatMap({
-        case Some(chunk) =>
-          // Depending on the backing of the byte buffer: extract the underlying bytes. The response handler
-          // has already created a defensive copy of the byte buffer, so we don't need to worry about Netty
-          // re-using it and the bytes possibly having been corrupted at this stage.
-          Stream.emits(if (chunk.hasArray) {
-            chunk.array()
-          } else {
-            val bytes = Array.ofDim[Byte](chunk.readableBytes())
-            chunk.readBytes(bytes)
-            bytes
-          })
+      .bracket(F.delay(stream))(stream => F.delay(stream.release()))
+      .flatMap({ stream =>
+        Stream
+          .repeatEval(async { stream.nextChunk() })
+          .takeWhile(_.isDefined)
+          .flatMap({
+            case Some(chunk) =>
+              Stream.emits({
+                val bytes = Array.ofDim[Byte](chunk.readableBytes())
+                chunk.readBytes(bytes)
+                chunk.release()
+                bytes
+              })
 
-        case None => Stream.empty
+            case None => Stream.empty
+          })
       })
 
   /**

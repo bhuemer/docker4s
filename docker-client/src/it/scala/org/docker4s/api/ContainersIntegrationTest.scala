@@ -23,7 +23,6 @@ package org.docker4s.api
 
 import org.docker4s.api.Containers.ListCriterion.showAll
 import org.docker4s.api.Containers.LogCriterion.stdout
-import org.docker4s.models.containers.Processes
 import org.scalatest.Matchers
 
 class ContainersIntegrationTest extends ClientSpec with Matchers {

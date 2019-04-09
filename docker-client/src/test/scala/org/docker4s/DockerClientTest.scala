@@ -1,9 +1,6 @@
 package org.docker4s
 
-import java.time.ZonedDateTime
-
 import cats.effect._
-import org.docker4s.models.containers.Container
 
 object DockerClientTest {
 

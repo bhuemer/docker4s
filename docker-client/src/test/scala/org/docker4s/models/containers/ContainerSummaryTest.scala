@@ -68,7 +68,38 @@ class ContainerSummaryTest extends FlatSpec with Matchers {
       |  "State": "exited",
       |  "Status": "Exited (0) 6 days ago"
       |}""".stripMargin)
-    println(containerSummary)
+
+    containerSummary should be(
+      ContainerSummary(
+        id = Container.Id("191bdb92cc525e317d8efd897e109aeb6439688fa477f057309e76387b4fb43a"),
+        names = List("/fervent_chatelet"),
+        imageName = "hello-world",
+        imageId = Image.Id("sha256:fce289e99eb9bca977dae136fbe2a82b6b7d4c372474c9235adc1741675f587e"),
+        command = "/hello",
+        createdAt = ZonedDateTime.parse("2019-03-12T00:17Z"),
+        ports = List.empty,
+        sizeRw = None,
+        sizeRootFs = None,
+        state = Container.Status.Exited,
+        status = "Exited (0) 6 days ago",
+        networkMode = "default",
+        networks = Map("bridge" -> Endpoint.Settings(
+          ipamConfig = None,
+          links = List.empty,
+          aliases = List.empty,
+          networkId = Network.Id("42d2ef1d4ca95d5e6b2c80c1f6dff08f905e1c0a6f94c2ba8bcbd50d9ea13bb9"),
+          endpointId = Endpoint.Id(""),
+          gateway = "",
+          ipAddress = "",
+          ipPrefixLen = 0,
+          ipv6Gateway = "",
+          globalIpv6Address = "",
+          globalIpv6PrefixLen = 0,
+          macAddress = "",
+          driverOpts = Map.empty
+        )),
+        mounts = List.empty
+      ))
   }
 
   "Decoding JSON into container summaries" should "successfully decode exposed ports" in {
@@ -137,6 +168,7 @@ class ContainerSummaryTest extends FlatSpec with Matchers {
         sizeRootFs = None,
         state = Container.Status.Running,
         status = "Up 6 seconds",
+        networkMode = "default",
         networks = Map(
           "bridge" -> Endpoint.Settings(
             ipamConfig = None,

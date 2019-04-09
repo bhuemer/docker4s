@@ -50,12 +50,17 @@ case class ContainerSummary(
     sizeRootFs: Option[Long],
     state: Container.Status,
     status: String,
+    networkMode: HostConfig.NetworkMode,
     networks: Map[String, Endpoint.Settings],
     mounts: List[MountPoint])
 
 object ContainerSummary {
 
   // -------------------------------------------- Circe decoders
+
+  private val networkModeDecoder: Decoder[HostConfig.NetworkMode] = Decoder.instance({ c =>
+    c.downField("NetworkMode").as(HostConfig.NetworkMode.decoder)
+  })
 
   private val networksDecoder: Decoder[Map[String, Endpoint.Settings]] = Decoder.instance({ c =>
     implicit val endpointSettingsDecoder: Decoder[Endpoint.Settings] = Endpoint.Settings.decoder
@@ -77,6 +82,7 @@ object ContainerSummary {
       status <- c.downField("Status").as[String].right
       sizeRw <- c.downField("SizeRw").as[Option[Long]].right
       sizeRootFs <- c.downField("SizeRootFs").as[Option[Long]].right
+      networkMode <- c.downField("HostConfig").as(networkModeDecoder).right
       networks <- c.downField("NetworkSettings").as(Decoder.decodeOption(networksDecoder)).right
       mounts <- c.downField("Mounts").as(Decoder.decodeOption(Decoder.decodeList(MountPoint.decoder))).right
     } yield
@@ -92,6 +98,7 @@ object ContainerSummary {
         sizeRootFs = sizeRootFs,
         state = state,
         status = status,
+        networkMode = networkMode,
         networks = networks.getOrElse(Map.empty),
         mounts = mounts.getOrElse(List.empty)
       )

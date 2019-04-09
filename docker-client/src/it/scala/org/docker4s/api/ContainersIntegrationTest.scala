@@ -98,11 +98,12 @@ class ContainersIntegrationTest extends ClientSpec with Matchers {
       created <- client.containers.create(image = "nginx")
       _ <- client.containers.start(created.id)
 
-      processes <- client.containers.top(created.id, psArgs = Some("-ef"))
-      _ = processes.titles should be(List("PID", "USER", "TIME", "COMMAND"))
+      processes <- client.containers.top(created.id)
+      // The titles aren't really uniform enough to be included in this test.
+      // _ = processes.titles should be(List("PID", "USER", "TIME", "COMMAND"))
       _ = processes.processes should have size 2
-      _ = processes.processes(0)(3) should include("nginx")
-      _ = processes.processes(1)(3) should include("nginx")
+      _ = processes.processes.head(3) should include("nginx")
+      _ = processes.processes.last(3) should include("nginx")
 
       _ <- client.containers.kill(created.id)
     } yield ()

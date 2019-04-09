@@ -31,7 +31,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.ExecutionContext.global
 
-class ClientTest extends FlatSpec with Matchers {
+class Http4sClientTest extends FlatSpec with Matchers {
 
   implicit val cs: ContextShift[IO] = IO.contextShift(global)
   implicit val timer: Timer[IO] = IO.timer(global)
@@ -78,6 +78,25 @@ class ClientTest extends FlatSpec with Matchers {
 
     // In addition to the details about the JSON, it should also include information about the request that failed.
     ex should includeInMessage("/networks/list")
+  }
+
+  "Error responses" should "be configurable in the exception type" in {
+    case class CustomException(message: String, context: String) extends Exception(message)
+
+    // @formatter:off
+    val client = newClient(Status.NotFound, body = Json.obj(
+      "message" -> Json.fromString("The given network 1234 cannot be found."))
+    )
+    // @formatter:on
+
+    val ex = the[Exception] thrownBy client
+      .get("/networks/1234/inspect")
+      .on(Status.NotFound)
+      .raise(CustomException)
+      .expect(Network.decoder)
+      .unsafeRunSync()
+    ex.getClass should be(classOf[CustomException])
+    ex should includeInMessage("The given network 1234 cannot be found.")
   }
 
   // -------------------------------------------- Utility methods & classes

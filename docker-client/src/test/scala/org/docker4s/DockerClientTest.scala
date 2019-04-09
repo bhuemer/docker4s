@@ -26,9 +26,9 @@ object DockerClientTest {
 
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
     for {
-      processes <- client.containers.top(Container.Id("9c296b4ad73f"))
+      containers <- client.containers.list()
     } yield {
-      println(processes)
+      containers.foreach(println)
       println()
     }
   }

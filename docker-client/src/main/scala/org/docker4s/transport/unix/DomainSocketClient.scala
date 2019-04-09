@@ -217,7 +217,7 @@ object DomainSocketClient extends LazyLogging {
         new DomainSocketAddress(socketPath.toFile.getAbsolutePath)
       )))({ eventLoop =>
       F.async({ cb =>
-        logger.debug("Closing the domain socket event loop.")
+        logger.trace("Closing the domain socket event loop.")
         eventLoop
           .close()
           .onComplete({ result =>

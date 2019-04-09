@@ -25,6 +25,7 @@ import java.time.{Instant, ZoneId, ZonedDateTime}
 
 import io.circe.Decoder
 import org.docker4s.models.images.Image
+import org.docker4s.models.networks.Endpoint
 
 /**
   *
@@ -48,11 +49,18 @@ case class ContainerSummary(
     sizeRw: Option[Long],
     sizeRootFs: Option[Long],
     state: Container.Status,
-    status: String)
+    status: String,
+    networks: Map[String, Endpoint.Settings],
+    mounts: List[MountPoint])
 
 object ContainerSummary {
 
   // -------------------------------------------- Circe decoders
+
+  private val networksDecoder: Decoder[Map[String, Endpoint.Settings]] = Decoder.instance({ c =>
+    implicit val endpointSettingsDecoder: Decoder[Endpoint.Settings] = Endpoint.Settings.decoder
+    c.downField("Networks").as[Option[Map[String, Endpoint.Settings]]].map(_.getOrElse(Map.empty))
+  })
 
   val decoder: Decoder[ContainerSummary] = Decoder.instance({ c =>
     implicit val portBindingDecoder: Decoder[PortBinding] = PortBinding.decoder
@@ -69,6 +77,8 @@ object ContainerSummary {
       status <- c.downField("Status").as[String].right
       sizeRw <- c.downField("SizeRw").as[Option[Long]].right
       sizeRootFs <- c.downField("SizeRootFs").as[Option[Long]].right
+      networks <- c.downField("NetworkSettings").as(Decoder.decodeOption(networksDecoder)).right
+      mounts <- c.downField("Mounts").as(Decoder.decodeOption(Decoder.decodeList(MountPoint.decoder))).right
     } yield
       ContainerSummary(
         id = Container.Id(id),
@@ -81,7 +91,9 @@ object ContainerSummary {
         sizeRw = sizeRw,
         sizeRootFs = sizeRootFs,
         state = state,
-        status = status
+        status = status,
+        networks = networks.getOrElse(Map.empty),
+        mounts = mounts.getOrElse(List.empty)
       )
   })
 

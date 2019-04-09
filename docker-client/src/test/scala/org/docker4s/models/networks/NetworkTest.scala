@@ -142,8 +142,8 @@ class NetworkTest extends FlatSpec with Matchers {
         ingress = Some(false),
         configOnly = Some(false),
         containers = Map(
-          "ingress-sbox" -> Network.Endpoint(
-            id = Network.Endpoint.Id("13dbdf154f085d974e71d9f548744bad356dc491186366895f06d39da48cbdb6"),
+          "ingress-sbox" -> Endpoint(
+            id = Endpoint.Id("13dbdf154f085d974e71d9f548744bad356dc491186366895f06d39da48cbdb6"),
             name = "gateway_ingress-sbox",
             macAddress = "02:42:ac:12:00:02",
             ipv4Address = "172.18.0.2/16",

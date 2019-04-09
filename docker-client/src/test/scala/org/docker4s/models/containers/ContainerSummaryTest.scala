@@ -24,6 +24,7 @@ package org.docker4s.models.containers
 import java.time.ZonedDateTime
 
 import org.docker4s.models.images.Image
+import org.docker4s.models.networks.{Endpoint, Network}
 import org.scalatest.{FlatSpec, Matchers}
 
 class ContainerSummaryTest extends FlatSpec with Matchers {
@@ -135,7 +136,25 @@ class ContainerSummaryTest extends FlatSpec with Matchers {
         sizeRw = None,
         sizeRootFs = None,
         state = Container.Status.Running,
-        status = "Up 6 seconds"
+        status = "Up 6 seconds",
+        networks = Map(
+          "bridge" -> Endpoint.Settings(
+            ipamConfig = None,
+            links = List.empty,
+            aliases = List.empty,
+            networkId = Network.Id("8e692c7e924e9ae7351992f2e427c586d5a853ced52e8a50da412fd6399dd5d2"),
+            endpointId = Endpoint.Id("0b4cc8afb7a3c17bc93fda25c5349f5a84af1346cb1c2a1449a89733c29bda8a"),
+            gateway = "172.17.0.1",
+            ipAddress = "172.17.0.2",
+            ipPrefixLen = 16,
+            ipv6Gateway = "",
+            globalIpv6Address = "",
+            globalIpv6PrefixLen = 0,
+            macAddress = "02:42:ac:11:00:02",
+            driverOpts = Map.empty
+          )
+        ),
+        mounts = List.empty
       )
     )
   }

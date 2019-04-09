@@ -37,7 +37,7 @@ case class Network(
     attachable: Boolean,
     ingress: Option[Boolean],
     configOnly: Option[Boolean],
-    containers: Map[String, Network.Endpoint],
+    containers: Map[String, Endpoint],
     options: Map[String, String],
     labels: Map[String, String])
 
@@ -57,12 +57,6 @@ object Network {
 
   object IPAM {
     case class Config(subnet: Option[String], ipRange: Option[String], gateway: Option[String])
-  }
-
-  case class Endpoint(name: String, id: Endpoint.Id, macAddress: String, ipv4Address: String, ipv6Address: String)
-
-  object Endpoint {
-    case class Id(value: String)
   }
 
   // -------------------------------------------- Circe decoders
@@ -90,16 +84,6 @@ object Network {
     } yield IPAM(driver, options.getOrElse(Map.empty), configs.getOrElse(List.empty))
   })
 
-  private val endpointDecoder: Decoder[Endpoint] = Decoder.instance({ c =>
-    for {
-      name <- c.downField("Name").as[String].right
-      id <- c.downField("EndpointID").as[String].right
-      macAddress <- c.downField("MacAddress").as[String].right
-      ipv4Address <- c.downField("IPv4Address").as[String].right
-      ipv6Address <- c.downField("IPv6Address").as[String].right
-    } yield Endpoint(name, Endpoint.Id(id), macAddress, ipv4Address, ipv6Address)
-  })
-
   val decoder: Decoder[Network] = Decoder.instance({ c =>
     for {
       id <- c.downField("Id").as[String].right
@@ -115,7 +99,7 @@ object Network {
       configOnly <- c.downField("ConfigOnly").as[Option[Boolean]].right
       containers <- c
         .downField("Containers")
-        .as(Decoder.decodeOption(Decoder.decodeMap(KeyDecoder.decodeKeyString, endpointDecoder)))
+        .as(Decoder.decodeOption(Decoder.decodeMap(KeyDecoder.decodeKeyString, Endpoint.decoder)))
       options <- c.downField("Options").as[Option[Map[String, String]]].right
       labels <- c.downField("Labels").as[Option[Map[String, String]]].right
     } yield

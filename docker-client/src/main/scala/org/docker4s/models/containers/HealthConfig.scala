@@ -26,12 +26,11 @@ import io.circe.{Decoder, Encoder, Json}
 import scala.concurrent.duration.{FiniteDuration, NANOSECONDS}
 
 /**
-  *
   * @param test Command to run to check health
-  * @param interval Time between running the check
+  * @param interval Time between running the health check
   * @param timeout Maximum time to allow one check to run before considering it to have hung
-  * @param retries Consecutive failures needed to report unhealthy
-  * @param startPeriod Start period for the container to initialize before counting retries towards unstable
+  * @param retries Consecutive failures needed to report the container as unhealthy
+  * @param startPeriod Start period for the container to initialize before counting retries towards being unhealthy
   */
 case class HealthConfig(
     test: HealthConfig.Test,
@@ -40,12 +39,24 @@ case class HealthConfig(
     retries: Option[Int] = None,
     startPeriod: Option[FiniteDuration] = None) {
 
+  /**
+    * Specifies the time between running the health check.
+    */
   def withInterval(interval: FiniteDuration): HealthConfig = copy(interval = Some(interval))
 
+  /**
+    * Specifies the maximum time to allow one check to run before considering it to have hung.
+    */
   def withTimeout(timeout: FiniteDuration): HealthConfig = copy(timeout = Some(timeout))
 
+  /**
+    * Specifies the number of consecutive failures needed to report the container as unhealthy.
+    */
   def withRetries(retries: Int): HealthConfig = copy(retries = Some(retries))
 
+  /**
+    * Specifies the period for the container to initialize before counting retries towards being unhealthy.
+    */
   def withStartPeriod(startPeriod: FiniteDuration): HealthConfig = copy(startPeriod = Some(startPeriod))
 
 }

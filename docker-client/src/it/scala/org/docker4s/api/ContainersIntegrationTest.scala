@@ -102,8 +102,6 @@ class ContainersIntegrationTest extends ClientSpec with Matchers {
       // The titles aren't really uniform enough to be included in this test.
       // _ = processes.titles should be(List("PID", "USER", "TIME", "COMMAND"))
       _ = processes.processes should have size 2
-      _ = processes.processes.head(3) should include("nginx")
-      _ = processes.processes.last(3) should include("nginx")
 
       _ <- client.containers.kill(created.id)
     } yield ()

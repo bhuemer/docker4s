@@ -30,38 +30,9 @@ import org.docker4s.models.containers._
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 
-trait Containers[F[_]] { self =>
+trait Containers[F[_]] {
 
-  def get(id: Container.Id): ContainerRef[F] = new ContainerRef[F] {
-
-    override def rename(name: String): F[Unit] = self.rename(id, name)
-
-    override def start: F[Unit] = self.start(id)
-
-    override def stop: F[Unit] = self.stop(id)
-
-    override def stop(timeout: FiniteDuration): F[Unit] = self.stop(id, timeout)
-
-    override def restart: F[Unit] = self.restart(id)
-
-    override def restart(timeout: FiniteDuration): F[Unit] = self.restart(id, timeout)
-
-    override def kill: F[Unit] = self.kill(id)
-
-    override def kill(signal: String): F[Unit] = self.kill(id, signal)
-
-    override def pause: F[Unit] = self.pause(id)
-
-    override def unpause: F[Unit] = self.unpause(id)
-
-    override def await: F[ContainerExit] = self.await(id)
-
-    override def remove: F[Unit] = self.remove(id)
-
-    override def logs(criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log] =
-      self.logs(id, criteria: _*)
-
-  }
+  def get(id: Container.Id): ContainerRef[F] = ContainerRef(this, id)
 
   /**
     * Returns differences in the given container's file system since it was started.

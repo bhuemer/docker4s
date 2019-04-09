@@ -22,7 +22,7 @@
 package org.docker4s.api
 
 import fs2.Stream
-import org.docker4s.models.containers.ContainerExit
+import org.docker4s.models.containers.{Container, ContainerExit}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
@@ -49,13 +49,31 @@ trait ContainerRef[F[_]] {
 
   def unpause: F[Unit]
 
-  /**
-    * Waits until this container stops, then returns the exit code. Similar to the `docker container wait` command.
-    */
   def await: F[ContainerExit]
 
   def remove: F[Unit]
 
   def logs(criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log]
+
+}
+
+object ContainerRef {
+
+  def apply[F[_]](containers: Containers[F], id: Container.Id): ContainerRef[F] = new ContainerRef[F] {
+    override def rename(name: String): F[Unit] = containers.rename(id, name)
+    override def start: F[Unit] = containers.start(id)
+    override def stop: F[Unit] = containers.stop(id)
+    override def stop(timeout: FiniteDuration): F[Unit] = containers.stop(id, timeout)
+    override def restart: F[Unit] = containers.restart(id)
+    override def restart(timeout: FiniteDuration): F[Unit] = containers.restart(id)
+    override def kill: F[Unit] = containers.kill(id)
+    override def kill(signal: String): F[Unit] = containers.kill(id, signal)
+    override def pause: F[Unit] = containers.pause(id)
+    override def unpause: F[Unit] = containers.unpause(id)
+    override def await: F[ContainerExit] = containers.await(id)
+    override def remove: F[Unit] = containers.remove(id)
+    override def logs(criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log] =
+      containers.logs(id, criteria: _*)
+  }
 
 }

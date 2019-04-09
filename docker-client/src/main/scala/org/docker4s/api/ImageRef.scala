@@ -32,3 +32,12 @@ trait ImageRef[F[_]] {
   def history: F[List[ImageHistory]]
 
 }
+
+object ImageRef {
+
+  def apply[F[_]](images: Images[F], id: Image.Id): ImageRef[F] = new ImageRef[F] {
+    override def inspect: F[Image] = images.inspect(id)
+    override def history: F[List[ImageHistory]] = images.history(id)
+  }
+
+}

@@ -27,7 +27,7 @@ import cats.effect.Effect
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
-import io.circe.Json
+import io.circe.{Decoder, Json}
 import org.docker4s.api.{Containers, Criterion, Images, Networks, Secrets, System, Volumes}
 import org.docker4s.models.containers._
 import org.docker4s.models.system.{Event, Info, Version}
@@ -335,14 +335,13 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       Stream.eval(F.delay(logger.info(s"Saving the images $ids."))).flatMap(_ => response)
     }
 
-    /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
+    /**
+      * Returns low-level information about an image. Similar to the `docker image inspect` command.
+      */
     override def inspect(id: Image.Id): F[Image] = {
       F.delay(logger.info(s"Inspecting the image ${id.value}.")) *>
         client
           .get(s"/images/${id.value}/json")
-//        .handleStatusWith({
-//          case Status.NotFound => (_, _) => new ImageNotFoundException(id.value, "")
-//        })
           .expect(Image.decoder)
     }
 
@@ -358,6 +357,21 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
             .queryParam("fromImage", name)
             .queryParam("tag", tag.getOrElse("latest"))
             .stream(PullEvent.decoder)
+        })
+    }
+
+    /**
+      *
+      */
+    override def build(image: Stream[F, Byte], name: Option[String]): Stream[F, BuildEvent] = {
+      client
+        .post("/build")
+        .queryParam("t", name)
+        .body(image)
+        .stream(BuildEvent.decoder)
+        .evalTap({
+          case BuildEvent.Built(imageId) => F.delay(logger.info(s"Built the image ${imageId.value}."))
+          case _                         => F.unit
         })
     }
 

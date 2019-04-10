@@ -21,4 +21,4 @@
  */
 package org.docker4s.errors
 
-class ImageNotFoundException(val image: String, message: String) extends Exception(message) {}
+case class ImageNotFoundException(message: String, context: String) extends Exception(s"$message - $context") {}

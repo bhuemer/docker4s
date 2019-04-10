@@ -59,6 +59,8 @@ object Client {
 
     def on(status: Status): StatusHandler[F]
 
+    def on(status: Status, handler: (String, String) => Exception): RequestBuilder[F] = on(status).raise(handler)
+
     def execute: F[Unit]
 
     def expect[A](decoder: Decoder[A]): F[A]

@@ -48,7 +48,14 @@ trait Images[F[_]] {
     */
   def save(id: Seq[Image.Id]): Stream[F, Byte]
 
-  /** Returns low-level information about an image. Similar to the `docker image inspect` command. */
+  /**
+    *
+    */
+  def build(image: Stream[F, Byte], name: Option[String]): Stream[F, BuildEvent]
+
+  /**
+    * Returns low-level information about an image. Similar to the `docker image inspect` command.
+    */
   def inspect(id: Image.Id): F[Image]
 
   /**
@@ -60,6 +67,10 @@ trait Images[F[_]] {
     * Removes the given image, along with any untagged parent images.
     *
     * Similar to the `docker image rm` command.
+    *
+    * @param id ID of the image you want to remove
+    * @param force Remove the image even if it is being used by stopped containers or has other tags
+    * @param noprune Do not delete untagged parent images
     */
   def remove(id: Image.Id, force: Boolean = false, noprune: Boolean = false): F[ImagesRemoved]
 

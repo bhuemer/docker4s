@@ -19,32 +19,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s
+package org.docker4s.models.images
 
 import cats.effect.Effect
 import fs2.Stream
-import org.docker4s.models.images.{BuildEvent, BuildResult, PullEvent, PullResult}
 
 import scala.language.higherKinds
 
-package object syntax {
+case class BuildResult(imageId: Option[Image.Id])
 
-  implicit class PullEventStreamOps[F[_]: Effect](private val stream: Stream[F, PullEvent]) {
+object BuildResult {
 
-    /**
-      * Evaluates the given stream of pull events, collecting both the status and the digest in the process.
-      */
-    def result: F[PullResult] = PullResult.evaluate(stream)
-
-  }
-
-  implicit class BuildEventStreamOps[F[_]: Effect](private val stream: Stream[F, BuildEvent]) {
-
-    /**
-      * Evaluates the given stream of build events, collecting the image ID in the process.
-      */
-    def result: F[BuildResult] = BuildResult.evaluate(stream)
-
+  /**
+    * Evaluates the given stream of build events, collecting the image ID in the process.
+    */
+  def evaluate[F[_]: Effect](stream: Stream[F, BuildEvent]): F[BuildResult] = {
+    stream.compile.fold(BuildResult(None))({
+      case (_, BuildEvent.Built(imageId)) => BuildResult(Some(imageId))
+      case (result, _)                    => result
+    })
   }
 
 }

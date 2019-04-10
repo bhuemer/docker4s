@@ -19,32 +19,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s
+package org.docker4s.util
 
-import cats.effect.Effect
-import fs2.Stream
-import org.docker4s.models.images.{BuildEvent, BuildResult, PullEvent, PullResult}
+object StringUtils {
 
-import scala.language.higherKinds
-
-package object syntax {
-
-  implicit class PullEventStreamOps[F[_]: Effect](private val stream: Stream[F, PullEvent]) {
-
-    /**
-      * Evaluates the given stream of pull events, collecting both the status and the digest in the process.
-      */
-    def result: F[PullResult] = PullResult.evaluate(stream)
-
-  }
-
-  implicit class BuildEventStreamOps[F[_]: Effect](private val stream: Stream[F, BuildEvent]) {
-
-    /**
-      * Evaluates the given stream of build events, collecting the image ID in the process.
-      */
-    def result: F[BuildResult] = BuildResult.evaluate(stream)
-
+  def rtrim(str: String): String = {
+    var i = str.length - 1
+    while (i >= 0 && Character.isWhitespace(str.charAt(i))) {
+      i -= 1
+    }
+    str.substring(0, i + 1)
   }
 
 }

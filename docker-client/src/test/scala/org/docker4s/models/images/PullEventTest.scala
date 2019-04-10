@@ -23,6 +23,8 @@ package org.docker4s.models.images
 
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.concurrent.duration._
+
 class PullEventTest extends FlatSpec with Matchers {
 
   "Decoding JSON into pull events" should "decode `pulling image` events" in {
@@ -91,6 +93,20 @@ class PullEventTest extends FlatSpec with Matchers {
         |{ "status": "Pull complete", "progressDetail": {}, "id": "0dd81083d77e" }
       """.stripMargin)
     pullEvent should be(PullEvent.Layer.Pulled("0dd81083d77e"))
+  }
+
+  "Decoding JSON into pull events" should "decode `retrying` events" in {
+    var pullEvent = decodePullEvent("""
+        {"status":"Retrying in 5 seconds","progressDetail":{},"id":"f05cd8a9cc4b"}""")
+    pullEvent should be(PullEvent.Layer.Retrying("f05cd8a9cc4b", 5.seconds))
+
+    pullEvent = decodePullEvent("""
+        {"status":"Retrying in 2 ms","progressDetail":{},"id":"f05cd8a9cc4b"}""")
+    pullEvent should be(PullEvent.Layer.Retrying("f05cd8a9cc4b", 2.milliseconds))
+
+    pullEvent = decodePullEvent("""
+        {"status":"Retrying in 3 minutes","progressDetail":{},"id":"f05cd8a9cc4b"}""")
+    pullEvent should be(PullEvent.Layer.Retrying("f05cd8a9cc4b", 3.minutes))
   }
 
   "Decoding JSON into pull events" should "decode `digest` events" in {

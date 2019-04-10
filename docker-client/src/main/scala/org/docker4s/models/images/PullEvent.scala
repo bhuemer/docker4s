@@ -23,6 +23,8 @@ package org.docker4s.models.images
 
 import io.circe.{Decoder, DecodingFailure}
 
+import scala.concurrent.duration.Duration
+
 sealed trait PullEvent
 
 object PullEvent {
@@ -55,6 +57,8 @@ object PullEvent {
 
     case class Pulled(id: String) extends LayerPullEvent(id)
 
+    case class Retrying(id: String, duration: Duration) extends LayerPullEvent(id)
+
   }
 
   case class Digest(digest: String) extends PullEvent
@@ -84,6 +88,12 @@ object PullEvent {
       } yield f(id, progress._1, progress._2)
     }
 
+    def retryingEvent(str: String): Either[DecodingFailure, PullEvent] = {
+      for {
+        id <- c.downField("id").as[String].right
+      } yield Layer.Retrying(id, Duration(str.substring("Retrying in".length)))
+    }
+
     c.downField("status")
       .as[String]
       .right
@@ -101,6 +111,8 @@ object PullEvent {
         case "Download complete"  => layerEvent(Layer.Downloaded)
         case "Extracting"         => progressEvent(Layer.Extracting)
         case "Pull complete"      => layerEvent(Layer.Pulled)
+
+        case retrying if retrying.startsWith("Retrying in") => retryingEvent(retrying)
 
         case digest if digest.startsWith("Digest: ") => Right(Digest(digest.substring("Digest: ".length)))
         case status if status.startsWith("Status: ") => Right(Status(status.substring("Status: ".length)))

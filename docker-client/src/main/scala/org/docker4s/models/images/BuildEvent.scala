@@ -19,32 +19,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s
+package org.docker4s.models.images
 
-import cats.effect.Effect
-import fs2.Stream
-import org.docker4s.models.images.{BuildEvent, BuildResult, PullEvent, PullResult}
+import io.circe.Decoder
 
-import scala.language.higherKinds
+sealed trait BuildEvent
 
-package object syntax {
+object BuildEvent {
 
-  implicit class PullEventStreamOps[F[_]: Effect](private val stream: Stream[F, PullEvent]) {
+  case class Pull(event: org.docker4s.models.images.PullEvent) extends BuildEvent
 
-    /**
-      * Evaluates the given stream of pull events, collecting both the status and the digest in the process.
-      */
-    def result: F[PullResult] = PullResult.evaluate(stream)
+  case class Stream(str: String) extends BuildEvent
 
-  }
+  case class Built(id: Image.Id) extends BuildEvent
 
-  implicit class BuildEventStreamOps[F[_]: Effect](private val stream: Stream[F, BuildEvent]) {
+  // -------------------------------------------- Circe decoders
 
-    /**
-      * Evaluates the given stream of build events, collecting the image ID in the process.
-      */
-    def result: F[BuildResult] = BuildResult.evaluate(stream)
+  private val infoDecoder: Decoder[BuildEvent] = Decoder.instance({ c =>
+    c.downField("stream").as[String].map(Stream)
+  })
 
+  private val pullDecoder: Decoder[BuildEvent] = PullEvent.decoder.map(Pull)
+
+  private val builtDecoder: Decoder[BuildEvent] = Decoder.instance({ c =>
+    c.downField("aux").downField("ID").as[String].map(id => Built(Image.Id(id)))
+  })
+
+  val decoder: Decoder[BuildEvent] = {
+    List(infoDecoder, builtDecoder, pullDecoder).reduce(_ or _)
   }
 
 }

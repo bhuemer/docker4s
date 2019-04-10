@@ -27,7 +27,7 @@ import cats.effect.Effect
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
-import io.circe.{Decoder, Json}
+import io.circe.Json
 import org.docker4s.api.{Containers, Criterion, Images, Networks, Secrets, System, Volumes}
 import org.docker4s.models.containers._
 import org.docker4s.models.system.{Event, Info, Version}
@@ -292,6 +292,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
         .flatMap({ _ =>
           client.get("/events").criteria(criteria).stream(Event.decoder)
         })
+        .evalTap({ event =>
+          F.delay(logger.debug(s"System event: $event"))
+        })
     }
 
     /**
@@ -357,6 +360,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
             .queryParam("fromImage", name)
             .queryParam("tag", tag.getOrElse("latest"))
             .stream(PullEvent.decoder)
+            .evalTap({ event =>
+              F.delay(logger.debug(s"Pull event ($name): $event"))
+            })
         })
     }
 
@@ -369,6 +375,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
         .queryParam("t", name)
         .body(image)
         .stream(BuildEvent.decoder)
+        .evalTap({ event =>
+          F.delay(logger.debug(s"Build event: $event"))
+        })
     }
 
     /**

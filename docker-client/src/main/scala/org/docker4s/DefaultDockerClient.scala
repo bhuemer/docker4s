@@ -369,10 +369,6 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
         .queryParam("t", name)
         .body(image)
         .stream(BuildEvent.decoder)
-        .evalTap({
-          case BuildEvent.Built(imageId) => F.delay(logger.info(s"Built the image ${imageId.value}."))
-          case _                         => F.unit
-        })
     }
 
     /**

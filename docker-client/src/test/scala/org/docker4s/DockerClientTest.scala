@@ -2,6 +2,7 @@ package org.docker4s
 
 import cats.effect._
 import fs2.Stream
+import org.docker4s.models.images.Image
 import org.docker4s.util.Compression
 
 object DockerClientTest {
@@ -24,24 +25,7 @@ object DockerClientTest {
   }
 
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
-    val image = Stream
-      .emits(
-        Seq(
-          Compression.TarEntry(
-            "Dockerfile",
-            dockerfile.getBytes
-          ),
-        ))
-      .through(Compression.tar())
-      .through(Compression.gzip())
-
-    client.images
-      .build(image, name = Some("docker4s-jupyter-example"))
-      .map({ event =>
-        println("Received: " + event)
-      })
-      .compile
-      .drain
+    client.images.inspect(Image.Id("261813e22459")).map(println)
   }
 
   private val dockerfile =

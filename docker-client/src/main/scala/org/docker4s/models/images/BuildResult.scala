@@ -22,6 +22,7 @@
 package org.docker4s.models.images
 
 import cats.effect.Effect
+import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 
@@ -35,12 +36,25 @@ object BuildResult extends LazyLogging {
     * Evaluates the given stream of build events, collecting the image ID in the process.
     */
   def evaluate[F[_]: Effect](stream: Stream[F, BuildEvent]): F[BuildResult] = {
-    stream.compile.fold(BuildResult(None))({
-      case (_, BuildEvent.Built(imageId)) => BuildResult(Some(imageId))
-      case (result, event) =>
-        logger.info(s"Received: $event")
+    stream.compile
+      .fold(BuildResult(None))({
+        case (_, BuildEvent.Built(imageId)) => BuildResult(Some(imageId))
+
+        // Only fall back to this workaround, if we haven't found an image ID yet in any other way.
+        case (BuildResult(None), BuildEvent.Stream(str)) if str.startsWith("Successfully built ") =>
+          val imageId = str.substring("Successfully built ".length)
+          BuildResult(Some(Image.Id(imageId.trim)))
+
+        case (result, _) => result
+      })
+      .map({ result =>
+        result.imageId match {
+          case Some(imageId) => logger.info(s"Built the image ${imageId.value}.")
+          case None          => logger.warn("Couldn't find an image ID in the build event stream.")
+        }
+
         result
-    })
+      })
   }
 
 }

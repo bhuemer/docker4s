@@ -22,13 +22,14 @@
 package org.docker4s.models.images
 
 import cats.effect.Effect
+import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 
 import scala.language.higherKinds
 
 case class BuildResult(imageId: Option[Image.Id])
 
-object BuildResult {
+object BuildResult extends LazyLogging {
 
   /**
     * Evaluates the given stream of build events, collecting the image ID in the process.
@@ -36,7 +37,9 @@ object BuildResult {
   def evaluate[F[_]: Effect](stream: Stream[F, BuildEvent]): F[BuildResult] = {
     stream.compile.fold(BuildResult(None))({
       case (_, BuildEvent.Built(imageId)) => BuildResult(Some(imageId))
-      case (result, _)                    => result
+      case (result, event) =>
+        logger.info(s"Received: $event")
+        result
     })
   }
 

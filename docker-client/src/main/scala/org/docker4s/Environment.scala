@@ -21,8 +21,6 @@
  */
 package org.docker4s
 
-import com.typesafe.scalalogging.LazyLogging
-
 trait Environment {
 
   def getProperty(name: String): Option[String] = getProperty(name, None)
@@ -50,11 +48,11 @@ object Environment {
   /**
     * Environment implementation that actually looks up variables and properties in production environments.
     */
-  object Live extends Environment with LazyLogging {
+  object Live extends Environment {
 
     override def getProperty(name: String, default: => Option[String]): Option[String] = {
-      Option(System.getenv(name))
-        .orElse(Option(System.getProperty(name)))
+      Option(System.getProperty(name))
+        .orElse(Option(System.getenv(name)))
         .orElse(default)
     }
 

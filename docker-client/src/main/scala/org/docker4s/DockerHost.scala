@@ -25,10 +25,15 @@ import java.nio.file.{Files, Path, Paths}
 
 import com.typesafe.scalalogging.LazyLogging
 import javax.net.ssl.SSLContext
+import org.docker4s.util.Certificates
 
 sealed trait DockerHost
 
 object DockerHost extends LazyLogging {
+
+  private val DEFAULT_CA_CERT_NAME = "ca.pem"
+  private val DEFAULT_CLIENT_CERT_NAME = "cert.pem"
+  private val DEFAULT_CLIENT_KEY_NAME = "key.pem"
 
   private val DEFAULT_UNIX_PATH = "/var/run/docker.sock"
   private val DEFAULT_ADDRESS = "localhost"
@@ -40,7 +45,7 @@ object DockerHost extends LazyLogging {
   case class Unix(socketPath: Path, sslContext: Option[SSLContext]) extends DockerHost
 
   // TODO: Npipe/Windows channels still need to be implemented
-  case class Npipe(socketPath: Path, sslContext: Option[SSLContext]) extends DockerHost
+  // case class Npipe(socketPath: Path, sslContext: Option[SSLContext]) extends DockerHost
 
   /**
     * Connects via TCP to the given docker host.
@@ -49,46 +54,74 @@ object DockerHost extends LazyLogging {
 
   def fromEnvironment(environment: Environment): DockerHost = {
     def sslContext: Option[SSLContext] = {
-      environment.getProperty("DOCKER_CERT_PATH").filter(_.nonEmpty).map(Paths.get(_)) match {
-        case Some(path) if Files.exists(path) =>
-          logger.info(s"Loading certificates from $path (via DOCKER_CERT_PATH).")
-          Some(DockerCertificates(path).sslContext)
+      val noContext = environment.getProperty("DOCKER_TLS_VERIFY").contains("0")
+      if (noContext) {
+        None
+      } else {
+        // By default, if we are supposed to load certificates, use the environment variable ..
+        val context = environment.getProperty("DOCKER_CERT_PATH").map(Paths.get(_)).flatMap(loadCertificates)
 
-        case Some(path) =>
-          logger.info(
-            s"Not loading certificates from $path, because at least " +
-              s"one of 'ca.pem', 'cert.pem', or 'key.pem' doesn't exist.")
-          None
-
-        case _ => None
+        // .. but fall back to .docker in the user's home directory if we haven't found anything.
+        context.orElse(environment.getProperty("user.home").map(Paths.get(_, ".docker")).flatMap(loadCertificates))
       }
     }
 
     environment.getProperty("DOCKER_HOST") match {
+      case Some(dockerHost) => from(dockerHost, sslContext)
+
       case None if environment.isOsX || environment.isLinux =>
         DockerHost.Unix(Paths.get(DEFAULT_UNIX_PATH), sslContext)
 
       case None =>
         DockerHost.Tcp(DEFAULT_ADDRESS, DEFAULT_PORT, sslContext)
+    }
+  }
 
-      case Some(dockerHost) if dockerHost.startsWith("tcp://") =>
+  def from(dockerHost: String, sslContext: Option[SSLContext] = None): DockerHost = {
+    dockerHost.toLowerCase match {
+      case tcp if tcp.startsWith("tcp://") =>
         dockerHost.substring("tcp://".length).split(":") match {
           case Array(host)       => DockerHost.Tcp(host, DEFAULT_PORT, sslContext)
           case Array(host, port) => DockerHost.Tcp(host, port.toInt, sslContext)
           case _ =>
-            throw new IllegalArgumentException(
-              s"Cannot determine the host and port for Docker host (DOCKER_HOST: $dockerHost)")
+            throw new IllegalArgumentException(s"Cannot determine the host and port for Docker host: $dockerHost")
         }
 
-      case Some(dockerHost) if dockerHost.startsWith("npipe://") =>
-        throw new IllegalArgumentException(s"Npipe endpoints are not yet supported (DOCKER_HOST: $dockerHost).")
-
-      case Some(dockerHost) if dockerHost.startsWith("unix://") =>
+      case unix if unix.startsWith("unix://") =>
         DockerHost.Unix(Paths.get(dockerHost.substring("unix://".length)), sslContext)
 
-      case Some(dockerHost) =>
-        throw new IllegalArgumentException(s"Unsupported docker host scheme: $dockerHost")
+      case npipe if npipe.startsWith("npipe://") =>
+        throw new IllegalArgumentException(s"Npipe endpoints are not yet supported: $dockerHost")
 
+      case _ =>
+        throw new IllegalArgumentException(s"Unsupported docker host scheme: $dockerHost")
+    }
+  }
+
+  def loadCertificates(certificatesPath: Path): Option[SSLContext] = {
+    loadCertificates(
+      clientKey = certificatesPath.resolve(DEFAULT_CLIENT_KEY_NAME),
+      clientCerts = certificatesPath.resolve(DEFAULT_CLIENT_CERT_NAME),
+      caCerts = certificatesPath.resolve(DEFAULT_CA_CERT_NAME)
+    )
+  }
+
+  def loadCertificates(clientKey: Path, clientCerts: Path, caCerts: Path): Option[SSLContext] = {
+    val everythingExists = List(
+      clientKey,
+      clientCerts,
+      caCerts
+    ).forall({ path =>
+      val exists = Files.exists(path)
+      if (!exists) {
+        logger.warn(s"Cannot load certificates from the given path: $path does not exist.")
+      }
+      exists
+    })
+    if (everythingExists) {
+      Some(Certificates.createSslContext(clientKey, clientCerts = clientCerts, caCerts = caCerts))
+    } else {
+      None
     }
   }
 

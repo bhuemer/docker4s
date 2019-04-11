@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets
 
 import fs2.{Chunk, Pipe, Pull, Stream, text}
 import org.docker4s.api.Containers
-import org.docker4s.util.StringUtils.rtrim
 
 import scala.language.higherKinds
 
@@ -147,6 +146,14 @@ object LogDecoder {
       })
       .pull
       .echo
+  }
+
+  private def rtrim(str: String): String = {
+    var i = str.length - 1
+    while (i >= 0 && Character.isWhitespace(str.charAt(i))) {
+      i -= 1
+    }
+    str.substring(0, i + 1)
   }
 
 }

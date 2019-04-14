@@ -63,8 +63,8 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     /**
       * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
       */
-    override def list(parameters: Parameter[Containers.ListCriterion]*): F[List[ContainerSummary]] = {
-      F.delay(logger.info(s"Listing containers [criteria: ${Parameter.toDebugString(parameters)}].")) *>
+    override def list(parameters: Parameter[Containers.ListParameter]*): F[List[ContainerSummary]] = {
+      F.delay(logger.info(s"Listing containers [parameters: ${Parameter.toDebugString(parameters)}].")) *>
         client
           .get("/containers/json")
           .withParameters(parameters)
@@ -184,11 +184,11 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
         client.delete(s"/containers/${id.value}").execute
     }
 
-    override def logs(id: Container.Id, parameters: Parameter[Containers.LogCriterion]*): Stream[F, Containers.Log] = {
+    override def logs(id: Container.Id, parameters: Parameter[Containers.LogParameter]*): Stream[F, Containers.Log] = {
       Stream
         .eval(
           F.delay(logger.info(s"Pulling logs for the container ${id.value} " +
-            s"[criteria: ${Parameter.toDebugString(parameters)}].")))
+            s"[parameters: ${Parameter.toDebugString(parameters)}].")))
         .flatMap({ _ =>
           client
             .get(s"/containers/${id.value}/logs")
@@ -410,7 +410,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Returns volumes currently registered by the docker daemon. Similar to the `docker volume ls` command.
       */
     override def list(parameters: Parameter[Volumes.ListCriterion]*): F[VolumeList] = {
-      F.delay(logger.info(s"Listing volumes [criteria: ${Parameter.toDebugString(parameters)}].")) *>
+      F.delay(logger.info(s"Listing volumes [parameters: ${Parameter.toDebugString(parameters)}].")) *>
         client.get(s"/volumes").withParameters(parameters).expect(VolumeList.decoder)
     }
 
@@ -483,7 +483,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Returns the list of networks configured in the docker host.
       */
     override def list(parameters: Parameter[Networks.ListCriterion]*): F[List[Network]] = {
-      F.delay(logger.info(s"Listing networks [criteria: ${Parameter.toDebugString(parameters)}].")) *>
+      F.delay(logger.info(s"Listing networks [parameters: ${Parameter.toDebugString(parameters)}].")) *>
         client.get("/networks").withParameters(parameters).expectMany(Network.decoder)
     }
 

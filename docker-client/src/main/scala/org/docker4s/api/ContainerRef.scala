@@ -53,7 +53,7 @@ trait ContainerRef[F[_]] {
 
   def remove: F[Unit]
 
-  def logs(criteria: Parameter[Containers.LogCriterion]*): Stream[F, Containers.Log]
+  def logs(criteria: Parameter[Containers.LogParameter]*): Stream[F, Containers.Log]
 
 }
 
@@ -72,7 +72,7 @@ object ContainerRef {
     override def unpause: F[Unit] = containers.unpause(id)
     override def await: F[ContainerExit] = containers.await(id)
     override def remove: F[Unit] = containers.remove(id)
-    override def logs(criteria: Parameter[Containers.LogCriterion]*): Stream[F, Containers.Log] =
+    override def logs(criteria: Parameter[Containers.LogParameter]*): Stream[F, Containers.Log] =
       containers.logs(id, criteria: _*)
   }
 

@@ -21,8 +21,8 @@
  */
 package org.docker4s.api
 
-import org.docker4s.api.Containers.ListCriterion.showAll
-import org.docker4s.api.Containers.LogCriterion.stdout
+import org.docker4s.api.Containers.ListParameter.showAll
+import org.docker4s.api.Containers.LogParameter.stdout
 import org.scalatest.Matchers
 
 class ContainersIntegrationTest extends ClientSpec with Matchers {

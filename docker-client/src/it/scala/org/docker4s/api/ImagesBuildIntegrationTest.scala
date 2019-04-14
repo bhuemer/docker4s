@@ -57,7 +57,7 @@ class ImagesBuildIntegrationTest extends ClientSpec with Matchers {
       _ <- client.containers.stop(container.id)
       _ <- client.containers.await(container.id)
 
-      logs <- client.containers.logs(container.id, Containers.LogCriterion.stdout).compile.toList
+      logs <- client.containers.logs(container.id, Containers.LogParameter.stdout).compile.toList
       _ = logs should be(
         List(Containers.Log(Containers.Stream.StdOut, "Hello World from a container built with docker4s")))
     } yield ()

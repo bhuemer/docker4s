@@ -30,16 +30,20 @@ class ImagesBuildIntegrationTest extends ClientSpec with Matchers {
 
   "The client" should "support building images from in-memory Dockerfiles" given { client =>
     val image = Stream
-      .emits(
-        Seq(
-          Compression.TarEntry(
-            "Dockerfile",
-            """
-              |FROM busybox:latest
-              |CMD ["echo", "Hello World from a container built with docker4s"]
-            """.stripMargin.getBytes
-          ),
-        ))
+      .emits(Seq(
+        Compression.TarEntry(
+          "Dockerfile",
+          """
+            |FROM busybox:latest
+            |COPY hello.txt .
+            |CMD ["cat", "hello.txt"]
+          """.stripMargin.getBytes
+        ),
+        Compression.TarEntry(
+          "hello.txt",
+          "Hello World from a container built with docker4s".getBytes
+        )
+      ))
       .through(Compression.tar())
       .through(Compression.gzip())
 
@@ -50,6 +54,8 @@ class ImagesBuildIntegrationTest extends ClientSpec with Matchers {
       // Run a container with the image we just created
       container <- client.containers.create(build.imageId.get.value)
       _ <- client.containers.start(container.id)
+      _ <- client.containers.stop(container.id)
+      _ <- client.containers.await(container.id)
 
       logs <- client.containers.logs(container.id, Containers.LogCriterion.stdout).compile.toList
       _ = logs should be(

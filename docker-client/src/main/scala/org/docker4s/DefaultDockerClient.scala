@@ -161,7 +161,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     override def await(id: Container.Id): F[ContainerExit] = {
       F.delay(logger.info(s"Waiting for the container ${id.value} to stop.")) *>
         client
-          .post(s"s/containers/${id.value}/wait")
+          .post(s"/containers/${id.value}/wait")
           .expect(ContainerExit.decoder)
     }
 

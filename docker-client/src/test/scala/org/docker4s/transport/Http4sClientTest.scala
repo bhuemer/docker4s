@@ -95,6 +95,7 @@ class Http4sClientTest extends FlatSpec with Matchers {
       .raise(CustomException)
       .expect(Network.decoder)
       .unsafeRunSync()
+
     ex.getClass should be(classOf[CustomException])
     ex should includeInMessage("The given network 1234 cannot be found.")
   }

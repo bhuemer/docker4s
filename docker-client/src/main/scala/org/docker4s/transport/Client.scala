@@ -23,9 +23,9 @@ package org.docker4s.transport
 
 import cats.effect.Effect
 import fs2.Stream
-import io.circe.Decoder
-import org.docker4s.api.Criterion
-import org.http4s.{EntityEncoder, QueryParamEncoder, QueryParamKeyLike, Status, Uri}
+import io.circe.{Decoder, Encoder}
+import org.docker4s.api.Parameter
+import org.http4s.{EntityEncoder, QueryParamEncoder, Status, Uri}
 
 import scala.language.higherKinds
 
@@ -45,17 +45,28 @@ object Client {
 
   trait RequestBuilder[F[_]] {
 
-    def body[T](entity: T)(implicit encoder: EntityEncoder[F, T]): RequestBuilder[F]
+    def withBody[T](entity: T)(implicit encoder: EntityEncoder[F, T]): RequestBuilder[F]
 
-    def queryParam[T: QueryParamEncoder, K: QueryParamKeyLike](key: K, value: T): RequestBuilder[F]
+    def withQueryParam[T: QueryParamEncoder](name: String, value: T): RequestBuilder[F] =
+      withParameter(Parameter.query(name, value))
 
-    def queryParam[T: QueryParamEncoder, K: QueryParamKeyLike](key: K, value: Option[T]): RequestBuilder[F]
+    def withQueryParam[T: QueryParamEncoder](name: String, value: Option[T]): RequestBuilder[F] =
+      withParameter(Parameter.query(name, value))
 
-    def queryParam[T: QueryParamEncoder, K: QueryParamKeyLike](key: K, values: Seq[T]): RequestBuilder[F]
+    def withQueryParam[T: QueryParamEncoder](name: String, values: Seq[T]): RequestBuilder[F] =
+      withParameter(Parameter.query(name, values))
 
-    /**
-      */
-    def criteria(criteria: Seq[Criterion[_]]): RequestBuilder[F]
+    def withBodyParam[T: Encoder](name: String, value: T): RequestBuilder[F] =
+      withParameter(Parameter.body(name, value))
+
+    def withBodyParam[T: Encoder](name: String, value: Option[T]): RequestBuilder[F] =
+      value.fold(this)(withBodyParam(name, _))
+
+    def withParameter(parameter: Parameter[_]): RequestBuilder[F] = withParameters(Seq(parameter))
+
+    def withParameter(parameter: Option[Parameter[_]]): RequestBuilder[F] = parameter.fold(this)(withParameter)
+
+    def withParameters(parameters: Seq[Parameter[_]]): RequestBuilder[F]
 
     def on(status: Status): StatusHandler[F]
 

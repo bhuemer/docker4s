@@ -23,13 +23,15 @@ package org.docker4s.transport
 
 import cats.effect.Effect
 import cats.syntax.all._
+import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.{Decoder, Json}
-import org.docker4s.api.Criterion
+import org.docker4s.api.Parameter
 import org.docker4s.errors.DockerApiException
 import org.docker4s.transport.Client.RequestBuilder
-import org.http4s.{EntityEncoder, Header, Method, QueryParamEncoder, QueryParamKeyLike, Request, Response, Status, Uri}
+import org.http4s.{EmptyBody, EntityEncoder, Header, Method, Request, Response, Status, Uri}
 import org.http4s.circe.accumulatingJsonOf
+import org.http4s.circe.jsonEncoder
 
 import scala.language.higherKinds
 
@@ -58,7 +60,8 @@ class Http4sClient[F[_]](
 
     new Http4sClient.Http4sRequestBuilder[F](
       client,
-      request, {
+      request,
+      Seq.empty, {
         case status if !status.isSuccess =>
           (message, context) =>
             new DockerApiException(s"An error occurred while evaluating the request: $message [$context].")
@@ -75,48 +78,29 @@ object Http4sClient {
   private class Http4sRequestBuilder[F[_]](
       private val client: org.http4s.client.Client[F],
       private val request: org.http4s.Request[F],
+      private val parameters: Seq[Parameter[_]],
       private val statusHandler: PartialFunction[Status, ErrorCreator])(implicit F: Effect[F])
-      extends RequestBuilder[F] {
+      extends RequestBuilder[F]
+      with LazyLogging {
 
-    override def body[T](entity: T)(implicit encoder: EntityEncoder[F, T]): RequestBuilder[F] =
-      new Http4sRequestBuilder(client, request.withEntity(entity), statusHandler)
-
-    override def queryParam[T: QueryParamEncoder, K: QueryParamKeyLike](key: K, value: T): RequestBuilder[F] = {
-      new Http4sRequestBuilder(
-        client,
-        request.withUri(uri = request.uri.withQueryParam(key, value).asInstanceOf[org.http4s.Uri]),
-        statusHandler)
+    override def withBody[T](entity: T)(implicit encoder: EntityEncoder[F, T]): RequestBuilder[F] = {
+      new Http4sRequestBuilder(client, request.withEntity(entity), parameters, statusHandler)
     }
 
-    override def queryParam[T: QueryParamEncoder, K: QueryParamKeyLike](key: K, value: Option[T]): RequestBuilder[F] =
-      value.fold[RequestBuilder[F]](ifEmpty = this)(queryParam(key, _))
-
-    override def queryParam[T: QueryParamEncoder, K: QueryParamKeyLike](key: K, values: Seq[T]): RequestBuilder[F] = {
-      new Http4sRequestBuilder(
-        client,
-        request.withUri(uri = request.uri.withQueryParam(key, values).asInstanceOf[org.http4s.Uri]),
-        statusHandler)
-    }
-
-    override def criteria(criteria: Seq[Criterion[_]]): RequestBuilder[F] = {
-      val parameters = Criterion.compile(criteria)
-      val newUri = parameters.foldLeft(request.uri)({
-        case (uri, (parameterName, parameterValues)) =>
-          uri.withQueryParam(parameterName, parameterValues).asInstanceOf[org.http4s.Uri]
-      })
-
-      new Http4sRequestBuilder(client, request.withUri(uri = newUri), statusHandler)
+    override def withParameters(newParameters: Seq[Parameter[_]]): RequestBuilder[F] = {
+      new Http4sRequestBuilder(client, request, parameters ++ newParameters, statusHandler)
     }
 
     override def on(status: Status): Client.StatusHandler[F] = (creator: ErrorCreator) => {
       val pf: PartialFunction[Status, ErrorCreator] = {
         case given if given == status => creator
       }
-      new Http4sRequestBuilder(client, request, pf.orElse(statusHandler))
+
+      new Http4sRequestBuilder(client, request, parameters, pf.orElse(statusHandler))
     }
 
     override def execute: F[Unit] = {
-      client.fetch[Unit](request)({ response =>
+      client.fetch[Unit](compiled)({ response =>
         if (statusHandler.isDefinedAt(response.status)) {
           raiseError(response)
         } else {
@@ -126,7 +110,7 @@ object Http4sClient {
     }
 
     override def expect[A](decoder: Decoder[A]): F[A] = {
-      client.fetch[A](request)({ response =>
+      client.fetch[A](compiled)({ response =>
         if (statusHandler.isDefinedAt(response.status)) {
           raiseError(response)
         } else {
@@ -137,7 +121,7 @@ object Http4sClient {
 
     override def stream: Stream[F, Byte] = {
       client
-        .stream(request)
+        .stream(compiled)
         .flatMap({ response =>
           if (statusHandler.isDefinedAt(response.status)) {
             Stream.eval(raiseError(response))
@@ -158,12 +142,35 @@ object Http4sClient {
       })
     }
 
+    private def compiled: Request[F] = {
+      val requestWithBody = Parameter
+        .compileBody(parameters)
+        .map({ json =>
+          if (request.body != EmptyBody) {
+            logger.warn(s"Replacing previously configured body for request $request with $json.")
+          }
+
+          request.withEntity(json)
+        })
+        .getOrElse(request)
+
+      val queryParameters = Parameter.compileQuery(parameters)
+      val newUri = queryParameters.foldLeft(request.uri)({
+        case (uri, (parameterName, parameterValues)) =>
+          uri.withQueryParam(parameterName, parameterValues).asInstanceOf[org.http4s.Uri]
+      })
+
+      val result = requestWithBody.withUri(newUri)
+      logger.debug(s"${result.method} ${result.pathInfo}?${result.queryString}")
+      result
+    }
+
     private def safeDecode[A](response: Response[F], decoder: Decoder[A]): F[A] = {
       response
         .as(F, accumulatingJsonOf(F, decoder))
         .recoverWith({
           case ex =>
-            val context = s"Request: $request, Response: $response"
+            val context = s"Request: $request, Parameters: ${Parameter.toDebugString(parameters)}, Response: $response"
             F.raiseError(new DockerApiException(s"Error occurred while decoding the response. $context", ex))
         })
     }
@@ -187,7 +194,7 @@ object Http4sClient {
               })
         })
         .flatMap({ errorMessage =>
-          val context = s"Request: $request, Response: $response"
+          val context = s"Request: $request, Parameters: ${Parameter.toDebugString(parameters)}, Response: $response"
           F.raiseError(statusHandler(response.status)(errorMessage, context))
         })
     }

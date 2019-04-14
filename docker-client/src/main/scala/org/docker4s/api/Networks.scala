@@ -21,7 +21,7 @@
  */
 package org.docker4s.api
 
-import org.docker4s.api.Criterion.filter
+import org.docker4s.api.Parameter.filter
 import org.docker4s.models.containers.Container
 import org.docker4s.models.networks.{Network, NetworkCreated, NetworksPruned}
 
@@ -32,7 +32,7 @@ trait Networks[F[_]] {
   /**
     * Returns the list of networks configured in the docker host. Similar to the `docker network ls` command.
     */
-  def list(criteria: Criterion[Networks.ListCriterion]*): F[List[Network]]
+  def list(criteria: Parameter[Networks.ListCriterion]*): F[List[Network]]
 
   /**
     * Returns the information config for the given network. Similar to the `docker network inspect` command.
@@ -70,29 +70,29 @@ object Networks {
     /**
       * Matches a network's driver.
       */
-    def driver(name: String): Criterion[ListCriterion] = filter("driver", name)
+    def driver(name: String): Parameter[ListCriterion] = filter("driver", name)
 
     /**
       * Matches all or part of a network ID.
       */
-    def id(id: String): Criterion[ListCriterion] = filter("id", id)
+    def id(id: String): Parameter[ListCriterion] = filter("id", id)
 
-    def id(id: Network.Id): Criterion[ListCriterion] = filter("id", id.value)
+    def id(id: Network.Id): Parameter[ListCriterion] = filter("id", id.value)
 
     /**
       * Matches all or part of a network name.
       */
-    def name(name: String): Criterion[ListCriterion] = filter("name", name)
+    def name(name: String): Parameter[ListCriterion] = filter("name", name)
 
-    def scope(scope: Network.Scope): Criterion[ListCriterion] = scope match {
+    def scope(scope: Network.Scope): Parameter[ListCriterion] = scope match {
       case Network.Scope.Swarm  => filter("scope", "swarm")
       case Network.Scope.Local  => filter("scope", "local")
       case Network.Scope.Global => filter("scope", "global")
     }
 
-    def custom: Criterion[ListCriterion] = filter("type", "custom")
+    def custom: Parameter[ListCriterion] = filter("type", "custom")
 
-    def builtin: Criterion[ListCriterion] = filter("type", "builtin")
+    def builtin: Parameter[ListCriterion] = filter("type", "builtin")
 
   }
 

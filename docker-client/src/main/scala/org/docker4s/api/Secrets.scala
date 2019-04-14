@@ -30,7 +30,7 @@ trait Secrets[F[_]] {
   /**
     * Returns secrets configured in the docker host. Similar to the `docker secret ls` command.
     */
-  def list(criteria: Criterion[Secrets.ListCriterion]*): F[List[Secret]]
+  def list(criteria: Parameter[Secrets.ListCriterion]*): F[List[Secret]]
 
   /**
     * Returns detailed information for the given secret. Similar to the `docker secret inspect` command.

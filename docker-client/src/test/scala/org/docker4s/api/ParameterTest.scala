@@ -24,25 +24,41 @@ package org.docker4s.api
 import org.http4s.Query
 import org.scalatest.{FlatSpec, Matchers}
 
-class CriterionTest extends FlatSpec with Matchers {
+class ParameterTest extends FlatSpec with Matchers {
 
   /**
     * Makes sure that query parameters and JSON encoded filter parameters can be mixed in a single query string.
     */
   "Building criteria" should "encode `filters` as JSON" in {
     renderQueryString(
-      Criterion.Query("all", "true"),
-      Criterion.Query("digests", "false"),
-      Criterion.Filter("dangling", "true"),
-      Criterion.Filter("before", "image-name")
+      Parameter.query("all", "true"),
+      Parameter.query("digests", "false"),
+      Parameter.filter("dangling", "true"),
+      Parameter.filter("before", "image-name")
     ) should be(
       "all=true&digests=false&filters=%7B%22dangling%22%3A%5B%22true%22%5D%2C%22before%22%3A%5B%22image-name%22%5D%7D")
   }
 
+  "Building criteria" should "encode `query arrays` as JSON" in {
+    renderQueryString(
+      Parameter.query("nocache", false),
+      Parameter.queryArr("cachefrom", "image-1"),
+      Parameter.queryArr("cachefrom", "image-2")
+    ) should be("nocache=false&cachefrom=%5B%22image-1%22%2C%22image-2%22%5D")
+  }
+
+  "Building parameters" should "encode `query maps` as JSON" in {
+    renderQueryString(
+      Parameter.query("nocache", false),
+      Parameter.queryMap("buildargs", "FOO", "bar"),
+      Parameter.queryMap("buildargs", "BLA", "blubb")
+    ) should be("nocache=false&buildargs=%7B%22FOO%22%3A%22bar%22%2C%22BLA%22%3A%22blubb%22%7D")
+  }
+
   // -------------------------------------------- Utility methods
 
-  private def renderQueryString(criteria: Criterion[_]*): String = {
-    Query.fromMap(Criterion.compile(criteria.toSeq)).renderString
+  private def renderQueryString(criteria: Parameter[_]*): String = {
+    Query.fromMap(Parameter.compileQuery(criteria.toSeq)).renderString
   }
 
 }

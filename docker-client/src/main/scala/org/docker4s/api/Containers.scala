@@ -24,7 +24,7 @@ package org.docker4s.api
 import java.time.ZonedDateTime
 
 import fs2.Stream
-import org.docker4s.api.Criterion.{filter, query}
+import org.docker4s.api.Parameter.{filter, query}
 import org.docker4s.models.containers._
 
 import scala.concurrent.duration.FiniteDuration
@@ -46,9 +46,9 @@ trait Containers[F[_]] {
     *
     * Similar to the `docker ps` or `docker container ls` commands.
     */
-  def list(criteria: Criterion[Containers.ListCriterion]*): F[List[ContainerSummary]]
+  def list(criteria: Parameter[Containers.ListCriterion]*): F[List[ContainerSummary]]
 
-  def logs(id: Container.Id, criteria: Criterion[Containers.LogCriterion]*): Stream[F, Containers.Log]
+  def logs(id: Container.Id, criteria: Parameter[Containers.LogCriterion]*): Stream[F, Containers.Log]
 
   /**
     * Renames the given Docker container.
@@ -128,42 +128,42 @@ object Containers {
     /**
       * Return the logs as a stream.
       */
-    def follow: Criterion[LogCriterion] = query("follow", true)
+    def follow: Parameter[LogCriterion] = query("follow", true)
 
     /**
       * Return logs from `stdout`.
       */
-    def stdout: Criterion[LogCriterion] = query("stdout", true)
+    def stdout: Parameter[LogCriterion] = query("stdout", true)
 
     /**
       * Return logs from `stderr`.
       */
-    def stderr: Criterion[LogCriterion] = query("stderr", true)
+    def stderr: Parameter[LogCriterion] = query("stderr", true)
 
     /**
       * Show logs since this timestamp.
       */
-    def since(timestamp: ZonedDateTime): Criterion[LogCriterion] = query("since", timestamp.toInstant.getEpochSecond)
+    def since(timestamp: ZonedDateTime): Parameter[LogCriterion] = query("since", timestamp.toInstant.getEpochSecond)
 
     /**
       * Show logs until this timestamp.
       */
-    def until(timestamp: ZonedDateTime): Criterion[LogCriterion] = query("until", timestamp.toInstant.getEpochSecond)
+    def until(timestamp: ZonedDateTime): Parameter[LogCriterion] = query("until", timestamp.toInstant.getEpochSecond)
 
     /**
       * Adds timestamps to every log line.
       */
-    def showTimestamps: Criterion[LogCriterion] = query("timestamps", true)
+    def showTimestamps: Parameter[LogCriterion] = query("timestamps", true)
 
     /**
       * Do not add timestamps to every log line.
       */
-    def hideTimestamps: Criterion[LogCriterion] = query("timestamps", false)
+    def hideTimestamps: Parameter[LogCriterion] = query("timestamps", false)
 
     /**
       * Only returns `n` lines from the end of the logs.
       */
-    def tail(n: Int): Criterion[LogCriterion] = query("tail", n)
+    def tail(n: Int): Parameter[LogCriterion] = query("tail", n)
 
   }
 
@@ -171,34 +171,34 @@ object Containers {
 
   object ListCriterion {
 
-    def showAll: Criterion[ListCriterion] = query("all", true)
+    def showAll: Parameter[ListCriterion] = query("all", true)
 
     /**
       * Return this number of most recently created containers, including non-running ones.
       */
-    def limit(n: Int): Criterion[ListCriterion] = query("limit", n)
+    def limit(n: Int): Parameter[ListCriterion] = query("limit", n)
 
-    def withSize: Criterion[ListCriterion] = query("size", true)
+    def withSize: Parameter[ListCriterion] = query("size", true)
 
     /**
       * Only show containers that exited with the given exit code.
       */
-    def exited(exitCode: Int): Criterion[ListCriterion] = filter("exited", exitCode.toString)
+    def exited(exitCode: Int): Parameter[ListCriterion] = filter("exited", exitCode.toString)
 
     /**
       * Only show containers with the given name (or part of the given name).
       */
-    def name(name: String): Criterion[ListCriterion] = filter("name", name)
+    def name(name: String): Parameter[ListCriterion] = filter("name", name)
 
     /**
       * Only show containers with the given status.
       */
-    def status(status: Container.Status): Criterion[ListCriterion] = filter("status", status.name)
+    def status(status: Container.Status): Parameter[ListCriterion] = filter("status", status.name)
 
     /**
       *
       */
-    def volume(name: String): Criterion[ListCriterion] = filter("volume", name)
+    def volume(name: String): Parameter[ListCriterion] = filter("volume", name)
 
   }
 

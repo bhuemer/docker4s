@@ -21,8 +21,10 @@
  */
 package org.docker4s.api
 
+import java.net.URI
+
 import fs2.Stream
-import org.docker4s.api.Criterion.{filter, query}
+import org.docker4s.api.Parameter.{filter, query, queryMap}
 import org.docker4s.models.images._
 
 import scala.language.higherKinds
@@ -36,7 +38,7 @@ trait Images[F[_]] {
   def get(id: Image.Id): ImageRef[F] = ImageRef(this, id)
 
   /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
-  def list(criteria: Criterion[Images.ListCriterion]*): F[List[ImageSummary]]
+  def list(criteria: Parameter[Images.ListCriterion]*): F[List[ImageSummary]]
 
   /**
     * Saves one or more images to a TAR archive. Similar to the `docker image save` command.
@@ -95,23 +97,63 @@ object Images {
     /**
       * Show all images. Only images from a final layer (no children) are shown by default.
       */
-    def showAll: Criterion[ListCriterion] = query("all", "true")
+    def showAll: Parameter[ListCriterion] = query("all", "true")
 
     /**
       * Show digest information as `RepoDigests` field on each image.
       */
-    def showDigests: Criterion[ListCriterion] = query("digests", "true")
+    def showDigests: Parameter[ListCriterion] = query("digests", "true")
 
-    def hideDigests: Criterion[ListCriterion] = query("digests", "false")
+    def hideDigests: Parameter[ListCriterion] = query("digests", "false")
 
     /**
       * Show dangling images only, i.e. images without a repository name.
       *
       * By default both dangling and non-dangling images will be shown.
       */
-    def showDangling: Criterion[ListCriterion] = filter("dangling", "true")
+    def showDangling: Parameter[ListCriterion] = filter("dangling", "true")
 
-    def hideDangling: Criterion[ListCriterion] = filter("dangling", "false")
+    def hideDangling: Parameter[ListCriterion] = filter("dangling", "false")
+
+  }
+
+  sealed trait BuildParameter
+
+  object BuildParameter {
+
+    def withExtraHost(extraHost: String): Parameter[BuildParameter] = query("extrahosts", extraHost)
+
+    def withSecurityOpt(securityOpt: String): Parameter[BuildParameter] = query("securityopt", securityOpt)
+
+    def withTag(tag: String): Parameter[BuildParameter] = query("t", tag)
+
+    /**
+      * Suppresses verbose build output.
+      */
+    def withOutputSuppressed: Parameter[BuildParameter] = query("q", "1")
+
+    def withRemote(uri: URI): Parameter[BuildParameter] = query("remote", uri.toString)
+
+    def withNocache(nocache: Boolean): Parameter[BuildParameter] = query("nocache", nocache)
+
+    /**
+      * Specifies the value for a build argument/variable.
+      *
+      * @see https://docs.docker.com/engine/reference/builder/#arg
+      */
+    def withBuildArg(key: String, value: String): Parameter[BuildParameter] =
+      queryMap("buildargs", key, value)
+
+    def withLabel(key: String, value: String): Parameter[BuildParameter] =
+      queryMap("labels", key, value)
+
+    /**
+      * Sets the networking mode for the run commands during build. Supported standard values are: `bridge`, `host`,
+      * `none`, and `container:<name|id>`. Any other value is taken as a custom network's name to which this container
+      * should connect to.
+      */
+    def withNetworkMode(networkMode: String): Parameter[BuildParameter] =
+      query("networkmode", networkMode)
 
   }
 

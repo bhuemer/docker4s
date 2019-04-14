@@ -24,7 +24,7 @@ package org.docker4s.api
 import java.time.ZonedDateTime
 
 import fs2.Stream
-import org.docker4s.api.Criterion.{filter, query}
+import org.docker4s.api.Parameter.{filter, query}
 import org.docker4s.models.system.{Event, Info, Version}
 
 import scala.language.higherKinds
@@ -43,7 +43,7 @@ trait System[F[_]] {
   /**
     * Streams real-time events from the server. Similar to the `docker system events` command.
     */
-  def events(criteria: Criterion[System.EventsCriterion]*): Stream[F, Event]
+  def events(criteria: Parameter[System.EventsCriterion]*): Stream[F, Event]
 
   /**
     * Returns version information from the server. Similar to the `docker version` command.
@@ -61,57 +61,57 @@ object System {
     /**
       * Show events created since this timestamp, then stream new events.
       */
-    def since(timestamp: ZonedDateTime): Criterion[EventsCriterion] = query("since", timestamp.toInstant.getEpochSecond)
+    def since(timestamp: ZonedDateTime): Parameter[EventsCriterion] = query("since", timestamp.toInstant.getEpochSecond)
 
     /**
       * Show events created until this timestamp, then stop streaming.
       */
-    def until(timestamp: ZonedDateTime): Criterion[EventsCriterion] = query("until", timestamp.toInstant.getEpochSecond)
+    def until(timestamp: ZonedDateTime): Parameter[EventsCriterion] = query("until", timestamp.toInstant.getEpochSecond)
 
     /**
       * Show events related to the given action. For example, `action(Event.Action.Pull)` for pull events.
       */
-    def action(action: Event.Action): Criterion[EventsCriterion] = filter("event", action.name)
+    def action(action: Event.Action): Parameter[EventsCriterion] = filter("event", action.name)
 
     /**
       * Show events related to the given config name or ID.
       */
-    def config(name: String): Criterion[EventsCriterion] = filter("config", name)
+    def config(name: String): Parameter[EventsCriterion] = filter("config", name)
 
     /**
       * Show events related to the given container name or ID.
       */
-    def container(name: String): Criterion[EventsCriterion] = filter("container", name)
+    def container(name: String): Parameter[EventsCriterion] = filter("container", name)
 
     /**
       * Show events related to the given daemon name or ID.
       */
-    def daemon(name: String): Criterion[EventsCriterion] = filter("daemon", name)
+    def daemon(name: String): Parameter[EventsCriterion] = filter("daemon", name)
 
     /**
       * Show events related to the given image name or ID.
       */
-    def image(name: String): Criterion[EventsCriterion] = filter("image", name)
+    def image(name: String): Parameter[EventsCriterion] = filter("image", name)
 
     /**
       * Show events related to the given network name or ID.
       */
-    def network(name: String): Criterion[EventsCriterion] = filter("network", name)
+    def network(name: String): Parameter[EventsCriterion] = filter("network", name)
 
     /**
       * Show events related to the given node name or ID.
       */
-    def node(name: String): Criterion[EventsCriterion] = filter("node", name)
+    def node(name: String): Parameter[EventsCriterion] = filter("node", name)
 
     /**
       * Show events related to the given plugin name or ID.
       */
-    def plugin(name: String): Criterion[EventsCriterion] = filter("plugin", name)
+    def plugin(name: String): Parameter[EventsCriterion] = filter("plugin", name)
 
     /**
       * Show events for scope `local` or `swarm`.
       */
-    def scope(scope: Event.Scope): Criterion[EventsCriterion] = scope match {
+    def scope(scope: Event.Scope): Parameter[EventsCriterion] = scope match {
       case Event.Scope.Local => filter("scope", "local")
       case Event.Scope.Swarm => filter("scope", "swarm")
     }
@@ -119,22 +119,22 @@ object System {
     /**
       * Show events related to the given secret name or ID.
       */
-    def secret(name: String): Criterion[EventsCriterion] = filter("secret", name)
+    def secret(name: String): Parameter[EventsCriterion] = filter("secret", name)
 
     /**
       * Show events related to the given service name or ID.
       */
-    def service(name: String): Criterion[EventsCriterion] = filter("service", name)
+    def service(name: String): Parameter[EventsCriterion] = filter("service", name)
 
     /**
       * Show events for objects of the given type.
       */
-    def `type`(`type`: Event.Type): Criterion[EventsCriterion] = filter("type", `type`.name)
+    def `type`(`type`: Event.Type): Parameter[EventsCriterion] = filter("type", `type`.name)
 
     /**
       * Show events related to the given volume name.
       */
-    def volume(name: String): Criterion[EventsCriterion] = filter("volume", name)
+    def volume(name: String): Parameter[EventsCriterion] = filter("volume", name)
 
   }
 

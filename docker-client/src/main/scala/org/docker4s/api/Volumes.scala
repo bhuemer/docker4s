@@ -21,7 +21,7 @@
  */
 package org.docker4s.api
 
-import org.docker4s.api.Criterion.filter
+import org.docker4s.api.Parameter.filter
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 
 import scala.language.higherKinds
@@ -31,7 +31,7 @@ trait Volumes[F[_]] {
   /**
     * Returns volumes configured in the docker host. Similar to the `docker volume ls` command.
     */
-  def list(criteria: Criterion[Volumes.ListCriterion]*): F[VolumeList]
+  def list(criteria: Parameter[Volumes.ListCriterion]*): F[VolumeList]
 
   /**
     * Creates and registers a named volume. Similar to the `docker volume create` command.
@@ -78,32 +78,32 @@ object Volumes {
     /**
       * Show dangling volumes only, i.e. all volumes that are not in use by a container.
       */
-    def showDangling: Criterion[ListCriterion] = filter("dangling", "true")
+    def showDangling: Parameter[ListCriterion] = filter("dangling", "true")
 
     /**
       * Show non-dangling volumes only, i.e. all volumes that are in use by one or mor containers.
       */
-    def hideDangling: Criterion[ListCriterion] = filter("dangling", "false")
+    def hideDangling: Parameter[ListCriterion] = filter("dangling", "false")
 
     /**
       * Show volumes with a matching driver name.
       */
-    def driver(name: String): Criterion[ListCriterion] = filter("driver", name)
+    def driver(name: String): Parameter[ListCriterion] = filter("driver", name)
 
     /**
       * Show volumes with a label with the given name, regardless of the label's value.
       */
-    def label(name: String): Criterion[ListCriterion] = filter("label", name)
+    def label(name: String): Parameter[ListCriterion] = filter("label", name)
 
     /**
       * Show volumes with the given label and value combination.
       */
-    def label(name: String, value: String): Criterion[ListCriterion] = filter("label", s"$name:$value")
+    def label(name: String, value: String): Parameter[ListCriterion] = filter("label", s"$name:$value")
 
     /**
       * Show volumes with the given name or part of the given name.
       */
-    def name(name: String): Criterion[ListCriterion] = filter("name", name)
+    def name(name: String): Parameter[ListCriterion] = filter("name", name)
 
   }
 

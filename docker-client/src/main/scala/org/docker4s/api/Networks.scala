@@ -32,7 +32,7 @@ trait Networks[F[_]] {
   /**
     * Returns the list of networks configured in the docker host. Similar to the `docker network ls` command.
     */
-  def list(criteria: Parameter[Networks.ListCriterion]*): F[List[Network]]
+  def list(parameters: Parameter[Networks.ListCriterion]*): F[List[Network]]
 
   /**
     * Returns the information config for the given network. Similar to the `docker network inspect` command.
@@ -70,21 +70,21 @@ object Networks {
     /**
       * Matches a network's driver.
       */
-    def driver(name: String): Parameter[ListCriterion] = filter("driver", name)
+    def withDriver(name: String): Parameter[ListCriterion] = filter("driver", name)
 
     /**
       * Matches all or part of a network ID.
       */
-    def id(id: String): Parameter[ListCriterion] = filter("id", id)
+    def withId(id: String): Parameter[ListCriterion] = filter("id", id)
 
-    def id(id: Network.Id): Parameter[ListCriterion] = filter("id", id.value)
+    def withId(id: Network.Id): Parameter[ListCriterion] = filter("id", id.value)
 
     /**
       * Matches all or part of a network name.
       */
-    def name(name: String): Parameter[ListCriterion] = filter("name", name)
+    def withName(name: String): Parameter[ListCriterion] = filter("name", name)
 
-    def scope(scope: Network.Scope): Parameter[ListCriterion] = scope match {
+    def withScope(scope: Network.Scope): Parameter[ListCriterion] = scope match {
       case Network.Scope.Swarm  => filter("scope", "swarm")
       case Network.Scope.Local  => filter("scope", "local")
       case Network.Scope.Global => filter("scope", "global")

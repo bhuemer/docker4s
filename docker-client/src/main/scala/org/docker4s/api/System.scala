@@ -43,7 +43,7 @@ trait System[F[_]] {
   /**
     * Streams real-time events from the server. Similar to the `docker system events` command.
     */
-  def events(criteria: Parameter[System.EventsCriterion]*): Stream[F, Event]
+  def events(parameters: Parameter[System.EventsCriterion]*): Stream[F, Event]
 
   /**
     * Returns version information from the server. Similar to the `docker version` command.

@@ -46,7 +46,7 @@ trait Containers[F[_]] {
     *
     * Similar to the `docker ps` or `docker container ls` commands.
     */
-  def list(criteria: Parameter[Containers.ListParameter]*): F[List[ContainerSummary]]
+  def list(parameters: Parameter[Containers.ListParameter]*): F[List[ContainerSummary]]
 
   def logs(id: Container.Id, criteria: Parameter[Containers.LogParameter]*): Stream[F, Containers.Log]
 

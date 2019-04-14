@@ -53,6 +53,12 @@ class ParameterTest extends FlatSpec with Matchers {
       Parameter.queryMap("buildargs", "FOO", "bar"),
       Parameter.queryMap("buildargs", "BLA", "blubb")
     ) should be("nocache=false&buildargs=%7B%22FOO%22%3A%22bar%22%2C%22BLA%22%3A%22blubb%22%7D")
+
+    renderQueryString(
+      Parameter.query("nocache", false),
+      Parameter.queryMap("labels", "key1", "value1"),
+      Parameter.queryMap("labels", "key2", "value2")
+    ) should be("nocache=false&labels=%7B%22key1%22%3A%22value1%22%2C%22key2%22%3A%22value2%22%7D")
   }
 
   // -------------------------------------------- Utility methods

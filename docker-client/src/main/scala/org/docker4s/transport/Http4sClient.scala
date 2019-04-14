@@ -71,7 +71,7 @@ class Http4sClient[F[_]](
 
 }
 
-object Http4sClient {
+object Http4sClient extends LazyLogging {
 
   private type ErrorCreator = (String, String) => Throwable
 
@@ -80,15 +80,23 @@ object Http4sClient {
       private val request: org.http4s.Request[F],
       private val parameters: Seq[Parameter[_]],
       private val statusHandler: PartialFunction[Status, ErrorCreator])(implicit F: Effect[F])
-      extends RequestBuilder[F]
-      with LazyLogging {
+      extends RequestBuilder[F] {
 
     override def withBody[T](entity: T)(implicit encoder: EntityEncoder[F, T]): RequestBuilder[F] = {
       new Http4sRequestBuilder(client, request.withEntity(entity), parameters, statusHandler)
     }
 
     override def withParameters(newParameters: Seq[Parameter[_]]): RequestBuilder[F] = {
-      new Http4sRequestBuilder(client, request, parameters ++ newParameters, statusHandler)
+      val shallResetBody = newParameters.exists({ _.isInstanceOf[Parameter.Body[_]] })
+      if (shallResetBody && (request.body != EmptyBody)) {
+        logger.warn(s"Replacing previously configured body for request $request with new parameters.")
+      }
+
+      new Http4sRequestBuilder(client, if (!shallResetBody) {
+        request
+      } else {
+        request.withEmptyBody
+      }, parameters ++ newParameters, statusHandler)
     }
 
     override def on(status: Status): Client.StatusHandler[F] = (creator: ErrorCreator) => {
@@ -161,7 +169,13 @@ object Http4sClient {
       })
 
       val result = requestWithBody.withUri(newUri)
-      logger.debug(s"${result.method} ${result.pathInfo}?${result.queryString}")
+      logger.whenTraceEnabled({
+        if (result.queryString.nonEmpty) {
+          logger.trace(s"${result.method} ${result.pathInfo}?${result.queryString}")
+        } else {
+          logger.trace(s"${result.method} ${result.pathInfo}")
+        }
+      })
       result
     }
 
@@ -186,7 +200,7 @@ object Http4sClient {
         // If the response cannot be parsed as error message JSON, continue anyway as we would otherwise lose
         // the information about the request and the response that we have anyway (status codes, URIs, ..).
         .recoverWith({
-          case ex =>
+          case _ =>
             response
               .as[String]
               .map({ body =>

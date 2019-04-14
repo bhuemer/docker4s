@@ -37,8 +37,10 @@ trait Images[F[_]] {
 
   def get(id: Image.Id): ImageRef[F] = ImageRef(this, id)
 
-  /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
-  def list(criteria: Parameter[Images.ListCriterion]*): F[List[ImageSummary]]
+  /**
+    * Returns a list of images on the server. Similar to the `docker image list` or `docker images` command.
+    */
+  def list(parameters: Parameter[Images.ListCriterion]*): F[List[ImageSummary]]
 
   /**
     * Saves one or more images to a TAR archive. Similar to the `docker image save` command.
@@ -72,9 +74,9 @@ trait Images[F[_]] {
     *
     * @param id ID of the image you want to remove
     * @param force Remove the image even if it is being used by stopped containers or has other tags
-    * @param noprune Do not delete untagged parent images
+    * @param prune Delete untagged parent images
     */
-  def remove(id: Image.Id, force: Boolean = false, noprune: Boolean = false): F[ImagesRemoved]
+  def remove(id: Image.Id, force: Boolean = false, prune: Boolean = true): F[ImagesRemoved]
 
   /** Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command. */
   def history(id: Image.Id): F[List[ImageHistory]]

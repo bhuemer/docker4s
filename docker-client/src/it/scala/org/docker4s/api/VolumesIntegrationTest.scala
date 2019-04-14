@@ -22,7 +22,7 @@
 package org.docker4s.api
 
 import com.typesafe.scalalogging.LazyLogging
-import org.docker4s.api.Volumes.ListCriterion.{hideDangling, name, showDangling}
+import org.docker4s.api.Volumes.ListCriterion.{hideDangling, showDangling, withName}
 import org.docker4s.models.volumes.VolumeList
 import org.scalatest.Matchers
 
@@ -67,16 +67,16 @@ class VolumesIntegrationTest extends ClientSpec with Matchers with LazyLogging {
       _ <- client.volumes.create(name = Some("test-her-volume-1"))
 
       // Make sure that it's possible to filter the results by the exact name ..
-      volumes <- client.volumes.list(name("test-his-volume-1"))
+      volumes <- client.volumes.list(withName("test-his-volume-1"))
       _ = logWarnings(volumes)
       _ = volumes.volumes.map(_.name) should be(List("test-his-volume-1"))
 
       // .. or by part of the name.
-      volumes <- client.volumes.list(name("his"))
+      volumes <- client.volumes.list(withName("his"))
       _ = logWarnings(volumes)
       _ = volumes.volumes.map(_.name) should be(List("test-his-volume-1"))
 
-      volumes <- client.volumes.list(name("her"))
+      volumes <- client.volumes.list(withName("her"))
       _ = logWarnings(volumes)
       _ = volumes.volumes.map(_.name) should be(List("test-her-volume-1"))
 

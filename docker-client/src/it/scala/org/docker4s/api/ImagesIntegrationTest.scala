@@ -36,7 +36,7 @@ class ImagesIntegrationTest extends ClientSpec with Matchers with LazyLogging {
       imagesBefore <- client.images.list()
 
       statusAndDigest <- client.images.pull("busybox").result
-      _ = logger.info(s"Result frm pulling busybox: $statusAndDigest")
+      _ = logger.info(s"Result from pulling busybox: $statusAndDigest")
 
       imagesAfter <- client.images.list()
     } yield {

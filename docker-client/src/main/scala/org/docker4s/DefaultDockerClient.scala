@@ -27,8 +27,8 @@ import cats.effect.Effect
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
-import io.circe.Json
 import org.docker4s.api.{Containers, Images, Networks, Parameter, Secrets, System, Volumes}
+import org.docker4s.errors.ContainerNotFoundException
 import org.docker4s.models.containers._
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images._
@@ -37,7 +37,7 @@ import org.docker4s.models.secrets.{Secret, SecretCreated}
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
 import org.docker4s.util.LogDecoder
-import org.http4s.circe.jsonEncoder
+import org.http4s.Status
 
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
@@ -94,9 +94,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       F.delay(logger.info(s"Starting the container ${id.value}.")) *>
         client
           .post(s"/containers/${id.value}/start")
-//        .handleStatusWith({
-//          case Status.NotFound => (_, _) => new ContainerNotFoundException(id.value, "")
-//        })
+          .on(Status.NotFound, new ContainerNotFoundException(_, _))
           .execute
     }
 
@@ -377,14 +375,18 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       *
       * Similar to the `docker image rm` command.
       */
-    override def remove(id: Image.Id, force: Boolean = false, noprune: Boolean = false): F[ImagesRemoved] = {
-      F.delay(logger.info(s"Removing the image ${id.value} [force: $force, noprune: $noprune].")) *>
+    override def remove(id: Image.Id, force: Boolean, prune: Boolean): F[ImagesRemoved] = {
+      F.delay(logger.info(s"Removing the image ${id.value} [force: $force, prune: $prune].")) *>
         client
           .delete(s"/images/${id.value}")
+          .withQueryParam("force", force)
+          .withQueryParam("noprune", !prune)
           .expect(ImagesRemoved.decoder)
     }
 
-    /** Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command. */
+    /**
+      * Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command.
+      */
     override def history(id: Image.Id): F[List[ImageHistory]] = {
       F.delay(logger.info(s"Fetching the history for the image ${id.value}.")) *>
         client

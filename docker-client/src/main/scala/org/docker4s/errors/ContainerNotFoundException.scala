@@ -21,4 +21,4 @@
  */
 package org.docker4s.errors
 
-class ContainerNotFoundException(val container: String, message: String) extends Exception(message) {}
+class ContainerNotFoundException(message: String, context: String) extends Exception(s"$message - $context") {}

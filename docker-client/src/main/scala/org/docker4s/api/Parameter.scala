@@ -160,6 +160,7 @@ object Parameter {
         case Query.Array(name, values)   => (name, values.map(_.noSpaces))
         case Query.Map(name, key, value) => (name, Seq(s"$key=$value"))
         case Filter(name, values)        => (name, values)
+        case Body(name, value)           => (name, Seq(value.noSpaces))
       })
       .groupBy(_._1)
       .mapValues(_.flatMap(_._2))

@@ -82,11 +82,11 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
           .execute
     }
 
-    override def create(image: String): F[ContainerCreated] = {
-      F.delay(logger.info(s"Creating a new container using the image '$image'.")) *>
+    override def create(parameters: Parameter[Containers.CreateParameter]*): F[ContainerCreated] = {
+      F.delay(logger.info(s"Creating a new container [parameters: ${Parameter.toDebugString(parameters)}].")) *>
         client
           .post(s"/containers/create")
-          .withBodyParam("Image", image)
+          .withParameters(parameters)
           .expect(ContainerCreated.decoder)
     }
 

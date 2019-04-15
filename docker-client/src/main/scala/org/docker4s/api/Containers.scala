@@ -24,7 +24,7 @@ package org.docker4s.api
 import java.time.ZonedDateTime
 
 import fs2.Stream
-import org.docker4s.api.Parameter.{filter, query}
+import org.docker4s.api.Parameter.{body, filter, query}
 import org.docker4s.models.containers._
 
 import scala.concurrent.duration.FiniteDuration
@@ -35,18 +35,56 @@ trait Containers[F[_]] {
   def get(id: Container.Id): ContainerRef[F] = ContainerRef(this, id)
 
   /**
+    * Returns a list of containers.
+    *
+    * Similar to the `docker ps` or `docker container ls` commands.
+    *
+    * @example {{{
+    * import org.docker4s.api.Containers.ListParameter._
+    * import org.docker4s.models.containers.Container
+    *
+    * val program = for {
+    *   containers <- client.containers.list(limit(10), withStatus(Container.Status.Running))
+    *   _ = containers.foreach({ container =>
+    *     println(s"Currently running: $container")
+    *   })
+    * } yield ()
+    * program.unsafeRunSync()
+    * }}}
+    */
+  def list(parameters: Parameter[Containers.ListParameter]*): F[List[ContainerSummary]]
+
+  /**
+    * Creates a new container from the given image.
+    *
+    * Similar to the `docker container create` command.
+    */
+  def create(image: String): F[ContainerCreated] = create(Containers.CreateParameter.withImage(image))
+
+  /**
+    * Creates a new container with the given parameters.
+    *
+    * Similar to the `docker container create` command.
+    *
+    * @example {{{
+    * import org.docker4s.api.Containers.CreateParameter._
+    * import org.docker4s.models.containers.Container
+    *
+    * val program = for {
+    *   created <- client.containers.create(withImage("busybox"), withCmd("echo", "Hello world from docker4s!"))
+    *   _ <- client.containers.start(created.id)
+    * } yield ()
+    * program.unsafeRunSync()
+    * }}}
+    */
+  def create(parameters: Parameter[Containers.CreateParameter]*): F[ContainerCreated]
+
+  /**
     * Returns differences in the given container's file system since it was started.
     *
     * Similar to the `docker container diff` command.
     */
   def diff(id: Container.Id): F[List[ContainerChange]]
-
-  /**
-    * Returns a list of containers.
-    *
-    * Similar to the `docker ps` or `docker container ls` commands.
-    */
-  def list(parameters: Parameter[Containers.ListParameter]*): F[List[ContainerSummary]]
 
   def logs(id: Container.Id, criteria: Parameter[Containers.LogParameter]*): Stream[F, Containers.Log]
 
@@ -54,8 +92,6 @@ trait Containers[F[_]] {
     * Renames the given Docker container.
     */
   def rename(id: Container.Id, newName: String): F[Unit]
-
-  def create(image: String): F[ContainerCreated]
 
   def start(id: Container.Id): F[Unit]
 
@@ -178,6 +214,9 @@ object Containers {
       */
     def limit(n: Int): Parameter[ListParameter] = query("limit", n)
 
+    /**
+      * Include size information of containers in the response (`SizeRw` and `SizeRootFs`).
+      */
     def withSize: Parameter[ListParameter] = query("size", true)
 
     /**
@@ -185,10 +224,21 @@ object Containers {
       */
     def withExitCode(exitCode: Int): Parameter[ListParameter] = filter("exited", exitCode.toString)
 
+    def withId(id: Container.Id): Parameter[ListParameter] = filter("id", id.value)
+
+    /**
+      * Only show containers with the given label.
+      */
+    def withLabel(key: String): Parameter[ListParameter] = filter("label", key)
+
+    def withLabel(key: String, value: String): Parameter[ListParameter] = filter("label", s"$key=$value")
+
     /**
       * Only show containers with the given name (or part of the given name).
       */
     def withName(name: String): Parameter[ListParameter] = filter("name", name)
+
+    def withNetwork(name: String): Parameter[ListParameter] = filter("network", name)
 
     /**
       * Only show containers with the given status.
@@ -196,9 +246,33 @@ object Containers {
     def withStatus(status: Container.Status): Parameter[ListParameter] = filter("status", status.name)
 
     /**
-      *
+      * Only show containers with the given volume (volume name or mount point destination).
       */
     def withVolume(name: String): Parameter[ListParameter] = filter("volume", name)
+
+  }
+
+  sealed trait CreateParameter
+
+  object CreateParameter {
+
+    def withCmd(cmd: String): Parameter[CreateParameter] = body("Cmd", cmd)
+
+    def withCmd(cmd: String, args: String*): Parameter[CreateParameter] = body("Cmd", Seq(cmd) ++ args)
+
+    /**
+      * Specifies the name of the image to use when creating the container.
+      */
+    def withImage(name: String): Parameter[CreateParameter] = body("Image", name)
+
+    /**
+      * Assigns the specified to the container.
+      */
+    def withName(name: String): Parameter[CreateParameter] = query("name", name)
+
+    def withNetworkingDisabled: Parameter[CreateParameter] = body("NetworkDisabled", false)
+
+    def withUser(user: String): Parameter[CreateParameter] = body("User", user)
 
   }
 

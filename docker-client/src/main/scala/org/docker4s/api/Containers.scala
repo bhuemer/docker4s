@@ -26,6 +26,7 @@ import java.time.ZonedDateTime
 import fs2.Stream
 import org.docker4s.api.Parameter.{body, filter, query}
 import org.docker4s.models.containers._
+import org.docker4s.models.images.Image
 
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
@@ -264,6 +265,8 @@ object Containers {
       * Specifies the name of the image to use when creating the container.
       */
     def withImage(name: String): Parameter[CreateParameter] = body("Image", name)
+
+    def withImage(id: Image.Id): Parameter[CreateParameter] = body("Image", id.value)
 
     /**
       * Assigns the specified to the container.

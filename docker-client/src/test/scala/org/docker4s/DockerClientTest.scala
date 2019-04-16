@@ -2,6 +2,7 @@ package org.docker4s
 
 import cats.effect._
 import fs2.Stream
+import org.docker4s.api.Containers
 import org.docker4s.models.images.Image
 import org.docker4s.util.Compression
 
@@ -25,7 +26,41 @@ object DockerClientTest {
   }
 
   private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
-    client.images.inspect(Image.Id("261813e22459")).map(println)
+    import org.docker4s.api.Containers.LogParameter._
+    import org.docker4s.api.Containers.CreateParameter._
+    import org.docker4s.syntax._
+
+    for {
+      _ <- client.images.pull(name = "busybox").compile.drain
+
+      built <- client.images
+        .build(
+          Stream
+            .emit(Compression.TarEntry(
+              "Dockerfile",
+              """
+              |FROM busybox:latest
+              |CMD ["sh", "-c", "while true; do echo -n 'This is a test ';date ; sleep 5; done"]
+            """.stripMargin.getBytes
+            ))
+            .through(Compression.tar())
+            .through(Compression.gzip()))
+        .result
+
+      // Create a container from the newly built image and run it
+      container <- client.containers.create(withImage(built.imageId.get))
+      _ <- client.containers.start(container.id)
+
+      // Follow all the logs from the container (stderr not actually used in this example ..)
+      _ <- client.containers
+        .logs(container.id, stdout, stderr, follow)
+        .evalTap[IO]({
+          case Containers.Log(Containers.Stream.StdOut, message) => IO(System.out.println(message))
+          case Containers.Log(Containers.Stream.StdErr, message) => IO(System.err.println(message))
+        })
+        .compile
+        .drain
+    } yield ()
   }
 
   private val dockerfile =

@@ -71,7 +71,7 @@ trait Images[F[_]] {
   /**
     *
     */
-  def build(image: Stream[F, Byte], name: Option[String]): Stream[F, BuildEvent]
+  def build(image: Stream[F, Byte], name: Option[String] = None): Stream[F, BuildEvent]
 
   /**
     * Returns low-level information about an image. Similar to the `docker image inspect` command.

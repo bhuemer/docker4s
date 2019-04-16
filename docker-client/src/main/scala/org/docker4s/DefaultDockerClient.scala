@@ -27,7 +27,6 @@ import cats.effect.Effect
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
-import io.circe.{Decoder, Json}
 import org.docker4s.api.{Containers, Images, Networks, Parameter, Secrets, System, Volumes}
 import org.docker4s.errors.ContainerNotFoundException
 import org.docker4s.models.containers._
@@ -38,7 +37,7 @@ import org.docker4s.models.secrets.{Secret, SecretCreated}
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
 import org.docker4s.util.LogDecoder
-import org.http4s.{Header, Headers, Status}
+import org.http4s.Status
 
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
@@ -326,14 +325,20 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
             .stream
       }
 
-      Stream.eval(F.delay(logger.info(s"Saving the images $ids."))).flatMap(_ => response)
+      Stream.eval(F.delay(logger.info(s"Saving/exporting the images $ids."))).flatMap(_ => response)
     }
 
-    override def load(image: Stream[F, Byte]): F[ImageLoaded] = {
-      client
-        .post("/images/load")
-        .withBody(image)
-        .expect(ImageLoaded.decoder)
+    override def load(image: Stream[F, Byte], quiet: Boolean): F[ImageLoaded] = {
+      F.delay(logger.info(s"Loading/importing an image from an archive [quiet: $quiet].")) *>
+        client
+          .post("/images/load")
+          .withQueryParam("quiet", quiet)
+          .withBody(image)
+          .expect(ImageLoaded.decoder)
+          .map({ loaded =>
+            logger.info(s"Finished loading image ${loaded.id.value}.")
+            loaded
+          })
     }
 
     /**

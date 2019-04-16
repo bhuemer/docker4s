@@ -66,7 +66,7 @@ trait Images[F[_]] {
     */
   def save(id: Seq[Image.Id]): Stream[F, Byte]
 
-  def load(image: Stream[F, Byte]): F[ImageLoaded]
+  def load(image: Stream[F, Byte], quiet: Boolean = false): F[ImageLoaded]
 
   /**
     *

@@ -22,6 +22,7 @@
 package org.docker4s.api
 
 import com.typesafe.scalalogging.LazyLogging
+import fs2.Stream
 import org.docker4s.models.images.ImageSummary
 import org.docker4s.syntax._
 import org.scalatest.Matchers
@@ -58,6 +59,26 @@ class ImagesIntegrationTest extends ClientSpec with Matchers with LazyLogging {
           List(s"busybox@${statusAndDigest.digest.get}") should be(busybox2.repoDigests)
       }
     }
+  }
+
+  "The client" should "support savind images to and loading images from TAR archives" given { client =>
+    for {
+      _ <- client.images.pull(name = "busybox").compile.drain
+
+      busybox <- client.images.inspect(name = "busybox")
+
+      saved <- client.images.save(busybox.id).compile.toList
+      _ = logger.info(s"Saved image in memory. Size: ${saved.size} bytes.")
+
+      // Delete it so that we can reload it from the saved version.
+      _ <- client.images.remove(busybox.id, force = true)
+
+      loaded <- client.images.load(Stream.emits(saved))
+      _ = loaded.id should be(busybox.id)
+
+      images <- client.images.list()
+      _ = images.map(_.id) should contain(busybox.id)
+    } yield ()
   }
 
 }

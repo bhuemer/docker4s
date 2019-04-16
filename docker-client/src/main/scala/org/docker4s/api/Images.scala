@@ -38,9 +38,23 @@ trait Images[F[_]] {
   def get(id: Image.Id): ImageRef[F] = ImageRef(this, id)
 
   /**
-    * Returns a list of images on the server. Similar to the `docker image list` or `docker images` command.
+    * Returns a list of images on the server.
+    *
+    * Similar to the `docker image list` or `docker images` command.
+    *
+    * @example {{{
+    * import org.docker4s.api.Images.ListParameter._
+    * import org.docker4s.models.images.{Image, ImageSummary}
+    *
+    * val program = for {
+    *   images <- client.images.list(showDigests)
+    *   _ = images.foreach({ image =>
+    *     println(s"Image: $image")
+    *   })
+    * } yield ()
+    * }}}
     */
-  def list(parameters: Parameter[Images.ListCriterion]*): F[List[ImageSummary]]
+  def list(parameters: Parameter[Images.ListParameter]*): F[List[ImageSummary]]
 
   /**
     * Saves one or more images to a TAR archive. Similar to the `docker image save` command.
@@ -52,6 +66,8 @@ trait Images[F[_]] {
     */
   def save(id: Seq[Image.Id]): Stream[F, Byte]
 
+  def load(image: Stream[F, Byte]): F[ImageLoaded]
+
   /**
     *
     */
@@ -60,7 +76,9 @@ trait Images[F[_]] {
   /**
     * Returns low-level information about an image. Similar to the `docker image inspect` command.
     */
-  def inspect(id: Image.Id): F[Image]
+  def inspect(id: Image.Id): F[Image] = inspect(id.value)
+
+  def inspect(name: String): F[Image]
 
   /**
     * Pulls the given docker container image.
@@ -92,30 +110,38 @@ trait Images[F[_]] {
 object Images {
 
   // type tag for criteria used in the `list` method
-  sealed trait ListCriterion
+  sealed trait ListParameter
 
-  object ListCriterion {
+  object ListParameter {
 
     /**
       * Show all images. Only images from a final layer (no children) are shown by default.
       */
-    def showAll: Parameter[ListCriterion] = query("all", "true")
+    def showAll: Parameter[ListParameter] = query("all", "true")
 
     /**
       * Show digest information as `RepoDigests` field on each image.
       */
-    def showDigests: Parameter[ListCriterion] = query("digests", "true")
+    def showDigests: Parameter[ListParameter] = query("digests", "true")
 
-    def hideDigests: Parameter[ListCriterion] = query("digests", "false")
+    def hideDigests: Parameter[ListParameter] = query("digests", "false")
 
     /**
       * Show dangling images only, i.e. images without a repository name.
       *
       * By default both dangling and non-dangling images will be shown.
       */
-    def showDangling: Parameter[ListCriterion] = filter("dangling", "true")
+    def showDangling: Parameter[ListParameter] = filter("dangling", "true")
 
-    def hideDangling: Parameter[ListCriterion] = filter("dangling", "false")
+    def hideDangling: Parameter[ListParameter] = filter("dangling", "false")
+
+    def withAfter(image: String): Parameter[ListParameter] = filter("after", image)
+
+    def withLabel(key: String): Parameter[ListParameter] = filter("label", key)
+
+    def withLabel(key: String, value: String): Parameter[ListParameter] = filter("label", s"$key=$value")
+
+    def withBefore(image: String): Parameter[ListParameter] = filter("before", image)
 
   }
 

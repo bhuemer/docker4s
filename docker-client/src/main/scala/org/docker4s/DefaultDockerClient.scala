@@ -27,6 +27,7 @@ import cats.effect.Effect
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
+import io.circe.{Decoder, Json}
 import org.docker4s.api.{Containers, Images, Networks, Parameter, Secrets, System, Volumes}
 import org.docker4s.errors.ContainerNotFoundException
 import org.docker4s.models.containers._
@@ -37,7 +38,7 @@ import org.docker4s.models.secrets.{Secret, SecretCreated}
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.Client
 import org.docker4s.util.LogDecoder
-import org.http4s.Status
+import org.http4s.{Header, Headers, Status}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
@@ -300,7 +301,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
   override val images: Images[F] = new Images[F] {
 
     /** Returns a list of images on the server. Similar to the `docker image list` or `docker images` command. */
-    override def list(parameters: Parameter[Images.ListCriterion]*): F[List[ImageSummary]] = {
+    override def list(parameters: Parameter[Images.ListParameter]*): F[List[ImageSummary]] = {
       F.delay(logger.info(s"Listing images [parameters: ${Parameter.toDebugString(parameters)}].")) *>
         client
           .get("/images/json")
@@ -328,13 +329,20 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       Stream.eval(F.delay(logger.info(s"Saving the images $ids."))).flatMap(_ => response)
     }
 
+    override def load(image: Stream[F, Byte]): F[ImageLoaded] = {
+      client
+        .post("/images/load")
+        .withBody(image)
+        .expect(ImageLoaded.decoder)
+    }
+
     /**
       * Returns low-level information about an image. Similar to the `docker image inspect` command.
       */
-    override def inspect(id: Image.Id): F[Image] = {
-      F.delay(logger.info(s"Inspecting the image ${id.value}.")) *>
+    override def inspect(name: String): F[Image] = {
+      F.delay(logger.info(s"Inspecting the image $name.")) *>
         client
-          .get(s"/images/${id.value}/json")
+          .get(s"/images/$name/json")
           .expect(Image.decoder)
     }
 

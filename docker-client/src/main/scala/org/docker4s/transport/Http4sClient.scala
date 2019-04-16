@@ -82,6 +82,9 @@ object Http4sClient extends LazyLogging {
       private val statusHandler: PartialFunction[Status, ErrorCreator])(implicit F: Effect[F])
       extends RequestBuilder[F] {
 
+    override def withHeader(header: Header): RequestBuilder[F] =
+      new Http4sRequestBuilder(client, request.withHeaders(header), parameters, statusHandler)
+
     override def withBody[T](entity: T)(implicit encoder: EntityEncoder[F, T]): RequestBuilder[F] = {
       new Http4sRequestBuilder(client, request.withEntity(entity), parameters, statusHandler)
     }

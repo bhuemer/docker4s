@@ -25,7 +25,7 @@ import cats.effect.Effect
 import fs2.Stream
 import io.circe.{Decoder, Encoder}
 import org.docker4s.api.Parameter
-import org.http4s.{EntityEncoder, QueryParamEncoder, Status, Uri}
+import org.http4s.{EntityEncoder, Header, QueryParamEncoder, Status, Uri}
 
 import scala.language.higherKinds
 
@@ -44,6 +44,8 @@ trait Client[F[_]] {
 object Client {
 
   trait RequestBuilder[F[_]] {
+
+    def withHeader(header: Header): RequestBuilder[F]
 
     def withBody[T](entity: T)(implicit encoder: EntityEncoder[F, T]): RequestBuilder[F]
 

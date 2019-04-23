@@ -33,12 +33,28 @@ dependencies {
     testImplementation 'org.slf4j:slf4j-simple:1.7.25'
 }
 
+/**
+ * Utility function to resolve a property
+ */
+def resolve(String name) {
+    String parameter = System.getenv(name)
+    if (parameter == null || parameter.isEmpty()) {
+        parameter = (String) project.findProperty(name)
+    }
+
+    if (parameter == null || parameter.isEmpty()) {
+        project.getLogger().warn("Parameter `" + name + "` cannot be resolved. " +
+                "Please either set as an environment variable or set in `gradle.properties`.")
+    }
+
+    return parameter
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
             groupId = 'org.docker4s'
             artifactId = 'docker-client'
-            version = '0.9-SNAPSHOT'
 
             from components.java
 
@@ -74,16 +90,14 @@ publishing {
         maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
             credentials {
-                username sonatypeUsername
-                password sonatypePassword
+                username resolve("SONATYPE_USER")
+                password resolve("SONATYPE_PASS")
             }
         }
     }
 }
 
 signing {
-    // def signingKey = findProperty("signingKey")
-    // def signingPassword = findProperty("signingPassword")
-    // useInMemoryPgpKeys(signingKey, signingPassword)
+    useInMemoryPgpKeys(resolve("GPG_KEY"), resolve("GPG_PASS"))
     sign configurations.archives
 }

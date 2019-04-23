@@ -45,7 +45,7 @@ jobs:
     - checkout
     - restore_cache: *restore_cache
     - save_cache: *save_cache
-    - run: gradle spec
+    - run: ./gradlew spec
     - run: *save_test_results
     - store_test_results: *store_test_results
     - store_artifacts: *store_artifacts
@@ -59,7 +59,7 @@ jobs:
     - setup_remote_docker:
         version: 18.06.0-ce
         docker_layer_caching: true
-    - run: gradle integrationSpec
+    - run: ./gradlew integrationSpec
     - run: *save_test_results
     - store_test_results: *store_test_results
     - store_artifacts: *store_artifacts
@@ -73,7 +73,7 @@ jobs:
     - setup_remote_docker:
         version: 17.03.0-ce
         docker_layer_caching: true
-    - run: gradle integrationSpec
+    - run: ./gradlew integrationSpec
     - run: *save_test_results
     - store_test_results: *store_test_results
     - store_artifacts: *store_artifacts

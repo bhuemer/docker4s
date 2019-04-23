@@ -91,63 +91,91 @@ trait Containers[F[_]] {
 
   /**
     * Exports the contents of the given container as a tarball.
+    *
+    * Similar to the `docker container export` command.
+    *
+    * @param path Resource in the container’s filesystem to archive. If no path is provided, then the entire file
+    *             system of the container will be exported in the TAR archive.
     */
-  def export(id: Container.Id): Stream[F, Byte]
+  def export(id: Container.Id, path: Option[String] = None): Stream[F, Byte]
 
   /**
     * Renames the given Docker container.
+    *
+    * Similar to the `docker container rename` command.
     */
   def rename(id: Container.Id, newName: String): F[Unit]
 
   def start(id: Container.Id): F[Unit]
 
   /**
-    * Stops the given container. Similar to the `docker stop` command.
+    * Stops the given container.
+    *
+    * Similar to the `docker stop` command.
+    *
     * @param timeout Amount of time to give the container to stop before killing it. Defaults to 10 seconds.
     */
   def stop(id: Container.Id, timeout: FiniteDuration = FiniteDuration(10, "s")): F[Unit]
 
   /**
-    * Restart the given container. Similar to the `docker restart` command.
+    * Restart the given container.
+    *
+    * Similar to the `docker restart` command.
+    *
     * @param timeout Amount of time to give the container to stop before killing it. Defaults to 10 seconds.
     */
   def restart(id: Container.Id, timeout: FiniteDuration = FiniteDuration(10, "s")): F[Unit]
 
   /**
-    * Kills the given docker container. Similar to the `docker kill` or `docker container kill` command.
+    * Kills the given docker container.
+    *
+    * Similar to the `docker kill` or `docker container kill` command.
+    *
     * @param signal Signal to send to the container, e.g. SIGKILL, SIGINT, ..
     */
   def kill(id: Container.Id, signal: String = "SIGKILL"): F[Unit]
 
   /**
-    * Pauses the given docker container. Similar to the `docker pause` or `docker container pause` commands.
+    * Pauses the given docker container.
+    *
+    * Similar to the `docker pause` or `docker container pause` commands.
     */
   def pause(id: Container.Id): F[Unit]
 
   /**
-    * Unpauses the given docker container. Similar to the `docker unpause` or `docker container unpause` commands.
+    * Unpauses the given docker container.
+    *
+    * Similar to the `docker unpause` or `docker container unpause` commands.
     */
   def unpause(id: Container.Id): F[Unit]
 
   /**
-    * Waits until a container stops, then returns the exit code. Similar to the `docker container wait` command.
+    * Waits until a container stops, then returns the exit code.
+    *
+    * Similar to the `docker container wait` command.
     */
   def await(id: Container.Id): F[ContainerExit]
 
   /**
-    * List processes running inside a container. Similar to the `docker container ps` command.
+    * List processes running inside a container.
+    *
+    * Similar to the `docker container ps` command.
     */
   def top(id: Container.Id, psArgs: Option[String] = None): F[Processes]
 
   /**
-    * Removes the given container. Similar to the `docker rm` command.
+    * Removes the given container.
+    *
+    * Similar to the `docker rm` command.
     */
   def remove(id: Container.Id): F[Unit]
 
   /**
-    * Delete stopped containers. Similar to the `docker container prune` command.
+    * Delete stopped containers.
+    *
+    * Similar to the `docker container prune` command.
     */
-  def prune(): F[ContainersPruned]
+  def prune(parameters: Parameter[Containers.PruneParameter]*): F[ContainersPruned]
 
 }
 
@@ -281,6 +309,27 @@ object Containers {
     def withNetworkingDisabled: Parameter[CreateParameter] = body("NetworkDisabled", false)
 
     def withUser(user: String): Parameter[CreateParameter] = body("User", user)
+
+  }
+
+  sealed trait PruneParameter
+
+  object PruneParameter {
+
+    /**
+      * Prune containers created before this timestamp.
+      */
+    def until(until: ZonedDateTime): Parameter[PruneParameter] = filter("until", until.toString)
+
+    /**
+      * Prune containers with the specified label.
+      */
+    def withLabel(key: String): Parameter[PruneParameter] = filter("label", key)
+
+    /**
+      * Prune containers with the specified label.
+      */
+    def withLabel(key: String, value: String): Parameter[PruneParameter] = filter("label", s"$key=$value")
 
   }
 

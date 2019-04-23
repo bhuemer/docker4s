@@ -61,7 +61,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
-      * Returns a list of containers. Similar to the `docker ps` or `docker container ls` commands.
+      * Returns a list of containers.
+      *
+      * Similar to the `docker ps` or `docker container ls` commands.
       */
     override def list(parameters: Parameter[Containers.ListParameter]*): F[List[ContainerSummary]] = {
       F.delay(logger.info(s"Listing containers [parameters: ${Parameter.toDebugString(parameters)}].")) *>
@@ -73,11 +75,21 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
 
     /**
       * Exports the contents of the given container as a tarball.
+      *
+      * Similar to the `docker container export` command.
+      *
+      * @param path Resource in the container’s filesystem to archive. If no path is provided, then the entire file
+      *             system of the container will be exported in the TAR archive.
       */
-    override def export(id: Container.Id): Stream[F, Byte] = {
+    override def export(id: Container.Id, path: Option[String]): Stream[F, Byte] = {
       Stream
-        .eval(F.delay(s"Exporting contents for the container ${id.value}."))
-        .flatMap(_ => client.get(s"/containers/${id.value}/export").stream)
+        .eval(F.delay(s"Exporting contents for the container ${id.value} [path: $path]."))
+        .flatMap({ _ =>
+          path match {
+            case Some(_) => client.get(s"/containers/${id.value}/archive").withQueryParam("path", path).stream
+            case None    => client.get(s"/containers/${id.value}/export").stream
+          }
+        })
     }
 
     /**
@@ -108,7 +120,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
-      * Stops the given container. Similar to the `docker stop` command.
+      * Stops the given container.
+      *
+      * Similar to the `docker stop` command.
       *
       * @param timeout Amount of time to give the container to stop before killing it. Defaults to 10 seconds.
       */
@@ -121,7 +135,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
-      * Restart the given container. Similar to the `docker restart` command.
+      * Restart the given container.
+      *
+      * Similar to the `docker restart` command.
       *
       * @param timeout Amount of time to give the container to stop before killing it. Defaults to 10 seconds.
       */
@@ -134,7 +150,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
-      * Kills the given docker container by sending a POSIX signal such as SIGKILL.
+      * Kills the given docker container.
+      *
+      * Similar to the `docker kill` or `docker container kill` command.
       *
       * @param signal Signal to send to the container, e.g. SIGKILL, SIGINT, ..
       */
@@ -147,7 +165,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
-      * Pauses the given docker container. Similar to the `docker container pause` command.
+      * Pauses the given docker container.
+      *
+      * Similar to the `docker container pause` command.
       */
     override def pause(id: Container.Id): F[Unit] = {
       F.delay(logger.debug(s"Pausing the container ${id.value}.")) *>
@@ -155,7 +175,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
-      * Unpauses the given docker container. Similar to the `docker container unpause` command.
+      * Unpauses the given docker container.
+      *
+      * Similar to the `docker container unpause` command.
       */
     override def unpause(id: Container.Id): F[Unit] = {
       F.delay(logger.info(s"Unpausing the container ${id.value}.")) *>
@@ -163,7 +185,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
-      * Waits until a container stops, then returns the exit code. Similar to the `docker container wait` command.
+      * Waits until a container stops, then returns the exit code.
+      *
+      * Similar to the `docker container wait` command.
       */
     override def await(id: Container.Id): F[ContainerExit] = {
       F.delay(logger.info(s"Waiting for the container ${id.value} to stop.")) *>
@@ -173,7 +197,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
-      * List processes running inside a container. Similar to the `docker container ps` command.
+      * List processes running inside a container.
+      *
+      * Similar to the `docker container ps` command.
       */
     def top(id: Container.Id, psArgs: Option[String]): F[Processes] = {
       F.delay(logger.info(s"Listing processes for container ${id.value}.")) *>
@@ -184,7 +210,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
-      * Removes the given container. Similar to the `docker rm` command.
+      * Removes the given container.
+      *
+      * Similar to the `docker rm` command.
       */
     override def remove(id: Container.Id): F[Unit] = {
       F.delay(logger.info(s"Removing the container ${id.value}.")) *>
@@ -206,12 +234,15 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
-      * Delete stopped containers. Similar to the `docker container prune` command.
+      * Delete stopped containers.
+      *
+      * Similar to the `docker container prune` command.
       */
-    override def prune(): F[ContainersPruned] = {
-      F.delay(logger.info(s"Pruning containers.")) *>
+    override def prune(parameters: Parameter[Containers.PruneParameter]*): F[ContainersPruned] = {
+      F.delay(logger.info(s"Pruning containers [parameters: ${Parameter.toDebugString(parameters)}].")) *>
         client
           .post("/containers/prune")
+          .withParameters(parameters)
           .expect(ContainersPruned.decoder)
     }
 

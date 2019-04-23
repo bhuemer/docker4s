@@ -23,12 +23,15 @@ package org.docker4s.util
 
 import java.io.ByteArrayOutputStream
 
-import fs2.{Chunk, Pipe, Pure, Stream, compress}
+import fs2.{Chunk, Pipe, Pure, RaiseThrowable, Stream, compress}
 import org.apache.commons.compress.archivers.tar.{TarArchiveEntry, TarArchiveOutputStream}
 
 import scala.language.higherKinds
 
 object Compression {
+
+  // 100kb by default
+  val DEFAULT_BUFFER_SIZE: Int = 1024 * 100
 
   case class TarEntry[F[_]](name: String, size: Long, mode: Option[Int], contents: Stream[F, Byte])
 
@@ -45,7 +48,7 @@ object Compression {
   /**
     * Returns a `Pipe` that turns a stream of file contents into a TAR archive.
     */
-  def tar[F[_]](bufferSize: Int = 1024): Pipe[F, TarEntry[F], Byte] = { in =>
+  def tar[F[_]](bufferSize: Int = DEFAULT_BUFFER_SIZE): Pipe[F, TarEntry[F], Byte] = { in =>
     Stream.suspend({
       val bos: ByteArrayOutputStream = new ByteArrayOutputStream(bufferSize)
       val tos: TarArchiveOutputStream = new TarArchiveOutputStream(bos)
@@ -95,6 +98,9 @@ object Compression {
     })
   }
 
-  def gzip[F[_]](bufferSize: Int = 1024): Pipe[F, Byte, Byte] = compress.gzip(bufferSize)
+  def gzip[F[_]](bufferSize: Int = DEFAULT_BUFFER_SIZE): Pipe[F, Byte, Byte] = compress.gzip(bufferSize)
+
+  def gunzip[F[_]: RaiseThrowable](bufferSize: Int = DEFAULT_BUFFER_SIZE): Pipe[F, Byte, Byte] =
+    compress.gunzip(bufferSize)
 
 }

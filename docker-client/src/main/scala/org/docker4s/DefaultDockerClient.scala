@@ -72,6 +72,15 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
+      * Exports the contents of the given container as a tarball.
+      */
+    override def export(id: Container.Id): Stream[F, Byte] = {
+      Stream
+        .eval(F.delay(s"Exporting contents for the container ${id.value}."))
+        .flatMap(_ => client.get(s"/containers/${id.value}/export").stream)
+    }
+
+    /**
       * Renames the given Docker container.
       */
     override def rename(id: Container.Id, name: String): F[Unit] = {

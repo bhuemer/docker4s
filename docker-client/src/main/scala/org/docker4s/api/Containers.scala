@@ -90,6 +90,11 @@ trait Containers[F[_]] {
   def logs(id: Container.Id, criteria: Parameter[Containers.LogParameter]*): Stream[F, Containers.Log]
 
   /**
+    * Exports the contents of the given container as a tarball.
+    */
+  def export(id: Container.Id): Stream[F, Byte]
+
+  /**
     * Renames the given Docker container.
     */
   def rename(id: Container.Id, newName: String): F[Unit]

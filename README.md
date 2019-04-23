@@ -2,6 +2,8 @@
 
 [![CircleCI](https://circleci.com/gh/bhuemer/docker4s.svg?style=shield&circle-token=ef5511de1818d46e6cce2e2d84ee7bbd2b1ff40b)](https://circleci.com/gh/bhuemer/docker4s)
 
+Docker client for Scala backed by http4s, fs2, cats & circe.
+
 ## Installation
 
 docker4s is available for Scala 2.12 on Sonatype OSS Snapshots at the following coordinates:

@@ -35,12 +35,55 @@ dependencies {
 
 publishing {
     publications {
-        maven(MavenPublication) {
+        mavenJava(MavenPublication) {
             groupId = 'org.docker4s'
             artifactId = 'docker-client'
             version = '0.9-SNAPSHOT'
 
             from components.java
+
+            artifact sourcesJar
+            artifact scaladocJar
+
+            pom {
+                name = 'Docker4s'
+                description = 'Docker client for Scala backed by http4s, fs2, cats & circe.'
+                url = 'http://docker4s.org'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'http://www.opensource.org/licenses/mit-license.php'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'bhuemer'
+                        name = 'Bernhard Huemer'
+                        email = 'bernhard.huemer@gmail.com'
+                    }
+                }
+                scm {
+                    url = 'https://github.com/bhuemer/docker4s'
+                    connection = 'scm:git://github.com/bhuemer/docker4s.git'
+                    developerConnection = 'scm:git://github.com/bhuemer/docker4s.git'
+                }
+            }
         }
     }
+    repositories {
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots/"
+            credentials {
+                username sonatypeUsername
+                password sonatypePassword
+            }
+        }
+    }
+}
+
+signing {
+    // def signingKey = findProperty("signingKey")
+    // def signingPassword = findProperty("signingPassword")
+    // useInMemoryPgpKeys(signingKey, signingPassword)
+    sign configurations.archives
 }

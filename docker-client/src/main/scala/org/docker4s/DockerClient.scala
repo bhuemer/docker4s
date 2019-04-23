@@ -79,6 +79,10 @@ object DockerClient {
     *  - '''DOCKER_TLS_VERIFY''' - verify the host against a CA certificate
     *  - '''DOCKER_CERT_PATH''' - path to a directory containing TLS certificates to use when connecting
     */
+  def fromEnvironment[F[_]: ConcurrentEffect](implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
+    fromEnvironment(Environment.Live)
+  }
+
   def fromEnvironment[F[_]: ConcurrentEffect](environment: Environment)(
       implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
     fromHost(DockerHost.fromEnvironment(environment))

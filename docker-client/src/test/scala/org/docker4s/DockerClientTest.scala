@@ -3,29 +3,23 @@ package org.docker4s
 import cats.effect._
 import fs2.Stream
 import org.docker4s.api.Containers
-import org.docker4s.models.images.Image
 import org.docker4s.util.Compression
 
-object DockerClientTest {
+import scala.concurrent.ExecutionContext
 
-  def main(args: Array[String]): Unit = {
-    import cats.effect.{ContextShift, Timer}
-    import scala.concurrent.ExecutionContext.global
+object DockerClientTest extends IOApp {
 
-    implicit val cs: ContextShift[IO] = IO.contextShift(global)
-    implicit val timer: Timer[IO] = IO.timer(global)
-    val cf: ConcurrentEffect[IO] = implicitly[ConcurrentEffect[IO]]
+  implicit val ec: ExecutionContext = ExecutionContext.global
 
+  override def run(args: List[String]): IO[ExitCode] = {
     DockerClient
-      .fromEnvironment(Environment.Live)(cf, global)
+      .fromEnvironment[IO]
       .use({ client =>
-        main(client)
+        main(client).map(_ => ExitCode.Success)
       })
-      .unsafeRunSync()
-    println()
   }
 
-  private def main(client: DockerClient[IO])(implicit cs: ContextShift[IO], timer: Timer[IO]): IO[Unit] = {
+  private def main(client: DockerClient[IO]): IO[Unit] = {
     import org.docker4s.api.Containers.LogParameter._
     import org.docker4s.api.Containers.CreateParameter._
     import org.docker4s.syntax._

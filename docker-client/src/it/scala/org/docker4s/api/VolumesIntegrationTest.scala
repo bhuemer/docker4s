@@ -22,7 +22,7 @@
 package org.docker4s.api
 
 import com.typesafe.scalalogging.LazyLogging
-import org.docker4s.api.Volumes.ListCriterion.{hideDangling, showDangling, withName}
+import org.docker4s.api.Volumes.ListParameter.{hideDangling, showDangling, withName}
 import org.docker4s.models.volumes.VolumeList
 import org.scalatest.Matchers
 

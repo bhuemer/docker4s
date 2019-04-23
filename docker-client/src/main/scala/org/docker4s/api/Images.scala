@@ -22,6 +22,7 @@
 package org.docker4s.api
 
 import java.net.URI
+import java.time.ZonedDateTime
 
 import fs2.Stream
 import org.docker4s.api.Parameter.{filter, query, queryMap}
@@ -99,11 +100,13 @@ trait Images[F[_]] {
   /** Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command. */
   def history(id: Image.Id): F[List[ImageHistory]]
 
+  def tag(id: Image.Id, repo: String, tag: Option[String] = None): F[Unit]
+
   /**
     * Removes all dangling images.
     */
   // TODO: Allow filtering of what to prune.
-  def prune(): F[ImagesPruned]
+  def prune(parameters: Parameter[Images.PruneParameter]*): F[ImagesPruned]
 
 }
 
@@ -182,6 +185,21 @@ object Images {
       */
     def withNetworkMode(networkMode: String): Parameter[BuildParameter] =
       query("networkmode", networkMode)
+
+  }
+
+  sealed trait PruneParameter
+
+  object PruneParameter {
+
+    /**
+      * Prune images created before this timestamp.
+      */
+    def until(until: ZonedDateTime): Parameter[PruneParameter] = filter("until", until.toEpochSecond.toString)
+
+    def withLabel(key: String): Parameter[PruneParameter] = filter("label", key)
+
+    def withLabel(key: String, value: String): Parameter[PruneParameter] = filter("label", s"$key=$value")
 
   }
 

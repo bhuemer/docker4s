@@ -61,7 +61,7 @@ class ImagesIntegrationTest extends ClientSpec with Matchers with LazyLogging {
     }
   }
 
-  "The client" should "support savind images to and loading images from TAR archives" given { client =>
+  "The client" should "support saving images to and loading images from TAR archives" given { client =>
     for {
       _ <- client.images.pull(name = "busybox").compile.drain
 
@@ -78,6 +78,19 @@ class ImagesIntegrationTest extends ClientSpec with Matchers with LazyLogging {
 
       images <- client.images.list()
       _ = images.map(_.id) should contain(busybox.id)
+    } yield ()
+  }
+
+  "The client" should "support tagging images" given { client =>
+    for {
+      _ <- client.images.pull(name = "busybox").compile.drain
+
+      busybox <- client.images.inspect(name = "busybox")
+
+      _ <- client.images.tag(busybox.id, repo = "docker4s/tagging-test", tag = Some("latest"))
+
+      tagged <- client.images.inspect(name = "docker4s/tagging-test")
+      _ = tagged.id should be(busybox.id)
     } yield ()
   }
 

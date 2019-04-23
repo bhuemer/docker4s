@@ -25,9 +25,7 @@ import org.scalatest.Matchers
 
 class NetworksIntegrationTest extends ClientSpec with Matchers {
 
-  /**
-    */
-  "Newly created, unused networks" should "be deleted when pruning networks" given { client =>
+  "The client" should "support pruning unused networks" given { client =>
     for {
       created <- client.networks.create("temp-network-1")
 

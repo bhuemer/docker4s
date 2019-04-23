@@ -31,7 +31,7 @@ trait Volumes[F[_]] {
   /**
     * Returns volumes configured in the docker host. Similar to the `docker volume ls` command.
     */
-  def list(parameters: Parameter[Volumes.ListCriterion]*): F[VolumeList]
+  def list(parameters: Parameter[Volumes.ListParameter]*): F[VolumeList]
 
   /**
     * Creates and registers a named volume. Similar to the `docker volume create` command.
@@ -65,45 +65,58 @@ trait Volumes[F[_]] {
   /**
     * Removes unused volumes. Similar to the `docker volume prune` command.
     */
-  def prune(): F[VolumesPruned]
+  def prune(parameters: Parameter[Volumes.PruneParameter]*): F[VolumesPruned]
 
 }
 
 object Volumes {
 
-  sealed trait ListCriterion
+  sealed trait ListParameter
 
-  object ListCriterion {
+  object ListParameter {
 
     /**
       * Show dangling volumes only, i.e. all volumes that are not in use by a container.
       */
-    def showDangling: Parameter[ListCriterion] = filter("dangling", "true")
+    def showDangling: Parameter[ListParameter] = filter("dangling", "true")
 
     /**
       * Show non-dangling volumes only, i.e. all volumes that are in use by one or mor containers.
       */
-    def hideDangling: Parameter[ListCriterion] = filter("dangling", "false")
+    def hideDangling: Parameter[ListParameter] = filter("dangling", "false")
 
     /**
       * Show volumes with a matching driver name.
       */
-    def withDriver(name: String): Parameter[ListCriterion] = filter("driver", name)
+    def withDriver(name: String): Parameter[ListParameter] = filter("driver", name)
 
     /**
       * Show volumes with a label with the given name, regardless of the label's value.
       */
-    def withLabel(name: String): Parameter[ListCriterion] = filter("label", name)
+    def withLabel(name: String): Parameter[ListParameter] = filter("label", name)
 
     /**
       * Show volumes with the given label and value combination.
       */
-    def withLabel(name: String, value: String): Parameter[ListCriterion] = filter("label", s"$name:$value")
+    def withLabel(name: String, value: String): Parameter[ListParameter] = filter("label", s"$name:$value")
 
     /**
       * Show volumes with the given name or part of the given name.
       */
-    def withName(name: String): Parameter[ListCriterion] = filter("name", name)
+    def withName(name: String): Parameter[ListParameter] = filter("name", name)
+
+  }
+
+  sealed trait PruneParameter
+
+  object PruneParameter {
+
+    /**
+      * Prunes volumes with the given label key.
+      */
+    def withLabel(key: String): Parameter[PruneParameter] = filter("label", key)
+
+    def withLabel(key: String, value: String): Parameter[PruneParameter] = filter("label", s"$key=$value")
 
   }
 

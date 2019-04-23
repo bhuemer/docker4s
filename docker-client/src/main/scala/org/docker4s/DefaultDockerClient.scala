@@ -408,12 +408,25 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
+      *
+      */
+    override def tag(id: Image.Id, repo: String, tag: Option[String]): F[Unit] = {
+      F.delay(logger.info(s"Tagging image ${id.value} with $repo [tag: $tag].")) *>
+        client
+          .post(s"/images/${id.value}/tag")
+          .withQueryParam("repo", repo)
+          .withQueryParam("tag", tag)
+          .execute
+    }
+
+    /**
       * Removes all dangling images.
       */
-    override def prune(): F[ImagesPruned] = {
-      F.delay(logger.info("Pruning all images.")) *>
+    override def prune(parameters: Parameter[Images.PruneParameter]*): F[ImagesPruned] = {
+      F.delay(logger.info(s"Pruning images [parameters: ${Parameter.toDebugString(parameters)}].")) *>
         client
           .post("/images/prune")
+          .withParameters(parameters)
           .expect(ImagesPruned.decoder)
     }
 
@@ -424,7 +437,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     /**
       * Returns volumes currently registered by the docker daemon. Similar to the `docker volume ls` command.
       */
-    override def list(parameters: Parameter[Volumes.ListCriterion]*): F[VolumeList] = {
+    override def list(parameters: Parameter[Volumes.ListParameter]*): F[VolumeList] = {
       F.delay(logger.info(s"Listing volumes [parameters: ${Parameter.toDebugString(parameters)}].")) *>
         client.get(s"/volumes").withParameters(parameters).expect(VolumeList.decoder)
     }
@@ -483,8 +496,8 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     /**
       * Removes unused volumes. Similar to the `docker volume prune` command.
       */
-    override def prune(): F[VolumesPruned] = {
-      F.delay(logger.info("Pruning all volumes.")) *>
+    override def prune(parameters: Parameter[Volumes.PruneParameter]*): F[VolumesPruned] = {
+      F.delay(logger.info(s"Pruning volumes [parameters: ${Parameter.toDebugString(parameters)}].")) *>
         client
           .post("/volumes/prune")
           .expect(VolumesPruned.decoder)
@@ -555,7 +568,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Removes unused networks from the docker host.
       */
     override def prune(): F[NetworksPruned] = {
-      F.delay(logger.info("Pruning all networks.")) *>
+      F.delay(logger.info("Pruning networks.")) *>
         client.post(s"/networks/prune").expect(NetworksPruned.decoder)
     }
 

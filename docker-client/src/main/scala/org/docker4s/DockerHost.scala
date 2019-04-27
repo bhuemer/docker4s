@@ -27,6 +27,9 @@ import com.typesafe.scalalogging.LazyLogging
 import javax.net.ssl.SSLContext
 import org.docker4s.util.Certificates
 
+/**
+  * Represents a docker endpoint.
+  */
 sealed trait DockerHost
 
 object DockerHost extends LazyLogging {
@@ -53,6 +56,7 @@ object DockerHost extends LazyLogging {
   case class Tcp(host: String, port: Int, sslContext: Option[SSLContext]) extends DockerHost
 
   def fromEnvironment(environment: Environment): DockerHost = {
+    // Creates the SSL context for the docker endpoint from environment variables.
     def sslContext: Option[SSLContext] = {
       val noContext = environment.getProperty("DOCKER_TLS_VERIFY").contains("0")
       if (noContext) {
@@ -98,6 +102,10 @@ object DockerHost extends LazyLogging {
     }
   }
 
+  /**
+    * Utility method to create an SSL context from certificates available in the given path. Typically this path
+    * would be `DOCKER_CERT_PATH` environment variable or `~/.docker/`, but you can load them from anywhere.
+    */
   def loadCertificates(certificatesPath: Path): Option[SSLContext] = {
     loadCertificates(
       clientKey = certificatesPath.resolve(DEFAULT_CLIENT_KEY_NAME),

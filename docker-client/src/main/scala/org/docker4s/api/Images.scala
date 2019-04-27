@@ -75,10 +75,17 @@ trait Images[F[_]] {
   def build(image: Stream[F, Byte], name: Option[String] = None): Stream[F, BuildEvent]
 
   /**
-    * Returns low-level information about an image. Similar to the `docker image inspect` command.
+    * Returns low-level information about an image.
+    *
+    * Similar to the `docker image inspect` command.
     */
   def inspect(id: Image.Id): F[Image] = inspect(id.value)
 
+  /**
+    * Returns low-level information about an image.
+    *
+    * Similar to the `docker image inspect` command.
+    */
   def inspect(name: String): F[Image]
 
   /**
@@ -97,7 +104,11 @@ trait Images[F[_]] {
     */
   def remove(id: Image.Id, force: Boolean = false, prune: Boolean = true): F[ImagesRemoved]
 
-  /** Returns the history of the image, i.e. its parent layers. Similar to the `docker history` command. */
+  /**
+    * Returns the history of the image, i.e. its parent layers.
+    *
+    * Similar to the `docker history` command.
+    */
   def history(id: Image.Id): F[List[ImageHistory]]
 
   def tag(id: Image.Id, repo: String, tag: Option[String] = None): F[Unit]
@@ -105,7 +116,6 @@ trait Images[F[_]] {
   /**
     * Removes all dangling images.
     */
-  // TODO: Allow filtering of what to prune.
   def prune(parameters: Parameter[Images.PruneParameter]*): F[ImagesPruned]
 
 }

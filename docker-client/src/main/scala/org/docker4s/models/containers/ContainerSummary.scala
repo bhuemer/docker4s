@@ -35,8 +35,10 @@ import org.docker4s.models.networks.Endpoint
   * @param imageId The ID of the image that this container was created from
   * @param command Command to run when starting the container
   * @param createdAt When the container was created
+  * @param ports The ports exposed by this container
   * @param sizeRw The size of files that have been created or changed by this container
   * @param sizeRootFs The total size of all the files in this container
+  * @param labels User-defined key/value metadata
   */
 case class ContainerSummary(
     id: Container.Id,
@@ -48,6 +50,7 @@ case class ContainerSummary(
     ports: List[PortBinding],
     sizeRw: Option[Long],
     sizeRootFs: Option[Long],
+    labels: Map[String, String],
     state: Container.Status,
     status: String,
     networkMode: HostConfig.NetworkMode,
@@ -81,6 +84,7 @@ object ContainerSummary {
       state <- c.downField("State").as(Container.statusDecoder).right
       status <- c.downField("Status").as[String].right
       sizeRw <- c.downField("SizeRw").as[Option[Long]].right
+      labels <- c.downField("Labels").as[Option[Map[String, String]]].right
       sizeRootFs <- c.downField("SizeRootFs").as[Option[Long]].right
       networkMode <- c.downField("HostConfig").as(networkModeDecoder).right
       networks <- c.downField("NetworkSettings").as(Decoder.decodeOption(networksDecoder)).right
@@ -96,6 +100,7 @@ object ContainerSummary {
         ports = ports.getOrElse(List.empty),
         sizeRw = sizeRw,
         sizeRootFs = sizeRootFs,
+        labels = labels.getOrElse(Map.empty),
         state = state,
         status = status,
         networkMode = networkMode,

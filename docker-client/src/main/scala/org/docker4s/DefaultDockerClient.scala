@@ -23,7 +23,7 @@ package org.docker4s
 
 import java.util.Base64
 
-import cats.effect.Effect
+import cats.effect.Sync
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
@@ -42,7 +42,7 @@ import org.http4s.Status
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 
-private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])(implicit F: Effect[F])
+private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])(implicit F: Sync[F])
     extends DockerClient[F]
     with LazyLogging {
 
@@ -491,8 +491,10 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
         options: Map[String, String],
         labels: Map[String, String]): F[Volume] = {
       F.delay({
-        val nameStr = name.getOrElse("with no name")
-        logger.info(s"Creating the volume $nameStr.")
+        logger.info(name match {
+          case Some(value) => s"Create the volume $value."
+          case None        => "Creating a volume with no name."
+        })
       }) *>
         client
           .post(s"/volumes/create")

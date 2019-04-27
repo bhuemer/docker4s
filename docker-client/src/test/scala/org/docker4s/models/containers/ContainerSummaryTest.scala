@@ -80,6 +80,7 @@ class ContainerSummaryTest extends FlatSpec with Matchers {
         ports = List.empty,
         sizeRw = None,
         sizeRootFs = None,
+        labels = Map.empty,
         state = Container.Status.Exited,
         status = "Exited (0) 6 days ago",
         networkMode = "default",
@@ -166,6 +167,9 @@ class ContainerSummaryTest extends FlatSpec with Matchers {
         ),
         sizeRw = None,
         sizeRootFs = None,
+        labels = Map(
+          "maintainer" -> "Jupyter Project <jupyter@googlegroups.com>"
+        ),
         state = Container.Status.Running,
         status = "Up 6 seconds",
         networkMode = "default",

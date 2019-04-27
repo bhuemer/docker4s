@@ -2,8 +2,8 @@
 #
 
 job_defaults: &job_defaults
-  docker:
-  - image: circleci/openjdk:8-jdk
+  machine:
+    image: circleci/openjdk:8-jdk
 
   working_directory: ~/repo
 

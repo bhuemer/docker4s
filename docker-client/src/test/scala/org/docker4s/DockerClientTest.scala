@@ -31,8 +31,9 @@ object DockerClientTest extends IOApp {
 
       container <- client.containers.create(
         withImage("hashicorp/http-echo"),
-        withArgs("-text=Hello from Docker4s"),
-        withPortBinding(PortBinding(privatePort = 5678, publicPort = Some(1234)))
+        withArgs("-text=Hello from Docker4s", "-listen=:8000"),
+        withExposedPort(port = 8000),
+        withPortBinding(PortBinding(privatePort = 8000, publicPort = Some(1234)))
       )
       _ <- client.containers.start(container.id)
 

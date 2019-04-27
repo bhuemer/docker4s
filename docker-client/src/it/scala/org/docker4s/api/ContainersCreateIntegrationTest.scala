@@ -30,6 +30,8 @@ import org.docker4s.api.Containers.LogParameter._
 import org.docker4s.models.containers.PortBinding
 import org.scalatest.Matchers
 
+import scala.concurrent.duration._
+
 class ContainersCreateIntegrationTest extends ClientSpec with Matchers with LazyLogging {
 
   /**
@@ -67,18 +69,18 @@ class ContainersCreateIntegrationTest extends ClientSpec with Matchers with Lazy
       _ <- client.containers.start(container.id)
 
       _ = {
-//        if (!runningOnCircleCI) {
-        val url = new URL(dockerHost match {
-          case DockerHost.Tcp(host, _, _) => s"http://$host:1234"
-          case DockerHost.Unix(_, _)      => s"http://localhost:1234"
-        })
-        logger.info(s"Trying to read the echo message from $url.")
-        val content = scala.io.Source.fromURL(url).mkString
-        content should be("Hello from Docker4s\n")
-//        }
+        if (!runningOnCircleCI) {
+          val url = new URL(dockerHost match {
+            case DockerHost.Tcp(host, _, _) => s"http://$host:1234"
+            case DockerHost.Unix(_, _)      => s"http://localhost:1234"
+          })
+          logger.info(s"Trying to read the echo message from $url.")
+          val content = scala.io.Source.fromURL(url).mkString
+          content should be("Hello from Docker4s\n")
+        }
       }
 
-      _ <- client.containers.stop(container.id)
+      _ <- client.containers.stop(container.id, timeout = 1.second)
     } yield ()
   }
 
@@ -101,19 +103,19 @@ class ContainersCreateIntegrationTest extends ClientSpec with Matchers with Lazy
       _ <- client.containers.start(container.id)
 
       _ = {
-        // On CircleCI we cannot connect to these exposed ports.
-//        if (!runningOnCircleCI) {
-        val url = new URL(dockerHost match {
-          case DockerHost.Tcp(host, _, _) => s"http://$host:1235"
-          case DockerHost.Unix(_, _)      => s"http://localhost:1235"
-        })
-        logger.info(s"Trying to read the echo message from $url.")
-        val content = scala.io.Source.fromURL(url).mkString
-        content should be("Hello from Docker4s\n")
-//        }
+        // CircleCI doesn't allow exposed parts on docker machines and seeing that we'd like to
+        if (!runningOnCircleCI) {
+          val url = new URL(dockerHost match {
+            case DockerHost.Tcp(host, _, _) => s"http://$host:1235"
+            case DockerHost.Unix(_, _)      => s"http://localhost:1235"
+          })
+          logger.info(s"Trying to read the echo message from $url.")
+          val content = scala.io.Source.fromURL(url).mkString
+          content should be("Hello from Docker4s\n")
+        }
       }
 
-      _ <- client.containers.stop(container.id)
+      _ <- client.containers.stop(container.id, timeout = 1.second)
     } yield ()
   }
 

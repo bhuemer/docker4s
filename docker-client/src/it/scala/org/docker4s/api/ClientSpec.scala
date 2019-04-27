@@ -47,8 +47,9 @@ trait ClientSpec extends FlatSpecLike {
   }
 
   /**
-    * Unfortunately some tests aren't working on CircleCI because of network limitations for
-    * security reasons. This method allows us to ignore theses tests where necessary.
+    * TODO: Create a new CircleCI job profile that doesn't use a docker executor, but a machine instead. That would
+    * allow us to expose ports in docker containers we're starting up. In the meantime we'll just disable tests when
+    * they shouldn't run.
     */
   protected def runningOnCircleCI: Boolean = Environment.Live.getProperty("CIRCLECI").contains("true")
 

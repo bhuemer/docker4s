@@ -21,12 +21,19 @@
  */
 package org.docker4s.api
 
+import java.io.{ByteArrayInputStream, InputStream}
+
 import fs2.Stream
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.utils.IOUtils
 import org.docker4s.api.Containers.ListParameter.showAll
 import org.docker4s.api.Containers.LogParameter.stdout
+import org.docker4s.models.containers.ContainerChange
 import org.docker4s.util.Compression
 import org.docker4s.syntax._
 import org.scalatest.Matchers
+
+import scala.io.Codec
 
 class ContainersIntegrationTest extends ClientSpec with Matchers {
 
@@ -111,23 +118,8 @@ class ContainersIntegrationTest extends ClientSpec with Matchers {
   }
 
   "The client" should "support the stat operation for files in containers" given { client =>
-    val image = Stream
-      .emits(
-        Seq(
-          Compression.TarEntry(
-            "Dockerfile",
-            """
-            |FROM busybox:latest
-            |RUN echo "Hello" > /home/hello.txt
-            |RUN ln -s /home/hello.txt /home/link.txt
-          """.stripMargin.getBytes
-          )
-        ))
-      .through(Compression.tar())
-      .through(Compression.gzip())
-
     for {
-      build <- client.images.build(image, name = Some("docker4s-stat-test")).result
+      build <- client.images.build(busyboxImageWithDummyFiles, name = Some("docker4s-stat-test")).result
       _ = build.imageId.isDefined should be(true)
 
       container <- client.containers.create(build.imageId.get)
@@ -135,22 +127,91 @@ class ContainersIntegrationTest extends ClientSpec with Matchers {
 
       stat <- client.containers.stat(container.id, path = "/home/hello.txt")
       _ = stat.name should be("hello.txt")
-      _ = stat.size should be(6)
       _ = stat.mode.asString should be("-------------rw-r--r--")
       _ = stat.linkTarget should be(None)
 
       stat <- client.containers.stat(container.id, path = "/home")
       _ = stat.name should be("home")
-      _ = stat.size should be(4096)
       _ = stat.mode.asString should be("d------------rwxr-xr-x")
       _ = stat.linkTarget should be(None)
 
       stat <- client.containers.stat(container.id, path = "/home/link.txt")
       _ = stat.name should be("link.txt")
-      _ = stat.size should be(15)
       _ = stat.mode.asString should be("----L--------rwxrwxrwx")
       _ = stat.linkTarget should be(Some("/home/hello.txt"))
     } yield ()
+  }
+
+  "The client" should "support copying files from the container to the client" given { client =>
+    for {
+      build <- client.images.build(busyboxImageWithDummyFiles, name = Some("docker4s-copy-test1")).result
+      _ = build.imageId.isDefined should be(true)
+
+      container <- client.containers.create(build.imageId.get)
+      _ <- client.containers.start(container.id)
+
+      bytes <- client.containers.export(container.id, path = Some("/home/hello.txt")).compile.toList.map(_.toArray)
+      _ = {
+        val ain = new TarArchiveInputStream(new ByteArrayInputStream(bytes))
+
+        val entry = ain.getNextEntry
+
+        entry.getName should be("hello.txt")
+        readFully(ain) should be("Hello from Docker4s\n")
+
+        ain.getNextEntry should be(null)
+      }
+    } yield ()
+  }
+
+  "The client" should "support copying files from the client to the container" given { client =>
+    for {
+      build <- client.images.build(busyboxImageWithDummyFiles, name = Some("docker4s-copy-test1")).result
+      _ = build.imageId.isDefined should be(true)
+
+      container <- client.containers.create(build.imageId.get)
+      _ <- client.containers.start(container.id)
+
+      _ <- client.containers.upload(
+        container.id,
+        path = "/home",
+        Stream
+          .emits(
+            Seq(
+              Compression.TarEntry("uploaded1.txt", "Uploaded1 from Docker4s".getBytes),
+              Compression.TarEntry("uploaded2.txt", "Uploaded2 from Docker4s".getBytes)
+            ))
+          .through(Compression.tar())
+          .through(Compression.gzip())
+      )
+
+      changes <- client.containers.diff(container.id)
+      _ = changes should contain theSameElementsAs
+        List(
+          ContainerChange("/home", ContainerChange.Kind.Modified),
+          ContainerChange("/home/uploaded1.txt", ContainerChange.Kind.Added),
+          ContainerChange("/home/uploaded2.txt", ContainerChange.Kind.Added)
+        )
+    } yield ()
+  }
+
+  private val busyboxImageWithDummyFiles = Stream
+    .emits(
+      Seq(
+        Compression.TarEntry(
+          "Dockerfile",
+          """
+            |FROM busybox:latest
+            |RUN echo "Hello from Docker4s" > /home/hello.txt
+            |RUN ln -s /home/hello.txt /home/link.txt
+          """.stripMargin.getBytes
+        )
+      ))
+    .through(Compression.tar())
+    .through(Compression.gzip())
+
+  private def readFully(is: InputStream)(implicit codec: Codec): String = {
+    new String(IOUtils.toByteArray(is), codec.charSet)
   }
 
 }

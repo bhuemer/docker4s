@@ -37,6 +37,8 @@ trait Client[F[_]] {
 
   def post(path: String): Client.RequestBuilder[F]
 
+  def put(path: String): Client.RequestBuilder[F]
+
   def delete(path: String): Client.RequestBuilder[F]
 
 }

@@ -21,7 +21,7 @@
  */
 package org.docker4s.util
 
-import java.io.{BufferedInputStream, ByteArrayOutputStream, FileOutputStream}
+import java.io.{BufferedInputStream, FileOutputStream, InputStream}
 import java.nio.file.{Files, Path}
 
 import cats.effect.{ContextShift, IO}
@@ -32,6 +32,7 @@ import org.apache.commons.compress.utils.IOUtils
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.ExecutionContext
+import scala.io.Codec
 
 class CompressionTest extends FlatSpec with Matchers {
 
@@ -73,21 +74,13 @@ class CompressionTest extends FlatSpec with Matchers {
             new BufferedInputStream(Files.newInputStream(path))))
       // @formatter:on
 
-      def contents: String = {
-        val bos = new ByteArrayOutputStream()
-        IOUtils.copy(ain, bos)
-        new String(bos.toByteArray)
-      }
-
       var entry = ain.getNextEntry
       entry.getName should be("Dockerfile")
-
-      contents should be(dockerfile)
+      readFully(ain) should be(dockerfile)
 
       entry = ain.getNextEntry
       entry.getName should be("config.yaml")
-
-      contents should be(configuration)
+      readFully(ain) should be(configuration)
 
       entry = ain.getNextEntry
       entry shouldBe null
@@ -97,6 +90,10 @@ class CompressionTest extends FlatSpec with Matchers {
   }
 
   // -------------------------------------------- Utility methods
+
+  private def readFully(is: InputStream)(implicit codec: Codec): String = {
+    new String(IOUtils.toByteArray(is), codec.charSet)
+  }
 
   private def writeTo(path: Path): Pipe[IO, Byte, Unit] = {
     implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)

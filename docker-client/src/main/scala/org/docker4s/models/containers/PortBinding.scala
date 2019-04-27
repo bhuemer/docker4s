@@ -27,15 +27,15 @@ case class PortBinding(ipAddress: Option[String], privatePort: Int, publicPort: 
 
 object PortBinding {
 
-  sealed trait Type
+  sealed abstract class Type(val name: String)
 
   object Type {
 
-    case object TCP extends Type
-    case object UDP extends Type
+    case object TCP extends Type("tcp")
+    case object UDP extends Type("udp")
 
     /** Stream control transmission protocol - widely used as a transport protocol for cellular networks. */
-    case object SCTP extends Type
+    case object SCTP extends Type("sctp")
 
   }
 

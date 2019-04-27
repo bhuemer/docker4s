@@ -93,7 +93,26 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     }
 
     /**
+      * Uploads a TAR archive to be extracted to a path in the filesystem of the given container.
+      */
+    override def upload(
+        id: Container.Id,
+        path: String,
+        noOverwriteConflict: Option[Boolean],
+        archive: Stream[F, Byte]): F[Unit] = {
+      F.delay(logger.info(s"Uploading files to ${id.value} in '$path' [noOverwriteConflict: $noOverwriteConflict")) *>
+        client
+          .put(s"/containers/${id.value}/archive")
+          .withQueryParam("path", path)
+          .withQueryParam("noOverwriteDirNonDir", noOverwriteConflict)
+          .withBody(archive)
+          .execute
+    }
+
+    /**
       * Renames the given Docker container.
+      *
+      * Similar to the `docker container rename` command.
       */
     override def rename(id: Container.Id, name: String): F[Unit] = {
       F.delay(logger.info(s"Renaming the container ${id.value} to $name.")) *>
@@ -103,6 +122,11 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
           .execute
     }
 
+    /**
+      * Creates a new container with the given parameters.
+      *
+      * Similar to the `docker container create` command.
+      */
     override def create(parameters: Parameter[Containers.CreateParameter]*): F[ContainerCreated] = {
       F.delay(logger.info(s"Creating a new container [parameters: ${Parameter.toDebugString(parameters)}].")) *>
         client

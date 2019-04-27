@@ -49,6 +49,8 @@ class Http4sClient[F[_]](
 
   override def post(path: String): RequestBuilder[F] = builderFor(Method.POST, path)
 
+  override def put(path: String): RequestBuilder[F] = builderFor(Method.PUT, path)
+
   override def delete(path: String): RequestBuilder[F] = builderFor(Method.DELETE, path)
 
   private def builderFor(method: org.http4s.Method, path: String): RequestBuilder[F] = {

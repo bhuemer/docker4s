@@ -24,6 +24,7 @@ package org.docker4s.api
 import java.time.ZonedDateTime
 
 import fs2.Stream
+import io.circe.Json
 import org.docker4s.api.Parameter.{body, filter, query}
 import org.docker4s.models.containers._
 import org.docker4s.models.images.Image
@@ -105,6 +106,16 @@ trait Containers[F[_]] {
     *             system of the container will be exported in the TAR archive.
     */
   def export(id: Container.Id, path: Option[String] = None): Stream[F, Byte]
+
+  /**
+    * Uploads a TAR archive to be extracted to a path in the filesystem of the given container.
+    */
+  def upload(id: Container.Id, path: String, archive: Stream[F, Byte]): F[Unit] = upload(id, path, None, archive)
+
+  /**
+    * Uploads a TAR archive to be extracted to a path in the filesystem of the given container.
+    */
+  def upload(id: Container.Id, path: String, noOverwriteConflict: Option[Boolean], archive: Stream[F, Byte]): F[Unit]
 
   /**
     * Renames the given Docker container.
@@ -305,6 +316,18 @@ object Containers {
     def withCmd(cmd: String): Parameter[CreateParameter] = body("Cmd", cmd)
 
     def withCmd(cmd: String, args: String*): Parameter[CreateParameter] = body("Cmd", Seq(cmd) ++ args)
+
+    /**
+      * Arguments to containers are passed as part of `Cmd` parameters as well - this just makes that more explicit.
+      */
+    def withArgs(args: String*): Parameter[CreateParameter] = body("Cmd", args)
+
+    def withExposedPort(port: Int, `type`: PortBinding.Type = PortBinding.Type.TCP): Parameter[CreateParameter] =
+      withExposedPorts((port, `type`))
+
+    def withExposedPorts(ports: (Int, PortBinding.Type)*): Parameter[CreateParameter] = {
+      body("ExposedPorts", Json.obj(ports.map(port => s"${port._1}/${port._2.name}" -> Json.obj()): _*))
+    }
 
     /**
       * Specifies the name of the image to use when creating the container.

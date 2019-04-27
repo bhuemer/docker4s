@@ -84,6 +84,10 @@ object Client {
 
     def stream[A](decoder: Decoder[A]): Stream[F, A]
 
+    def header(name: String): F[String] = header(name, value => Right(value))
+
+    def header[A](name: String, decoder: String => Either[Throwable, A]): F[A]
+
   }
 
   trait StatusHandler[F[_]] {

@@ -164,6 +164,11 @@ trait Containers[F[_]] {
   def top(id: Container.Id, psArgs: Option[String] = None): F[Processes]
 
   /**
+    * Returns filesystem header information about the given path in a container.
+    */
+  def stat(id: Container.Id, path: String): F[PathStat]
+
+  /**
     * Removes the given container.
     *
     * Similar to the `docker rm` command.

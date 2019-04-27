@@ -32,6 +32,7 @@ import org.docker4s.transport.Client.RequestBuilder
 import org.http4s.{EmptyBody, EntityEncoder, Header, Method, Request, Response, Status, Uri}
 import org.http4s.circe.accumulatingJsonOf
 import org.http4s.circe.jsonEncoder
+import org.http4s.util.CaseInsensitiveString
 
 import scala.language.higherKinds
 
@@ -150,6 +151,19 @@ object Http4sClient extends LazyLogging {
           .evalMap({ json =>
             json.as(decoder).fold(error => F.raiseError[A](error), value => F.delay[A](value))
           })
+      })
+    }
+
+    override def header[A](name: String, decoder: String => Either[Throwable, A]): F[A] = {
+      client.fetch[A](compiled)({ response =>
+        if (statusHandler.isDefinedAt(response.status)) {
+          raiseError(response)
+        } else {
+          response.headers.get(CaseInsensitiveString(name)) match {
+            case Some(header) => F.fromEither(decoder(header.value))
+            case None         => F.raiseError(new IllegalStateException(s"Cannot find the header $name in the response."))
+          }
+        }
       })
     }
 

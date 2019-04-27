@@ -28,7 +28,7 @@ import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import org.docker4s.api.{Containers, Images, Networks, Parameter, Secrets, System, Volumes}
-import org.docker4s.errors.ContainerNotFoundException
+import org.docker4s.errors.{ContainerNotFoundException, DockerApiException}
 import org.docker4s.models.containers._
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images._
@@ -207,6 +207,25 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
           .get(s"/containers/${id.value}/top")
           .withQueryParam("ps_args", psArgs)
           .expect(Processes.decoder)
+    }
+
+    /**
+      * Returns filesystem header information about the given path in a container.
+      */
+    override def stat(id: Container.Id, path: String): F[PathStat] = {
+      F.delay(logger.info(s"Fetching file system stats for $path in container ${id.value}.")) *>
+        client
+          .head(s"/containers/${id.value}/archive")
+          .withQueryParam("path", path)
+          .header(
+            "X-Docker-Container-Path-Stat", { value =>
+              val decoded = new String(Base64.getDecoder.decode(value))
+              io.circe.jawn
+                .decodeAccumulating(decoded)(PathStat.decoder)
+                .toEither
+                .leftMap(errors => new DockerApiException(s"Could not decode path stats from $decoded: $errors"))
+            }
+          )
     }
 
     /**

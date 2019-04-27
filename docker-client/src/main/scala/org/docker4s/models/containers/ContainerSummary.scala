@@ -39,6 +39,8 @@ import org.docker4s.models.networks.Endpoint
   * @param sizeRw The size of files that have been created or changed by this container
   * @param sizeRootFs The total size of all the files in this container
   * @param labels User-defined key/value metadata
+  * @param state The state of this container (e.g. `Exited`)
+  * @param status Additional human-readable status of this container (e.g. `Exit 0`)
   */
 case class ContainerSummary(
     id: Container.Id,

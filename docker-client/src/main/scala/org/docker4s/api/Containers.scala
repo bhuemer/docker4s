@@ -25,9 +25,10 @@ import java.time.ZonedDateTime
 
 import fs2.Stream
 import io.circe.Json
-import org.docker4s.api.Parameter.{body, filter, query}
 import org.docker4s.models.containers._
 import org.docker4s.models.images.Image
+import org.docker4s.transport.Parameter
+import org.docker4s.transport.Parameter.{body, filter, query}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds

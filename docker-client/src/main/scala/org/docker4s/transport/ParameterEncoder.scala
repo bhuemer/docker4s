@@ -21,17 +21,26 @@
  */
 package org.docker4s.transport
 
-import cats.effect.{Effect, Resource}
-import org.http4s.{Request, Response, Uri}
+/**
+  * Type class defining how to encode a `T` as a query parameter.
+  *
+  * The equivalent in Http4s would basically be `org.http4s.QueryParamEncoder`,
+  * but this part of the client shouldn't depend on a particular HTTP library.
+  */
+trait ParameterEncoder[T] {
 
-import scala.language.higherKinds
+  def encode(value: T): String
 
-object MockClient {
+}
 
-  def apply[F[_]: Effect](f: Request[F] => Response[F]): Client[F] = {
-    Client.from(org.http4s.client.Client({ request =>
-      Resource.pure(f(request))
-    }), uri = Uri.unsafeFromString("http://localhost"))
-  }
+object ParameterEncoder {
+
+  implicit val booleanEncoder: ParameterEncoder[Boolean] = _.toString
+  implicit val shortEncoder: ParameterEncoder[Short] = _.toString
+  implicit val intEncoder: ParameterEncoder[Int] = _.toString
+  implicit val longEncoder: ParameterEncoder[Long] = _.toString
+  implicit val doubleEncoder: ParameterEncoder[Double] = _.toString
+  implicit val floatEncoder: ParameterEncoder[Float] = _.toString
+  implicit val stringEncoder: ParameterEncoder[String] = _.toString
 
 }

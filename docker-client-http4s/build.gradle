@@ -1,0 +1,36 @@
+apply from: '../gradle/scala.gradle'
+apply from: '../gradle/publish.gradle'
+
+dependencies {
+    implementation project(':docker-client')
+
+    implementation 'org.typelevel:cats-core_2.12:1.6.0'
+    implementation 'org.typelevel:cats-effect_2.12:1.2.0'
+    implementation 'org.typelevel:cats-kernel_2.12:1.6.0'
+
+    // HTTP dependencies
+    implementation 'org.http4s:http4s-core_2.12:0.20.0-M6'
+    implementation 'org.http4s:http4s-circe_2.12:0.20.0-M6'
+    implementation 'org.http4s:http4s-client_2.12:0.20.0-M6'
+    implementation 'org.http4s:http4s-blaze-client_2.12:0.20.0-M6'
+
+    // JSON dependencies
+    implementation 'io.circe:circe-core_2.12:0.11.1'
+    implementation 'io.circe:circe-parser_2.12:0.11.1'
+
+    // Logging dependencies
+    implementation 'com.typesafe.scala-logging:scala-logging_2.12:3.9.2'
+
+    // Netty is used to implement the UNIX socket transport client
+    implementation 'io.netty:netty-handler:4.1.33.Final'
+    implementation 'io.netty:netty-codec-http:4.1.33.Final'
+    implementation 'io.netty:netty-transport-native-epoll:4.1.33.Final'
+    implementation 'io.netty:netty-transport-native-kqueue:4.1.33.Final'
+
+    // Other utility libraries that are required
+    implementation 'org.apache.commons:commons-compress:1.18'
+    implementation 'org.bouncycastle:bcpkix-jdk15on:1.60'
+
+    testImplementation 'io.netty:netty-transport-native-kqueue:4.1.33.Final:osx-x86_64'
+    testImplementation 'org.slf4j:slf4j-simple:1.7.25'
+}

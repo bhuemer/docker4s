@@ -19,20 +19,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.transport
+package org.docker4s.http4s.transport
 
 import cats.effect.Effect
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.{Decoder, Json}
-import org.docker4s.api.Parameter
 import org.docker4s.errors.DockerApiException
 import org.docker4s.transport.Client.RequestBuilder
-import org.http4s.{EmptyBody, EntityEncoder, Header, Method, Request, Response, Status, Uri}
-import org.http4s.circe.accumulatingJsonOf
-import org.http4s.circe.jsonEncoder
+import org.docker4s.transport.{Client, Parameter}
+import org.http4s.circe.{accumulatingJsonOf, jsonEncoder}
 import org.http4s.util.CaseInsensitiveString
+import org.http4s.{EmptyBody, Header, Method, Request, Response, Status, Uri}
 
 import scala.language.higherKinds
 
@@ -85,12 +84,11 @@ object Http4sClient extends LazyLogging {
       private val statusHandler: PartialFunction[Status, ErrorCreator])(implicit F: Effect[F])
       extends RequestBuilder[F] {
 
-    override def withHeader(header: Header): RequestBuilder[F] =
-      new Http4sRequestBuilder(client, request.withHeaders(header), parameters, statusHandler)
+    override def withBody(json: Json): RequestBuilder[F] =
+      new Http4sRequestBuilder(client, request.withEntity(json), parameters, statusHandler)
 
-    override def withBody[T](entity: T)(implicit encoder: EntityEncoder[F, T]): RequestBuilder[F] = {
+    override def withBody(entity: Stream[F, Byte]): RequestBuilder[F] =
       new Http4sRequestBuilder(client, request.withEntity(entity), parameters, statusHandler)
-    }
 
     override def withParameters(newParameters: Seq[Parameter[_]]): RequestBuilder[F] = {
       val shallResetBody = newParameters.exists({ _.isInstanceOf[Parameter.Body[_]] })
@@ -105,9 +103,9 @@ object Http4sClient extends LazyLogging {
       }, parameters ++ newParameters, statusHandler)
     }
 
-    override def on(status: Status): Client.StatusHandler[F] = (creator: ErrorCreator) => {
+    override def on(status: Int): Client.StatusHandler[F] = (creator: ErrorCreator) => {
       val pf: PartialFunction[Status, ErrorCreator] = {
-        case given if given == status => creator
+        case given if given.code == status => creator
       }
 
       new Http4sRequestBuilder(client, request, parameters, pf.orElse(statusHandler))

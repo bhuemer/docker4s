@@ -69,6 +69,7 @@ class ContainersCreateIntegrationTest extends ClientSpec with Matchers with Lazy
       _ <- client.containers.start(container.id)
 
       _ = {
+        // CircleCI doesn't allow exposed parts on docker machines and seeing that we'd like to
         if (!runningOnCircleCI) {
           val url = new URL(dockerHost match {
             case DockerHost.Tcp(host, _, _) => s"http://$host:1234"

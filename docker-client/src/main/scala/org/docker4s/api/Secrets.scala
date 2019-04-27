@@ -22,6 +22,7 @@
 package org.docker4s.api
 
 import org.docker4s.models.secrets.{Secret, SecretCreated}
+import org.docker4s.transport.Parameter
 
 import scala.language.higherKinds
 

@@ -24,8 +24,9 @@ package org.docker4s.api
 import java.time.ZonedDateTime
 
 import fs2.Stream
-import org.docker4s.api.Parameter.{filter, query}
 import org.docker4s.models.system.{Event, Info, Version}
+import org.docker4s.transport.Parameter
+import org.docker4s.transport.Parameter.{filter, query}
 
 import scala.language.higherKinds
 

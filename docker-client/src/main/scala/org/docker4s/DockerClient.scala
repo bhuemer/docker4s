@@ -21,14 +21,8 @@
  */
 package org.docker4s
 
-import cats.effect.{ConcurrentEffect, Resource}
 import org.docker4s.api.{Containers, Images, Networks, Secrets, System, Volumes}
-import org.docker4s.transport.Client
-import org.docker4s.transport.unix.DomainSocketClient
-import org.http4s.Uri
-import org.http4s.client.blaze.BlazeClientBuilder
 
-import scala.concurrent.ExecutionContext
 import scala.language.higherKinds
 
 /**
@@ -66,46 +60,5 @@ trait DockerClient[F[_]] {
     * Returns an object for managing volumes on the docker host.
     */
   def volumes: Volumes[F]
-
-}
-
-object DockerClient {
-
-  /**
-    * Returns a [[DockerClient]] configured from environment variables.
-    *
-    * The environment variables used are the same as those used by the Docker command-line client. They are:
-    *  - '''DOCKER_HOST''' - the URL to the Docker host
-    *  - '''DOCKER_TLS_VERIFY''' - verify the host against a CA certificate
-    *  - '''DOCKER_CERT_PATH''' - path to a directory containing TLS certificates to use when connecting
-    */
-  def fromEnvironment[F[_]: ConcurrentEffect](implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
-    fromEnvironment(Environment.Live)
-  }
-
-  def fromEnvironment[F[_]: ConcurrentEffect](environment: Environment)(
-      implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
-    fromHost(DockerHost.fromEnvironment(environment))
-  }
-
-  def fromHost[F[_]: ConcurrentEffect](dockerHost: DockerHost)(
-      implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
-    dockerHost match {
-      case DockerHost.Unix(socketPath, sslContext) =>
-        DomainSocketClient(socketPath).map({ client =>
-          new DefaultDockerClient[F](Client.from(client, uri = Uri.unsafeFromString("http://localhost")))
-        })
-
-      case DockerHost.Tcp(host, port, sslContext) =>
-        BlazeClientBuilder[F](ec)
-          .withSslContextOption(sslContext)
-          .resource
-          .map({ client =>
-            val scheme = if (sslContext.isDefined) "https" else "http"
-            new DefaultDockerClient[F](Client.from(client, uri = Uri.unsafeFromString(s"$scheme://$host:$port")))
-          })
-
-    }
-  }
 
 }

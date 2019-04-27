@@ -19,13 +19,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.transport
+package org.docker4s.http4s.transport
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import io.circe.Json
 import org.docker4s.models.networks.Network
-import org.http4s.{EntityEncoder, Response, Status, Uri}
+import org.docker4s.transport.Client
 import org.http4s.circe.jsonEncoder
+import org.http4s.{EntityEncoder, Response, Status, Uri}
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -91,7 +92,7 @@ class Http4sClientTest extends FlatSpec with Matchers {
 
     val ex = the[Exception] thrownBy client
       .get("/networks/1234/inspect")
-      .on(Status.NotFound)
+      .on(404)
       .raise(CustomException)
       .expect(Network.decoder)
       .unsafeRunSync()
@@ -103,7 +104,7 @@ class Http4sClientTest extends FlatSpec with Matchers {
   // -------------------------------------------- Utility methods & classes
 
   private def newClient[T](status: Status, body: T)(implicit encoder: EntityEncoder[IO, T]): Client[IO] = {
-    Client.from(org.http4s.client.Client({ _ =>
+    new Http4sClient(org.http4s.client.Client({ _ =>
       Resource.pure(Response[IO]().withStatus(status).withEntity(body))
     }), uri = Uri.unsafeFromString("http://localhost"))
   }

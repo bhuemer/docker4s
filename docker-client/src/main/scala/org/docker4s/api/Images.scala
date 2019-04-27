@@ -25,8 +25,9 @@ import java.net.URI
 import java.time.ZonedDateTime
 
 import fs2.Stream
-import org.docker4s.api.Parameter.{filter, query, queryMap}
 import org.docker4s.models.images._
+import org.docker4s.transport.Parameter
+import org.docker4s.transport.Parameter.{filter, query, queryMap}
 
 import scala.language.higherKinds
 

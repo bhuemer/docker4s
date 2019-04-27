@@ -27,7 +27,7 @@ import cats.effect.Sync
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
-import org.docker4s.api.{Containers, Images, Networks, Parameter, Secrets, System, Volumes}
+import org.docker4s.api.{Containers, Images, Networks, Secrets, System, Volumes}
 import org.docker4s.errors.{ContainerNotFoundException, DockerApiException}
 import org.docker4s.models.containers._
 import org.docker4s.models.system.{Event, Info, Version}
@@ -35,9 +35,8 @@ import org.docker4s.models.images._
 import org.docker4s.models.networks.{Network, NetworkCreated, NetworksPruned}
 import org.docker4s.models.secrets.{Secret, SecretCreated}
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
-import org.docker4s.transport.Client
+import org.docker4s.transport.{Client, Parameter}
 import org.docker4s.util.LogDecoder
-import org.http4s.Status
 
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
@@ -139,7 +138,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       F.delay(logger.info(s"Starting the container ${id.value}.")) *>
         client
           .post(s"/containers/${id.value}/start")
-          .on(Status.NotFound, new ContainerNotFoundException(_, _))
+          .on(status = 404, new ContainerNotFoundException(_, _))
           .execute
     }
 

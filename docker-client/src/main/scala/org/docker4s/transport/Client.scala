@@ -21,11 +21,8 @@
  */
 package org.docker4s.transport
 
-import cats.effect.Effect
 import fs2.Stream
-import io.circe.{Decoder, Encoder}
-import org.docker4s.api.Parameter
-import org.http4s.{EntityEncoder, Header, QueryParamEncoder, Status, Uri}
+import io.circe.{Decoder, Encoder, Json}
 
 import scala.language.higherKinds
 
@@ -47,17 +44,17 @@ object Client {
 
   trait RequestBuilder[F[_]] {
 
-    def withHeader(header: Header): RequestBuilder[F]
+    def withBody(json: Json): RequestBuilder[F]
 
-    def withBody[T](entity: T)(implicit encoder: EntityEncoder[F, T]): RequestBuilder[F]
+    def withBody(entity: Stream[F, Byte]): RequestBuilder[F]
 
-    def withQueryParam[T: QueryParamEncoder](name: String, value: T): RequestBuilder[F] =
+    def withQueryParam[T: ParameterEncoder](name: String, value: T): RequestBuilder[F] =
       withParameter(Parameter.query(name, value))
 
-    def withQueryParam[T: QueryParamEncoder](name: String, value: Option[T]): RequestBuilder[F] =
+    def withQueryParam[T: ParameterEncoder](name: String, value: Option[T]): RequestBuilder[F] =
       withParameter(Parameter.query(name, value))
 
-    def withQueryParam[T: QueryParamEncoder](name: String, values: Seq[T]): RequestBuilder[F] =
+    def withQueryParam[T: ParameterEncoder](name: String, values: Seq[T]): RequestBuilder[F] =
       withParameter(Parameter.query(name, values))
 
     def withBodyParam[T: Encoder](name: String, value: T): RequestBuilder[F] =
@@ -72,9 +69,9 @@ object Client {
 
     def withParameters(parameters: Seq[Parameter[_]]): RequestBuilder[F]
 
-    def on(status: Status): StatusHandler[F]
+    def on(status: Int): StatusHandler[F]
 
-    def on(status: Status, handler: (String, String) => Exception): RequestBuilder[F] = on(status).raise(handler)
+    def on(status: Int, handler: (String, String) => Exception): RequestBuilder[F] = on(status).raise(handler)
 
     def execute: F[Unit]
 
@@ -96,10 +93,5 @@ object Client {
   trait StatusHandler[F[_]] {
     def raise(handler: (String, String) => Exception): RequestBuilder[F]
   }
-
-  /**
-    *
-    */
-  def from[F[_]: Effect](client: org.http4s.client.Client[F], uri: Uri): Client[F] = new Http4sClient[F](client, uri)
 
 }

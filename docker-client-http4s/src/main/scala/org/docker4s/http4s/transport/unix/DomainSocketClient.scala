@@ -19,7 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.transport.unix
+package org.docker4s.http4s.transport.unix
 
 import java.nio.file.Path
 
@@ -111,6 +111,7 @@ final private[unix] class DomainSocketClient[F[_]](private val eventLoop: Domain
 
   private def asHttp4sResponse(response: HttpResponse): F[Response[F]] = {
     import org.http4s.{Header, Headers, HttpVersion, Status}
+
     import scala.collection.JavaConverters._
 
     for {

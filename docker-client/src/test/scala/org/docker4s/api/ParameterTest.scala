@@ -21,6 +21,7 @@
  */
 package org.docker4s.api
 
+import org.docker4s.transport.Parameter
 import org.http4s.Query
 import org.scalatest.{FlatSpec, Matchers}
 

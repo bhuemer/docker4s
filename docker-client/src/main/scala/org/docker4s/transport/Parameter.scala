@@ -19,11 +19,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.api
+package org.docker4s.transport
 
 import io.circe.{Encoder, Json}
 import org.docker4s.util.JsonUtils
-import org.http4s.QueryParamEncoder
 
 /**
   * The Docker API typically allows for two different ways of specifying criteria:
@@ -37,16 +36,14 @@ sealed trait Parameter[T]
 
 object Parameter {
 
-  def query[T, A](name: String, value: A)(implicit encoder: QueryParamEncoder[A]): Parameter[T] =
-    Query(name, Seq(encoder.encode(value).value))
+  def query[T, A](name: String, value: A)(implicit encoder: ParameterEncoder[A]): Parameter[T] =
+    Query(name, Seq(encoder.encode(value)))
 
-  def query[T, A](name: String, value: Option[A])(implicit encoder: QueryParamEncoder[A]): Parameter[T] =
-    Query(name, value.map(encoder.encode(_).value).toSeq)
+  def query[T, A](name: String, value: Option[A])(implicit encoder: ParameterEncoder[A]): Parameter[T] =
+    Query(name, value.map(encoder.encode).toSeq)
 
-  def query[T, A](name: String, values: Seq[A])(implicit encoder: QueryParamEncoder[A]): Parameter[T] =
-    Query(name, values.map({ value =>
-      encoder.encode(value).value
-    }))
+  def query[T, A](name: String, values: Seq[A])(implicit encoder: ParameterEncoder[A]): Parameter[T] =
+    Query(name, values.map(encoder.encode))
 
   def queryArr[T, A](name: String, value: A)(implicit encoder: Encoder[A]): Parameter[T] =
     Query.Array(name, Seq(encoder(value)))

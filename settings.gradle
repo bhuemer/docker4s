@@ -1,3 +1,5 @@
 rootProject.name = 'docker4s'
 
 include 'docker-client'
+include 'docker-client-akka'
+include 'docker-client-http4s'

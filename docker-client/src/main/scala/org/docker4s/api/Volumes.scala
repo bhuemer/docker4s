@@ -21,8 +21,9 @@
  */
 package org.docker4s.api
 
-import org.docker4s.api.Parameter.filter
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
+import org.docker4s.transport.Parameter
+import org.docker4s.transport.Parameter.filter
 
 import scala.language.higherKinds
 

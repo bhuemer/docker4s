@@ -322,12 +322,22 @@ object Containers {
       */
     def withArgs(args: String*): Parameter[CreateParameter] = body("Cmd", args)
 
-    def withExposedPort(port: Int, `type`: PortBinding.Type = PortBinding.Type.TCP): Parameter[CreateParameter] =
-      withExposedPorts((port, `type`))
+    //def withExposedPort(port: Int, `type`: PortBinding.Type = PortBinding.Type.TCP): Parameter[CreateParameter] = ???
 
-    def withExposedPorts(ports: (Int, PortBinding.Type)*): Parameter[CreateParameter] = {
-      body("ExposedPorts", Json.obj(ports.map(port => s"${port._1}/${port._2.name}" -> Json.obj()): _*))
-    }
+    def withPortBinding(binding: PortBinding): Parameter[CreateParameter] =
+      body(
+        "HostConfig",
+        Json.obj(
+          "PortBindings" -> Json.obj(
+            s"${binding.privatePort}/${binding.`type`.name}" -> Json.arr(
+              Json.obj(
+                "HostIp" -> Json.fromString(binding.ipAddress.getOrElse("")),
+                "HostPort" -> Json.fromString(binding.publicPort.map(_.toString).getOrElse(""))
+              )
+            )
+          )
+        )
+      )
 
     /**
       * Specifies the name of the image to use when creating the container.

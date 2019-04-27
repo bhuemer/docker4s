@@ -21,8 +21,11 @@
  */
 package org.docker4s.api
 
+import java.net.URL
+
 import org.docker4s.api.Containers.CreateParameter._
 import org.docker4s.api.Containers.LogParameter._
+import org.docker4s.models.containers.PortBinding
 import org.scalatest.Matchers
 
 class ContainersCreateIntegrationTest extends ClientSpec with Matchers {
@@ -41,6 +44,32 @@ class ContainersCreateIntegrationTest extends ClientSpec with Matchers {
 
       logs <- client.containers.logs(created.id, stdout).compile.toList
       _ = logs should be(List(Containers.Log(Containers.Stream.StdOut, "Hello from docker4s")))
+    } yield ()
+  }
+
+  /**
+    * Makes sure that we can run the equivalent to the following Docker command:
+    * {{{
+    * docker run -p 1234:5678 hashicorp/http-echo -text="hello world"
+    * }}}
+    */
+  "The client" should "support specifying port bindings when creating a container" given { client =>
+    for {
+      _ <- client.images.pull(name = "hashicorp/http-echo").compile.drain
+
+      container <- client.containers.create(
+        withImage("hashicorp/http-echo"),
+        withArgs("-text=Hello from Docker4s"),
+        withPortBinding(PortBinding(privatePort = 5678, publicPort = Some(1234)))
+      )
+      _ <- client.containers.start(container.id)
+
+      _ = {
+        val content = scala.io.Source.fromURL(new URL("http://localhost:1234")).mkString
+        content should be("Hello from Docker4s\n")
+      }
+
+      _ <- client.containers.stop(container.id)
     } yield ()
   }
 

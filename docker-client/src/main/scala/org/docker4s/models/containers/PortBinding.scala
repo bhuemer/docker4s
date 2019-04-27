@@ -23,7 +23,11 @@ package org.docker4s.models.containers
 
 import io.circe.Decoder
 
-case class PortBinding(ipAddress: Option[String], privatePort: Int, publicPort: Option[Int], `type`: PortBinding.Type)
+case class PortBinding(
+    ipAddress: Option[String] = None,
+    privatePort: Int,
+    publicPort: Option[Int] = None,
+    `type`: PortBinding.Type = PortBinding.Type.TCP)
 
 object PortBinding {
 

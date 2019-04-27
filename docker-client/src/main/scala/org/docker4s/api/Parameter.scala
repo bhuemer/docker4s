@@ -22,6 +22,7 @@
 package org.docker4s.api
 
 import io.circe.{Encoder, Json}
+import org.docker4s.util.JsonUtils
 import org.http4s.QueryParamEncoder
 
 /**
@@ -58,8 +59,10 @@ object Parameter {
 
   def filter[T](name: String, values: Seq[String]): Parameter[T] = Filter(name, values)
 
+  def body[T](value: Json): Parameter[T] = Body(value)
+
   def body[T, A](name: String, value: A)(implicit encoder: Encoder[A]): Parameter[T] =
-    Body(name, encoder(value))
+    Body(Json.obj(name -> encoder(value)))
 
   /**
     * Represents a parameter that is included as a query parameter in the URL.
@@ -88,7 +91,7 @@ object Parameter {
   /**
     *
     */
-  case class Body[T](name: String, value: Json) extends Parameter[T]
+  case class Body[T](value: Json) extends Parameter[T]
 
   def compileQuery(criteria: Seq[Parameter[_]]): Map[String, Seq[String]] = {
     val jsonArrQueries = criteria
@@ -141,12 +144,12 @@ object Parameter {
 
   def compileBody(parameters: Seq[Parameter[_]]): Option[Json] = {
     val bodyParameters = parameters.collect({
-      case Body(name, value) => name -> value
+      case Body(value) => value
     })
     if (bodyParameters.isEmpty) {
       None
     } else {
-      Some(Json.obj(bodyParameters: _*))
+      Some(bodyParameters.reduce(JsonUtils.merge))
     }
   }
 
@@ -160,7 +163,7 @@ object Parameter {
         case Query.Array(name, values)   => (name, values.map(_.noSpaces))
         case Query.Map(name, key, value) => (name, Seq(s"$key=$value"))
         case Filter(name, values)        => (name, values)
-        case Body(name, value)           => (name, Seq(value.noSpaces))
+        case Body(value)                 => ("body", Seq(value.noSpaces))
       })
       .groupBy(_._1)
       .mapValues(_.flatMap(_._2))

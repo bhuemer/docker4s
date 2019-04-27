@@ -23,9 +23,9 @@ package org.docker4s.models.secrets
 
 import java.time.ZonedDateTime
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class SecretTest extends FlatSpec with Matchers {
+class SecretTest extends ModelsSpec {
 
   "Decoding JSON into secrets" should "work" in {
     val secret = decodeSecret("""{
@@ -51,12 +51,6 @@ class SecretTest extends FlatSpec with Matchers {
     )
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[Secret]] or throws an exception if something goes wrong. */
-  private def decodeSecret(str: String): Secret = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(Secret.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeSecret(str: String): Secret = decode(str, Secret.decoder)
 
 }

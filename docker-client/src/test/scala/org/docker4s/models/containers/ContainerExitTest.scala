@@ -21,9 +21,9 @@
  */
 package org.docker4s.models.containers
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class ContainerExitTest extends FlatSpec with Matchers {
+class ContainerExitTest extends ModelsSpec {
 
   "Decoding JSON into container exits" should "work with error messages" in {
     decodeContainerExit("""{
@@ -60,12 +60,6 @@ class ContainerExitTest extends FlatSpec with Matchers {
         |}""".stripMargin) should be(ContainerExit(0, errorMessage = None))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[ContainerExit]] or throws an exception if something goes wrong. */
-  private def decodeContainerExit(str: String): ContainerExit = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(ContainerExit.decoder).fold(err => throw new IllegalArgumentException(err), Predef.identity)
-  }
+  private def decodeContainerExit(str: String): ContainerExit = decode(str, ContainerExit.decoder)
 
 }

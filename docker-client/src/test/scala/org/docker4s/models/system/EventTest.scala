@@ -23,9 +23,9 @@ package org.docker4s.models.system
 
 import java.time.ZonedDateTime
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class EventTest extends FlatSpec with Matchers {
+class EventTest extends ModelsSpec {
 
   "Decoding JSON into events" should "decode `container-start` events" in {
     val event = decodeEvent("""{
@@ -120,12 +120,6 @@ class EventTest extends FlatSpec with Matchers {
     )
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as an [[Event]] or throws an exception if something goes wrong. */
-  private def decodeEvent(str: String): Event = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(Event.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeEvent(str: String): Event = decode(str, Event.decoder)
 
 }

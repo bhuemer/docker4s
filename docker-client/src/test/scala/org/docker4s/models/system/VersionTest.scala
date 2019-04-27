@@ -23,12 +23,12 @@ package org.docker4s.models.system
 
 import java.time.ZonedDateTime
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
 /**
   * Contains test cases related to parsing [[Version]] objects from JSON response bodies.
   */
-class VersionTest extends FlatSpec with Matchers {
+class VersionTest extends ModelsSpec {
 
   "Decoding JSON into versions" should "extract all the relevant pieces of information" in {
     val version = decodeVersion("""{
@@ -76,12 +76,6 @@ class VersionTest extends FlatSpec with Matchers {
     )
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[Version]] or throws an exception if something goes wrong. */
-  private def decodeVersion(str: String): Version = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(Version.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeVersion(str: String): Version = decode(str, Version.decoder)
 
 }

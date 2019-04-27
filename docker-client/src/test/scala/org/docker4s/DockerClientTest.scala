@@ -3,6 +3,7 @@ package org.docker4s
 import cats.effect._
 import fs2.Stream
 import org.docker4s.api.Containers
+import org.docker4s.models.containers.Container
 import org.docker4s.util.Compression
 
 import scala.concurrent.ExecutionContext

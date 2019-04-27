@@ -21,14 +21,14 @@
  */
 package org.docker4s.models.images
 
+import org.docker4s.models.ModelsSpec
 import org.docker4s.models.images.Image.Id
 import org.docker4s.models.images.ImagesRemoved.Ref.{Deleted, Untagged}
-import org.scalatest.{FlatSpec, Matchers}
 
 /**
   * Contains test cases related to parsing [[ImagesPruned]] objects from JSON response bodies.
   */
-class ImagesPrunedTest extends FlatSpec with Matchers {
+class ImagesPrunedTest extends ModelsSpec {
 
   "Decoding JSON into images pruned" should "work" in {
     val imagesPruned = decodeImagesPruned(
@@ -69,14 +69,13 @@ class ImagesPrunedTest extends FlatSpec with Matchers {
       |  "SpaceReclaimed" : 0
       |}
      """.stripMargin) should be(ImagesPruned(images = List.empty, spaceReclaimed = 0))
+
+    decodeImagesPruned("""{
+      |  "SpaceReclaimed" : 0
+      |}
+      """.stripMargin) should be(ImagesPruned(images = List.empty, spaceReclaimed = 0))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as an [[ImagesPruned]] or throws an exception if something goes wrong. */
-  private def decodeImagesPruned(str: String): ImagesPruned = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(ImagesPruned.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeImagesPruned(str: String): ImagesPruned = decode(str, ImagesPruned.decoder)
 
 }

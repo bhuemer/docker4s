@@ -24,9 +24,9 @@ package org.docker4s.models.containers
 import java.nio.file.attribute.PosixFilePermission
 import java.time.ZonedDateTime
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class PathStatSpec extends FlatSpec with Matchers {
+class PathStatSpec extends ModelsSpec {
 
   /**
     * {{{
@@ -178,11 +178,6 @@ class PathStatSpec extends FlatSpec with Matchers {
     pathStat.mode.asString should be("-----D----c--rw-rw-rw-")
   }
 
-  // -------------------------------------------- Utility methods
-
-  private def decodePathStat(str: String): PathStat = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(PathStat.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodePathStat(str: String): PathStat = decode(str, PathStat.decoder)
 
 }

@@ -21,11 +21,11 @@
  */
 package org.docker4s.models.images
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
 import scala.concurrent.duration._
 
-class PullEventTest extends FlatSpec with Matchers {
+class PullEventTest extends ModelsSpec {
 
   "Decoding JSON into pull events" should "decode `pulling image` events" in {
     val pullEvent = decodePullEvent("""
@@ -132,12 +132,6 @@ class PullEventTest extends FlatSpec with Matchers {
       """.stripMargin)
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[PullEvent]] or throws an exception if something goes wrong. */
-  private def decodePullEvent(str: String): PullEvent = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(PullEvent.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodePullEvent(str: String): PullEvent = decode(str, PullEvent.decoder)
 
 }

@@ -21,12 +21,12 @@
  */
 package org.docker4s.models.containers
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
 /**
   * Contains test cases related to parsing [[ContainersPruned]] objects from JSON response bodies.
   */
-class ContainersPrunedTest extends FlatSpec with Matchers {
+class ContainersPrunedTest extends ModelsSpec {
 
   "Decoding JSON into containers pruned" should "work" in {
     val containersPruned =
@@ -64,12 +64,6 @@ class ContainersPrunedTest extends FlatSpec with Matchers {
      """.stripMargin) should be(ContainersPruned(containers = List.empty, spaceReclaimed = 0L))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[ContainersPruned]] or throws an exception if something goes wrong. */
-  private def decodeContainersPruned(str: String): ContainersPruned = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(ContainersPruned.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeContainersPruned(str: String): ContainersPruned = decode(str, ContainersPruned.decoder)
 
 }

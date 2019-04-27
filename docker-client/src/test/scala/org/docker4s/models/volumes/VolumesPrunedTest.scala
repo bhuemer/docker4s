@@ -21,9 +21,9 @@
  */
 package org.docker4s.models.volumes
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class VolumesPrunedTest extends FlatSpec with Matchers {
+class VolumesPrunedTest extends ModelsSpec {
 
   "Decoding JSON into volumes pruned" should "work" in {
     val volumesPruned = decodeVolumesPruned("""{
@@ -32,7 +32,7 @@ class VolumesPrunedTest extends FlatSpec with Matchers {
       |  	"9ef1658e9bab5f623ca36892aa14c92f4fc1b7437cc0d8cc3c9bcc3f060af164"
       |  ],
       |  "SpaceReclaimed": 0
-      |}""".stripMargin)
+      |}""")
 
     volumesPruned should be(
       VolumesPruned(
@@ -47,21 +47,15 @@ class VolumesPrunedTest extends FlatSpec with Matchers {
         |  "VolumesDeleted": null,
         |  "SpaceReclaimed": 0
         |}
-     """.stripMargin) should be(VolumesPruned(volumes = List.empty, spaceReclaimed = 0L))
+     """) should be(VolumesPruned(volumes = List.empty, spaceReclaimed = 0L))
 
     decodeVolumesPruned("""{
         |  "VolumesDeleted": [],
         |  "SpaceReclaimed": 0
         |}
-     """.stripMargin) should be(VolumesPruned(volumes = List.empty, spaceReclaimed = 0L))
+     """) should be(VolumesPruned(volumes = List.empty, spaceReclaimed = 0L))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[VolumesPruned]] or throws an exception if something goes wrong. */
-  private def decodeVolumesPruned(str: String): VolumesPruned = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(VolumesPruned.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeVolumesPruned(str: String): VolumesPruned = decode(str, VolumesPruned.decoder)
 
 }

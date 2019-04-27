@@ -41,6 +41,20 @@ class NetworksPrunedTest extends FlatSpec with Matchers {
         )))
   }
 
+  "Decoding JSON into networks pruned" should "cope with empty lists" in {
+    decodeNetworksPruned("""{
+        |  "NetworksDeleted": []
+        |}
+      """.stripMargin) should be(NetworksPruned(List.empty))
+
+    decodeNetworksPruned("""{
+        |  "NetworksDeleted": null
+        |}
+        """.stripMargin) should be(NetworksPruned(List.empty))
+
+    decodeNetworksPruned("""{}""".stripMargin) should be(NetworksPruned(List.empty))
+  }
+
   // -------------------------------------------- Utility methods
 
   private def decodeNetworksPruned(str: String): NetworksPruned = {

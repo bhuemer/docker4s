@@ -21,9 +21,9 @@
  */
 package org.docker4s.models.plugins
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class PluginsTest extends FlatSpec with Matchers {
+class PluginsTest extends ModelsSpec {
 
   "Decoding JSON into plugins" should "decode the `vieux/sshfs` plugin" ignore {
     val plugin =
@@ -138,9 +138,6 @@ class PluginsTest extends FlatSpec with Matchers {
 
   // -------------------------------------------- Utility methods
 
-  private def decodePlugin(str: String): Plugin = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(Plugin.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodePlugin(str: String): Plugin = decode(str, Plugin.decoder)
 
 }

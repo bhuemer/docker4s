@@ -21,9 +21,9 @@
  */
 package org.docker4s.models.containers
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class MountPointTest extends FlatSpec with Matchers {
+class MountPointTest extends ModelsSpec {
 
   "Decoding JSON into mounts" should "work" in {
     val mount = decodeMountPoint("""{
@@ -49,12 +49,6 @@ class MountPointTest extends FlatSpec with Matchers {
       ))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[MountPoint]] or throws an exception if something goes wrong. */
-  private def decodeMountPoint(str: String): MountPoint = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(MountPoint.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeMountPoint(str: String): MountPoint = decode(str, MountPoint.decoder)
 
 }

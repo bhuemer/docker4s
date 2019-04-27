@@ -21,9 +21,9 @@
  */
 package org.docker4s.models.containers
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class PortBindingTest extends FlatSpec with Matchers {
+class PortBindingTest extends ModelsSpec {
 
   "Decoding JSON into port bindings" should "not require public ports" in {
     val portBinding = decodePortBinding("""{
@@ -39,12 +39,6 @@ class PortBindingTest extends FlatSpec with Matchers {
       ))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[PortBinding]] or throws an exception if something goes wrong. */
-  private def decodePortBinding(str: String): PortBinding = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(PortBinding.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodePortBinding(str: String): PortBinding = decode(str, PortBinding.decoder)
 
 }

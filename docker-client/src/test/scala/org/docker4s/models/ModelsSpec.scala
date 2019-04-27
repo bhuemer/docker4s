@@ -19,29 +19,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.models.containers
+package org.docker4s.models
 
-import org.docker4s.models.ModelsSpec
+import io.circe.Decoder
+import org.scalatest.{FlatSpec, Matchers}
 
-class ContainerChangeTest extends ModelsSpec {
+trait ModelsSpec extends FlatSpec with Matchers {
 
-  "Decoding JSON into container changes" should "work" in {
-    decodeContainerChange("""{
-      |  "Path": "/dev",
-      |  "Kind": 0
-      |}""".stripMargin) should be(ContainerChange("/dev", ContainerChange.Kind.Modified))
-
-    decodeContainerChange("""{
-      |  "Path": "/dev/kmsg",
-      |  "Kind": 1
-      |}""".stripMargin) should be(ContainerChange("/dev/kmsg", ContainerChange.Kind.Added))
-
-    decodeContainerChange("""{
-      |  "Path": "/home/hello.txt",
-      |  "Kind": 2
-      |}""".stripMargin) should be(ContainerChange("/home/hello.txt", ContainerChange.Kind.Deleted))
+  protected def decode[A](str: String, decoder: Decoder[A]): A = {
+    io.circe.jawn
+      .decodeAccumulating(str.stripMargin)(decoder)
+      .fold(errors => {
+        throw new IllegalStateException(s"Error occured while parsing or decoding the JSON ${str.stripMargin}: $errors")
+      }, Predef.identity)
   }
-
-  private def decodeContainerChange(str: String): ContainerChange = decode(str, ContainerChange.decoder)
 
 }

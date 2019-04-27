@@ -21,9 +21,9 @@
  */
 package org.docker4s.models.networks
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class EndpointsTest extends FlatSpec with Matchers {
+class EndpointsTest extends ModelsSpec {
 
   "Decoding JSON into endpoint settings" should "work" in {
     val endpointSettings =
@@ -62,9 +62,6 @@ class EndpointsTest extends FlatSpec with Matchers {
 
   // -------------------------------------------- Utility methods
 
-  private def decodeEndpointSettings(str: String): Endpoint.Settings = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(Endpoint.Settings.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeEndpointSettings(str: String): Endpoint.Settings = decode(str, Endpoint.Settings.decoder)
 
 }

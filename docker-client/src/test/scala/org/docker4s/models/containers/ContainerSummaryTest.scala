@@ -23,11 +23,11 @@ package org.docker4s.models.containers
 
 import java.time.ZonedDateTime
 
+import org.docker4s.models.ModelsSpec
 import org.docker4s.models.images.Image
 import org.docker4s.models.networks.{Endpoint, Network}
-import org.scalatest.{FlatSpec, Matchers}
 
-class ContainerSummaryTest extends FlatSpec with Matchers {
+class ContainerSummaryTest extends ModelsSpec {
 
   "Decoding JSON into container summaries" should "successfully decode hello-world containers" in {
     val containerSummary =
@@ -195,12 +195,6 @@ class ContainerSummaryTest extends FlatSpec with Matchers {
     )
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[ContainerSummary]] or throws an exception if something goes wrong. */
-  private def decodeContainerSummary(str: String): ContainerSummary = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(ContainerSummary.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeContainerSummary(str: String): ContainerSummary = decode(str, ContainerSummary.decoder)
 
 }

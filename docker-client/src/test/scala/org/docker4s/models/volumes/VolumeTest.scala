@@ -23,9 +23,9 @@ package org.docker4s.models.volumes
 
 import java.time.ZonedDateTime
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class VolumeTest extends FlatSpec with Matchers {
+class VolumeTest extends ModelsSpec {
 
   "Decoding JSON into volumes" should "work" in {
     val volume = decodeVolume("""{
@@ -43,7 +43,7 @@ class VolumeTest extends FlatSpec with Matchers {
       |      "type": "tmpfs"
       |    },
       |    "Scope": "local"
-      |}""".stripMargin)
+      |}""")
 
     volume should be(
       Volume(
@@ -74,7 +74,7 @@ class VolumeTest extends FlatSpec with Matchers {
       |  "Name" : "test-volume-1",
       |  "Options" : { },
       |  "Scope" : "local"
-      |}""".stripMargin)
+      |}""")
     volume should be(
       Volume(
         name = "test-volume-1",
@@ -88,12 +88,6 @@ class VolumeTest extends FlatSpec with Matchers {
       ))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[Volume]] or throws an exception if something goes wrong. */
-  private def decodeVolume(str: String): Volume = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(Volume.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeVolume(str: String): Volume = decode(str, Volume.decoder)
 
 }

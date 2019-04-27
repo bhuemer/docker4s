@@ -21,9 +21,9 @@
  */
 package org.docker4s.models.secrets
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class SecretCreatedTest extends FlatSpec with Matchers {
+class SecretCreatedTest extends ModelsSpec {
 
   "Decoding JSON into secret created responses" should "work" in {
     val secretCreated = decodeSecretCreated("""{
@@ -32,12 +32,6 @@ class SecretCreatedTest extends FlatSpec with Matchers {
     secretCreated should be(SecretCreated(Secret.Id("k6p1ib3hs3jlusd3zgr9mnumm")))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[SecretCreated]] or throws an exception if something goes wrong. */
-  private def decodeSecretCreated(str: String): SecretCreated = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(SecretCreated.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeSecretCreated(str: String): SecretCreated = decode(str, SecretCreated.decoder)
 
 }

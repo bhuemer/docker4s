@@ -21,11 +21,11 @@
  */
 package org.docker4s.models.images
 
+import org.docker4s.models.ModelsSpec
 import org.docker4s.models.images.Image.Id
 import org.docker4s.models.images.ImagesRemoved.Ref.{Deleted, Untagged}
-import org.scalatest.{FlatSpec, Matchers}
 
-class ImagesRemovedTest extends FlatSpec with Matchers {
+class ImagesRemovedTest extends ModelsSpec {
 
   "Decoding JSON into images removed" should "work" in {
     val imagesRemoved = decodeImagesRemoved(
@@ -67,12 +67,10 @@ class ImagesRemovedTest extends FlatSpec with Matchers {
       )))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as an [[ImagesRemoved]] or throws an exception if something goes wrong. */
-  private def decodeImagesRemoved(str: String): ImagesRemoved = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(ImagesRemoved.decoder).fold(throw _, Predef.identity)
+  "Decoding JSON into images removed" should "cope with empty lists" in {
+    decodeImagesRemoved("[]") should be(ImagesRemoved(List.empty))
   }
+
+  private def decodeImagesRemoved(str: String): ImagesRemoved = decode(str, ImagesRemoved.decoder)
 
 }

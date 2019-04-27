@@ -46,6 +46,10 @@ object ImagesRemoved {
     ).reduceLeft(_.or(_))
   }
 
-  val decoder: Decoder[ImagesRemoved] = Decoder.decodeList(refDecoder).map(ImagesRemoved(_))
+  val decoder: Decoder[ImagesRemoved] =
+    Decoder
+      .decodeOption(Decoder.decodeList(refDecoder))
+      .map(_.getOrElse(List.empty))
+      .map(ImagesRemoved(_))
 
 }

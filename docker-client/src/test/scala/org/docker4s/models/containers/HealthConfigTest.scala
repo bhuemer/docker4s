@@ -22,11 +22,11 @@
 package org.docker4s.models.containers
 
 import io.circe.syntax._
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
 import scala.concurrent.duration._
 
-class HealthConfigTest extends FlatSpec with Matchers {
+class HealthConfigTest extends ModelsSpec {
 
   "Encoding health configs into JSON" should "encode inherited tests" in {
     val json = HealthConfig.inherited
@@ -111,12 +111,6 @@ class HealthConfigTest extends FlatSpec with Matchers {
     healthConfig should be(HealthConfig.cmdShell("stat /etc/passwd || exit 1").withInterval(2.seconds))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[HealthConfig]] or throws an exception if something goes wrong. */
-  private def decodeHealthConfig(str: String): HealthConfig = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(HealthConfig.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeHealthConfig(str: String): HealthConfig = decode(str, HealthConfig.decoder)
 
 }

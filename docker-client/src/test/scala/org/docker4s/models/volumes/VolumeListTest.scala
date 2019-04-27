@@ -21,24 +21,18 @@
  */
 package org.docker4s.models.volumes
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class VolumeListTest extends FlatSpec with Matchers {
+class VolumeListTest extends ModelsSpec {
 
   "Decoding JSON into volume lists" should "support empty responses from 1.26 APIs" in {
     val volumeList = decodeVolumeList("""{
       |  "Volumes" : null,
       |  "Warnings" : null
-      |}""".stripMargin)
+      |}""")
     volumeList should be(VolumeList(volumes = List.empty, warnings = List.empty))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[VolumeList]] or throws an exception if something goes wrong. */
-  private def decodeVolumeList(str: String): VolumeList = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(VolumeList.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeVolumeList(str: String): VolumeList = decode(str, VolumeList.decoder)
 
 }

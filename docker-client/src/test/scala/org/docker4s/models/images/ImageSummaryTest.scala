@@ -23,12 +23,12 @@ package org.docker4s.models.images
 
 import java.time.ZonedDateTime
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
 /**
   * Contains test cases related to parsing [[ImageSummary]] objects from JSON response bodies.
   */
-class ImageSummaryTest extends FlatSpec with Matchers {
+class ImageSummaryTest extends ModelsSpec {
 
   /** Makes sure the decoder is not overly restrictive wrt/ `null` vs empty objects/maps. */
   "Decoding JSON into images" should "cope with `null` labels" in {
@@ -127,12 +127,6 @@ class ImageSummaryTest extends FlatSpec with Matchers {
       ))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as an [[ImageSummary]] or throws an exception if something goes wrong. */
-  private def decodeImage(str: String): ImageSummary = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(ImageSummary.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeImage(str: String): ImageSummary = decode(str, ImageSummary.decoder)
 
 }

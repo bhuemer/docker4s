@@ -23,9 +23,9 @@ package org.docker4s.models.networks
 
 import java.time.ZonedDateTime
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.docker4s.models.ModelsSpec
 
-class NetworkTest extends FlatSpec with Matchers {
+class NetworkTest extends ModelsSpec {
 
   "Decoding JSON into networks" should "work" in {
     val network = decodeNetwork("""{
@@ -202,12 +202,6 @@ class NetworkTest extends FlatSpec with Matchers {
       ))
   }
 
-  // -------------------------------------------- Utility methods
-
-  /** Decodes the given string as a [[Network]] or throws an exception if something goes wrong. */
-  private def decodeNetwork(str: String): Network = {
-    val json = io.circe.parser.parse(str).fold(throw _, Predef.identity)
-    json.as(Network.decoder).fold(throw _, Predef.identity)
-  }
+  private def decodeNetwork(str: String): Network = decode(str, Network.decoder)
 
 }

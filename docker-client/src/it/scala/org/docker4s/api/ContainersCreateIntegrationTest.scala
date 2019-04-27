@@ -67,13 +67,15 @@ class ContainersCreateIntegrationTest extends ClientSpec with Matchers with Lazy
       _ <- client.containers.start(container.id)
 
       _ = {
-        val url = new URL(dockerHost match {
-          case DockerHost.Tcp(host, _, _) => s"http://$host:1234"
-          case DockerHost.Unix(_, _)      => s"http://localhost:1234"
-        })
-        logger.info(s"Trying to read the echo message from $url.")
-        val content = scala.io.Source.fromURL(url).mkString
-        content should be("Hello from Docker4s\n")
+        if (!runningOnCircleCI) {
+          val url = new URL(dockerHost match {
+            case DockerHost.Tcp(host, _, _) => s"http://$host:1234"
+            case DockerHost.Unix(_, _)      => s"http://localhost:1234"
+          })
+          logger.info(s"Trying to read the echo message from $url.")
+          val content = scala.io.Source.fromURL(url).mkString
+          content should be("Hello from Docker4s\n")
+        }
       }
 
       _ <- client.containers.stop(container.id)
@@ -99,13 +101,16 @@ class ContainersCreateIntegrationTest extends ClientSpec with Matchers with Lazy
       _ <- client.containers.start(container.id)
 
       _ = {
-        val url = new URL(dockerHost match {
-          case DockerHost.Tcp(host, _, _) => s"http://$host:1235"
-          case DockerHost.Unix(_, _)      => s"http://localhost:1235"
-        })
-        logger.info(s"Trying to read the echo message from $url.")
-        val content = scala.io.Source.fromURL(url).mkString
-        content should be("Hello from Docker4s\n")
+        // On CircleCI we cannot connect to these exposed ports.
+        if (!runningOnCircleCI) {
+          val url = new URL(dockerHost match {
+            case DockerHost.Tcp(host, _, _) => s"http://$host:1235"
+            case DockerHost.Unix(_, _)      => s"http://localhost:1235"
+          })
+          logger.info(s"Trying to read the echo message from $url.")
+          val content = scala.io.Source.fromURL(url).mkString
+          content should be("Hello from Docker4s\n")
+        }
       }
 
       _ <- client.containers.stop(container.id)

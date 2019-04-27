@@ -46,6 +46,12 @@ trait ClientSpec extends FlatSpecLike {
 
   }
 
+  /**
+    * Unfortunately some tests aren't working on CircleCI because of network limitations for
+    * security reasons. This method allows us to ignore theses tests where necessary.
+    */
+  protected def runningOnCircleCI: Boolean = Environment.Live.getProperty("CIRCLECI").contains("true")
+
   protected def dockerHost: DockerHost = DockerHost.fromEnvironment(Environment.Live)
 
 }

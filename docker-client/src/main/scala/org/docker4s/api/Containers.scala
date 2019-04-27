@@ -63,6 +63,13 @@ trait Containers[F[_]] {
   def create(image: String): F[ContainerCreated] = create(Containers.CreateParameter.withImage(image))
 
   /**
+    * Creates a new container from the given image.
+    *
+    * Similar to the `docker container create` command.
+    */
+  def create(imageId: Image.Id): F[ContainerCreated] = create(Containers.CreateParameter.withImage(imageId))
+
+  /**
     * Creates a new container with the given parameters.
     *
     * Similar to the `docker container create` command.

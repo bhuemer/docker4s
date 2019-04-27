@@ -21,8 +21,11 @@
  */
 package org.docker4s.api
 
+import fs2.Stream
 import org.docker4s.api.Containers.ListParameter.showAll
 import org.docker4s.api.Containers.LogParameter.stdout
+import org.docker4s.util.Compression
+import org.docker4s.syntax._
 import org.scalatest.Matchers
 
 class ContainersIntegrationTest extends ClientSpec with Matchers {
@@ -104,6 +107,49 @@ class ContainersIntegrationTest extends ClientSpec with Matchers {
       _ = processes.processes should have size 2
 
       _ <- client.containers.kill(created.id)
+    } yield ()
+  }
+
+  "The client" should "support the stat operation for files in containers" given { client =>
+    val image = Stream
+      .emits(
+        Seq(
+          Compression.TarEntry(
+            "Dockerfile",
+            """
+            |FROM busybox:latest
+            |RUN echo "Hello" > /home/hello.txt
+            |RUN ln -s /home/hello.txt /home/link.txt
+          """.stripMargin.getBytes
+          )
+        ))
+      .through(Compression.tar())
+      .through(Compression.gzip())
+
+    for {
+      build <- client.images.build(image, name = Some("docker4s-stat-test")).result
+      _ = build.imageId.isDefined should be(true)
+
+      container <- client.containers.create(build.imageId.get)
+      _ <- client.containers.start(container.id)
+
+      stat <- client.containers.stat(container.id, path = "/home/hello.txt")
+      _ = stat.name should be("hello.txt")
+      _ = stat.size should be(6)
+      _ = stat.mode.asString should be("-------------rw-r--r--")
+      _ = stat.linkTarget should be(None)
+
+      stat <- client.containers.stat(container.id, path = "/home")
+      _ = stat.name should be("home")
+      _ = stat.size should be(4096)
+      _ = stat.mode.asString should be("d------------rwxr-xr-x")
+      _ = stat.linkTarget should be(None)
+
+      stat <- client.containers.stat(container.id, path = "/home/link.txt")
+      _ = stat.name should be("link.txt")
+      _ = stat.size should be(15)
+      _ = stat.mode.asString should be("----L--------rwxrwxrwx")
+      _ = stat.linkTarget should be(Some("/home/hello.txt"))
     } yield ()
   }
 

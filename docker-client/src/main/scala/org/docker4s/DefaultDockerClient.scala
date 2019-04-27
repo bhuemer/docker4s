@@ -222,8 +222,8 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
               val decoded = new String(Base64.getDecoder.decode(value))
               io.circe.jawn
                 .decodeAccumulating(decoded)(PathStat.decoder)
-                .toEither
                 .leftMap(errors => new DockerApiException(s"Could not decode path stats from $decoded: $errors"))
+                .toEither
             }
           )
     }

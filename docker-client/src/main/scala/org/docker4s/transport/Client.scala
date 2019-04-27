@@ -78,7 +78,8 @@ object Client {
 
     def expect[A](decoder: Decoder[A]): F[A]
 
-    def expectMany[A](decoder: Decoder[A]): F[List[A]] = expect(Decoder.decodeList(decoder))
+    def expectMany[A](decoder: Decoder[A]): F[List[A]] =
+      expect(Decoder.decodeOption(Decoder.decodeList(decoder)).map(_.getOrElse(List.empty)))
 
     def stream: Stream[F, Byte]
 

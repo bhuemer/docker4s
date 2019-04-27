@@ -23,6 +23,7 @@ package org.docker4s.api
 
 import java.net.URL
 
+import org.docker4s.DockerHost
 import org.docker4s.api.Containers.CreateParameter._
 import org.docker4s.api.Containers.LogParameter._
 import org.docker4s.models.containers.PortBinding
@@ -65,7 +66,12 @@ class ContainersCreateIntegrationTest extends ClientSpec with Matchers {
       _ <- client.containers.start(container.id)
 
       _ = {
-        val content = scala.io.Source.fromURL(new URL("http://localhost:1234")).mkString
+        val content = scala.io.Source
+          .fromURL(new URL(dockerHost match {
+            case DockerHost.Tcp(host, _, _) => s"http://$host:1234"
+            case DockerHost.Unix(_, _)      => s"http://localhost:1234"
+          }))
+          .mkString
         content should be("Hello from Docker4s\n")
       }
 

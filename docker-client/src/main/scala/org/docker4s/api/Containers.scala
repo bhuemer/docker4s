@@ -322,7 +322,8 @@ object Containers {
       */
     def withArgs(args: String*): Parameter[CreateParameter] = body("Cmd", args)
 
-    //def withExposedPort(port: Int, `type`: PortBinding.Type = PortBinding.Type.TCP): Parameter[CreateParameter] = ???
+    def withExposedPort(port: Int, `type`: PortBinding.Type = PortBinding.Type.TCP): Parameter[CreateParameter] =
+      body("ExposedPorts", Json.obj(s"$port/${`type`.name}" -> Json.obj()))
 
     def withPortBinding(binding: PortBinding): Parameter[CreateParameter] =
       body(

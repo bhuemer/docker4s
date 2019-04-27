@@ -23,13 +23,14 @@ package org.docker4s.api
 
 import java.net.URL
 
+import com.typesafe.scalalogging.LazyLogging
 import org.docker4s.DockerHost
 import org.docker4s.api.Containers.CreateParameter._
 import org.docker4s.api.Containers.LogParameter._
 import org.docker4s.models.containers.PortBinding
 import org.scalatest.Matchers
 
-class ContainersCreateIntegrationTest extends ClientSpec with Matchers {
+class ContainersCreateIntegrationTest extends ClientSpec with Matchers with LazyLogging {
 
   /**
     * Makes sure that you can override the default specified in an image's `CMD`.
@@ -66,12 +67,44 @@ class ContainersCreateIntegrationTest extends ClientSpec with Matchers {
       _ <- client.containers.start(container.id)
 
       _ = {
-        val content = scala.io.Source
-          .fromURL(new URL(dockerHost match {
-            case DockerHost.Tcp(host, _, _) => s"http://$host:1234"
-            case DockerHost.Unix(_, _)      => s"http://localhost:1234"
-          }))
-          .mkString
+        val url = new URL(dockerHost match {
+          case DockerHost.Tcp(host, _, _) => s"http://$host:1234"
+          case DockerHost.Unix(_, _)      => s"http://localhost:1234"
+        })
+        logger.info(s"Trying to read the echo message from $url.")
+        val content = scala.io.Source.fromURL(url).mkString
+        content should be("Hello from Docker4s\n")
+      }
+
+      _ <- client.containers.stop(container.id)
+    } yield ()
+  }
+
+  /**
+    * Makes sure that we can run the equivalent to the following Docker command:
+    * {{{
+    * docker run -p 1234:8000 hashicorp/http-echo -listen=:8000 -text="hello world"
+    * }}}
+    */
+  "The client" should "support specifying exposed ports when creating a container" given { client =>
+    for {
+      _ <- client.images.pull(name = "hashicorp/http-echo").compile.drain
+
+      container <- client.containers.create(
+        withImage("hashicorp/http-echo"),
+        withArgs("-text=Hello from Docker4s", "-listen=:8000"),
+        withExposedPort(port = 8000),
+        withPortBinding(PortBinding(privatePort = 8000, publicPort = Some(1235)))
+      )
+      _ <- client.containers.start(container.id)
+
+      _ = {
+        val url = new URL(dockerHost match {
+          case DockerHost.Tcp(host, _, _) => s"http://$host:1235"
+          case DockerHost.Unix(_, _)      => s"http://localhost:1235"
+        })
+        logger.info(s"Trying to read the echo message from $url.")
+        val content = scala.io.Source.fromURL(url).mkString
         content should be("Hello from Docker4s\n")
       }
 

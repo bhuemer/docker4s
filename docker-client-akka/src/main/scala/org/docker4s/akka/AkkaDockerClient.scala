@@ -29,6 +29,7 @@ import org.docker4s.akka.transport.{AkkaClient, ClientTransport}
 import org.docker4s.transport.Client
 import org.docker4s.{DefaultDockerClient, DockerClient, DockerHost, Environment}
 
+import scala.concurrent.ExecutionContext
 import scala.language.higherKinds
 
 object AkkaDockerClient {
@@ -76,6 +77,31 @@ object AkkaDockerClient {
         Resource.liftF(F.delay(new DefaultDockerClient[F](client)))
 
     }
+  }
+
+  /**
+    * Creates a new Akka-based Docker client connecting to the given host. This factory method also automagically
+    * manages the actor system and materializer for you, i.e. they'll be shut down once the resource is used.
+    */
+  def managed[F[_]](
+      dockerHost: DockerHost)(implicit F: ConcurrentEffect[F], ec: ExecutionContext): Resource[F, DockerClient[F]] = {
+    def actorSystem: Resource[F, ActorSystem] =
+      Resource.make(F.delay(ActorSystem()))({ system =>
+        F.async[Unit]({ cb =>
+          system.terminate().map(_ => ()).onComplete(result => cb(result.toEither))
+        })
+      })
+
+    def actorMaterializer(implicit system: ActorSystem): Resource[F, ActorMaterializer] =
+      Resource.make(F.delay(ActorMaterializer()))({ materializer =>
+        F.delay(materializer.shutdown())
+      })
+
+    actorSystem.flatMap({ implicit system =>
+      actorMaterializer.flatMap({ implicit materializer =>
+        fromHost(dockerHost)
+      })
+    })
   }
 
 }

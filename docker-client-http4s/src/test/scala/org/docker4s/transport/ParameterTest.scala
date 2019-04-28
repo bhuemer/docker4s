@@ -19,9 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s.api
+package org.docker4s.transport
 
-import org.docker4s.transport.Parameter
 import org.http4s.Query
 import org.scalatest.{FlatSpec, Matchers}
 

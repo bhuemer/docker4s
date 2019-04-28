@@ -152,11 +152,12 @@ class AkkaRequestBuilder[F[_]](request: HttpRequest, transport: ClientTransport,
         .run(compiled)
         .onComplete({
           case Success(response) =>
-//            Option[String](response.getHeader(name).map(_.value).orElse(null)) match {
-//              case Some(header) => cb(decoder(header))
-//              case None =>
-//                cb(Left(new DockerApiException(s"Cannot find the header '$name' in the response $response.")))
-//            }
+            response.headers.find(_.is(name.toLowerCase)) match {
+              case Some(header) => cb(decoder(header.value()))
+              case None =>
+                cb(Left(new DockerApiException(s"Cannot find the header '$name' in the response $response.")))
+            }
+
           case Failure(error) => cb(Left(error))
         })
     })

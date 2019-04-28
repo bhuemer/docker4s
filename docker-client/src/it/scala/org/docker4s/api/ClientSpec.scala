@@ -21,10 +21,7 @@
  */
 package org.docker4s.api
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import cats.effect.{ContextShift, IO, Resource, Timer}
-import cats.syntax.all._
+import cats.effect.{ContextShift, IO, Timer}
 import com.typesafe.scalalogging.LazyLogging
 import org.docker4s.akka.AkkaDockerClient
 import org.docker4s.http4s.Http4sDockerClient
@@ -48,33 +45,10 @@ trait ClientSpec extends FlatSpecLike {
     def given(testFun: DockerClient[IO] => IO[Any])(implicit pos: source.Position): Unit = {
       new InAndIgnoreMethods(resultOfStringPassedToVerb).in(testFun = {
         logger.info("Running this test with the Http4s implementation.")
-        http4sClient.use(testFun).unsafeRunSync()
+        Http4sDockerClient.fromHost[IO](dockerHost).use(testFun).unsafeRunSync()
 
         logger.info("Running this test with the Akka implementation.")
-        akkaClient.use(testFun).unsafeRunSync()
-      })
-    }
-
-    private def http4sClient: Resource[IO, DockerClient[IO]] = Http4sDockerClient.fromHost(dockerHost)
-    private def akkaClient: Resource[IO, DockerClient[IO]] = {
-      // Creates an actor system as a cats resource. That'll make sure that the system gets restarted for every test.
-      def actorSystem: Resource[IO, ActorSystem] =
-        Resource.make(IO(ActorSystem()))({ system =>
-          IO.async[Unit]({ cb =>
-            system.terminate().map(_ => ()).onComplete(result => cb(result.toEither))
-          })
-        })
-
-      // Creates an actor matierializer as a cats resource.
-      def actorMaterializer(implicit system: ActorSystem): Resource[IO, ActorMaterializer] =
-        Resource.make(IO(ActorMaterializer()))({ materializer =>
-          IO(materializer.shutdown())
-        })
-
-      actorSystem.flatMap({ implicit system =>
-        actorMaterializer.flatMap({ implicit materializer =>
-          AkkaDockerClient.fromHost(dockerHost)
-        })
+        AkkaDockerClient.managed[IO](dockerHost).use(testFun).unsafeRunSync()
       })
     }
 

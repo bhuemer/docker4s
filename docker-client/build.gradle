@@ -2,6 +2,7 @@ apply from: '../gradle/scala.gradle'
 apply from: '../gradle/publish.gradle'
 
 dependencies {
+    // Integration tests are run as part of this project and they depend on the concrete implementations
     testImplementation project(":docker-client-akka")
     testImplementation project(":docker-client-http4s")
 
@@ -9,15 +10,9 @@ dependencies {
     implementation 'org.typelevel:cats-effect_2.12:1.2.0'
     implementation 'org.typelevel:cats-kernel_2.12:1.6.0'
 
-    implementation 'co.fs2:fs2-core_2.12:1.0.4'
-    implementation 'co.fs2:fs2-reactive-streams_2.12:1.0.4'
     implementation 'co.fs2:fs2-cats_2.12:0.5.0'
-
-    // HTTP dependencies
-    implementation 'org.http4s:http4s-core_2.12:0.20.0-M6'
-    implementation 'org.http4s:http4s-circe_2.12:0.20.0-M6'
-    implementation 'org.http4s:http4s-client_2.12:0.20.0-M6'
-    implementation 'org.http4s:http4s-blaze-client_2.12:0.20.0-M6'
+    implementation 'co.fs2:fs2-core_2.12:1.0.4'
+    implementation 'co.fs2:fs2-io_2.12:1.0.4'
 
     // JSON dependencies
     implementation 'io.circe:circe-core_2.12:0.11.1'
@@ -25,12 +20,6 @@ dependencies {
 
     // Logging dependencies
     implementation 'com.typesafe.scala-logging:scala-logging_2.12:3.9.2'
-
-    // Netty is used to implement the UNIX socket transport client
-    implementation 'io.netty:netty-handler:4.1.33.Final'
-    implementation 'io.netty:netty-codec-http:4.1.33.Final'
-    implementation 'io.netty:netty-transport-native-epoll:4.1.33.Final'
-    implementation 'io.netty:netty-transport-native-kqueue:4.1.33.Final'
 
     // Other utility libraries that are required
     implementation 'org.apache.commons:commons-compress:1.18'

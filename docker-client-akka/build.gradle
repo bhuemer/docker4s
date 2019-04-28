@@ -8,9 +8,14 @@ dependencies {
     implementation 'org.typelevel:cats-effect_2.12:1.2.0'
     implementation 'org.typelevel:cats-kernel_2.12:1.6.0'
 
+    implementation 'co.fs2:fs2-core_2.12:1.0.4'
+    implementation 'co.fs2:fs2-reactive-streams_2.12:1.0.4'
+    implementation 'co.fs2:fs2-cats_2.12:0.5.0'
+
     // HTTP dependencies
-    implementation 'com.typesafe.akka:akka-stream_2.12:2.5.18'
-    implementation 'com.typesafe.akka:akka-http_2.12:10.1.5'
+    implementation 'com.typesafe.akka:akka-stream_2.12:2.5.21'
+    implementation 'com.typesafe.akka:akka-http_2.12:10.1.8'
+    implementation 'com.lightbend.akka:akka-stream-alpakka-unix-domain-socket_2.12:1.0.0'
 
     // JSON dependencies
     implementation 'io.circe:circe-core_2.12:0.11.1'
@@ -19,5 +24,11 @@ dependencies {
     // Logging dependencies
     implementation 'com.typesafe.scala-logging:scala-logging_2.12:3.9.2'
 
-    testImplementation 'org.slf4j:slf4j-simple:1.7.25'
+    implementation 'org.slf4j:slf4j-simple:1.7.25'
+}
+
+repositories {
+    maven {
+        url  "https://dl.bintray.com/akka/maven"
+    }
 }

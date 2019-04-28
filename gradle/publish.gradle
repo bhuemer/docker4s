@@ -10,3 +10,74 @@ task scaladocJar(type: Jar) {
     from scaladoc
     archiveClassifier = 'scaladoc'
 }
+
+/**
+ * Utility function to resolve a property either from the environment or a gradle.properties file.
+ */
+def resolve(String name) {
+    String parameter = System.getenv(name)
+    if (parameter == null || parameter.isEmpty()) {
+        parameter = (String) project.findProperty(name)
+    }
+
+    if (parameter == null || parameter.isEmpty()) {
+        parameter = (String) project.findProperty(name.toLowerCase().replaceAll("_", "."))
+    }
+
+    if (parameter == null || parameter.isEmpty()) {
+        project.getLogger().warn("Parameter `" + name + "` cannot be resolved. " +
+                "Please either set as an environment variable or set in `gradle.properties`.")
+    }
+
+    return parameter
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'org.docker4s'
+
+            from components.java
+
+            artifact sourcesJar
+            artifact scaladocJar
+
+            pom {
+                name = project.name
+                url = 'http://docker4s.org'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'http://www.opensource.org/licenses/mit-license.php'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'bhuemer'
+                        name = 'Bernhard Huemer'
+                        email = 'bernhard.huemer@gmail.com'
+                    }
+                }
+                scm {
+                    url = 'https://github.com/bhuemer/docker4s'
+                    connection = 'scm:git://github.com/bhuemer/docker4s.git'
+                    developerConnection = 'scm:git://github.com/bhuemer/docker4s.git'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots/"
+            credentials {
+                username resolve("SONATYPE_USER")
+                password resolve("SONATYPE_PASS")
+            }
+        }
+    }
+}
+
+//signing {
+//    useInMemoryPgpKeys(resolve("GPG_KEY"), resolve("GPG_PASS"))
+//    sign configurations.archives
+//}

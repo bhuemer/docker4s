@@ -8,12 +8,15 @@ Docker client for Scala backed by http4s, fs2, cats & circe.
 
 docker4s is available for Scala 2.12 on Sonatype OSS Snapshots at the following coordinates:
 
+### Http4s
+
 ```scala
 resolvers +=
   "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
 libraryDependencies ++= Seq(
-  "org.docker4s" % "docker-client" % "0.9-SNAPSHOT",
+  "org.docker4s" % "docker-client" % "0.1-SNAPSHOT",
+  "org.docker4s" % "docker-client-http4s" % "0.1-SNAPSHOT",
   "io.netty" % "netty-transport-native-kqueue" % "4.1.33.Final" classifier "osx-x86_64"
   // Or, if you want to use UNIX domain sockets on `epoll`-based systems like Linux:
   // "io.netty" % "netty-transport-native-epoll" % "4.1.33.Final" classifier "linux-x86_64"
@@ -21,6 +24,18 @@ libraryDependencies ++= Seq(
 ```
 
 The second dependency is optional and only necessary when you want to use UNIX domain sockets to communicate with the Docker host (see also [Netty project: Native transports](https://netty.io/wiki/native-transports.html)).
+
+### Akka HTTP
+
+```scala
+resolvers +=
+  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+
+libraryDependencies ++= Seq(
+  "org.docker4s" % "docker-client" % "0.1-SNAPSHOT",
+  "org.docker4s" % "docker-client-akka" % "0.1-SNAPSHOT"
+)
+```
 
 ## Usage example
 
@@ -31,6 +46,7 @@ import cats.effect.{ExitCode, IO, IOApp}
 import org.docker4s.DockerClient
 import org.docker4s.api.Containers
 import org.docker4s.api.Containers.LogParameter._
+import org.docker4s.http4s.Http4sDockerClient
 
 import scala.concurrent.ExecutionContext
 
@@ -41,7 +57,7 @@ object DockerApp extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
     // Uses environment variables to determine the Docker host, e.g. by default on a
     // MacOS X machine it'd be "unix:///var/run/docker.sock" without certificates.
-    val clientResource = DockerClient.fromEnvironment[IO]
+    val clientResource = Http4sDockerClient.fromEnvironment[IO]
     clientResource.use({ client =>
       for {
         // Equivalent to `docker container ls`

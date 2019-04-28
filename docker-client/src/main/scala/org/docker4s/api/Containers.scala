@@ -319,6 +319,29 @@ object Containers {
     def withCmd(cmd: String, args: String*): Parameter[CreateParameter] = body("Cmd", Seq(cmd) ++ args)
 
     /**
+      * Includes the given key-value pair as an environment variable set inside the container.
+      */
+    def withEnv(key: String, value: String): Parameter[CreateParameter] =
+      body("Env", Json.arr(Json.fromString(s"$key=$value")))
+
+    /**
+      * Includes the given key-value pairs as environment variables set inside the container.
+      */
+    def withEnv(env: (String, String)*): Parameter[CreateParameter] = withEnv(Map(env: _*))
+
+    /**
+      * Includes the given key-value pairs as environment variables set inside the container.
+      */
+    def withEnv(env: Map[String, String]): Parameter[CreateParameter] =
+      body("Env", Json.arr(env.map(entry => Json.fromString(s"${entry._1}=${entry._2}")).toSeq: _*))
+
+    /**
+      * Removes the given variable from the environment in the container.
+      */
+    def withoutEnv(key: String): Parameter[CreateParameter] =
+      body("Env", Json.arr(Json.fromString(key)))
+
+    /**
       * Arguments to containers are passed as part of `Cmd` parameters as well - this just makes that more explicit.
       */
     def withArgs(args: String*): Parameter[CreateParameter] = body("Cmd", args)
@@ -355,7 +378,20 @@ object Containers {
 
     def withNetworkingDisabled: Parameter[CreateParameter] = body("NetworkDisabled", false)
 
+    /**
+      * Specifies the timeout to stop a container in seconds (default: 10 seconds).
+      */
+    def withStopTimeout(timeout: FiniteDuration): Parameter[CreateParameter] = body("StopTimeout", timeout.toSeconds)
+
+    /**
+      * Specifies the user that commands are run as inside the container.
+      */
     def withUser(user: String): Parameter[CreateParameter] = body("User", user)
+
+    /**
+      * Specifies the working directory for commands to run in.
+      */
+    def withWorkingDir(path: String): Parameter[CreateParameter] = body("WorkingDir", path)
 
   }
 

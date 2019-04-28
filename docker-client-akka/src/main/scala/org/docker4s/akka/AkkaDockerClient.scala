@@ -22,18 +22,13 @@
 package org.docker4s.akka
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.HttpsConnectionContext
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import cats.effect.{ConcurrentEffect, Resource}
-import javax.net.ssl.SSLContext
-import org.docker4s.akka.transport.{AkkaClient, RequestRunner}
-import org.docker4s.akka.transport.unix.UnixTransport
+import org.docker4s.akka.transport.{AkkaClient, ClientTransport}
 import org.docker4s.transport.Client
 import org.docker4s.{DefaultDockerClient, DockerClient, DockerHost, Environment}
 
-import scala.concurrent.ExecutionContext
 import scala.language.higherKinds
 
 object AkkaDockerClient {
@@ -46,25 +41,27 @@ object AkkaDockerClient {
     *  - '''DOCKER_TLS_VERIFY''' - verify the host against a CA certificate
     *  - '''DOCKER_CERT_PATH''' - path to a directory containing TLS certificates to use when connecting
     */
-  def fromEnvironment[F[_]: ConcurrentEffect](implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
+  def fromEnvironment[F[_]: ConcurrentEffect](
+      implicit system: ActorSystem,
+      materializer: ActorMaterializer): Resource[F, DockerClient[F]] = {
     fromEnvironment(Environment.Live)
   }
 
   def fromEnvironment[F[_]: ConcurrentEffect](environment: Environment)(
-      implicit ec: ExecutionContext): Resource[F, DockerClient[F]] = {
+      implicit system: ActorSystem,
+      materializer: ActorMaterializer): Resource[F, DockerClient[F]] = {
     fromHost(DockerHost.fromEnvironment(environment))
   }
 
-  def fromHost[F[_]](
-      dockerHost: DockerHost)(implicit F: ConcurrentEffect[F], ec: ExecutionContext): Resource[F, DockerClient[F]] = {
-    implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
-
+  def fromHost[F[_]](dockerHost: DockerHost)(
+      implicit F: ConcurrentEffect[F],
+      system: ActorSystem,
+      materializer: ActorMaterializer): Resource[F, DockerClient[F]] = {
     dockerHost match {
       case DockerHost.Unix(socketPath, sslContext) =>
         val client: Client[F] = new AkkaClient[F](
           uri = Uri(s"http://localhost"),
-          RequestRunner.unixRequests(socketPath)
+          ClientTransport.unixRequests(socketPath)
         )
 
         Resource.liftF(F.delay(new DefaultDockerClient[F](client)))
@@ -73,7 +70,7 @@ object AkkaDockerClient {
         val scheme = if (sslContext.isDefined) "https" else "http"
         val client: Client[F] = new AkkaClient(
           uri = Uri(s"$scheme://$host:$port"),
-          RequestRunner.singleRequests
+          ClientTransport.singleRequests(sslContext)
         )
 
         Resource.liftF(F.delay(new DefaultDockerClient[F](client)))

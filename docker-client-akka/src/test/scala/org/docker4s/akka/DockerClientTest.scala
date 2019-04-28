@@ -1,6 +1,8 @@
 package org.docker4s.akka
 import java.net.URL
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import cats.effect.{ExitCode, IO, IOApp}
 import org.docker4s.DockerClient
 import org.docker4s.models.containers.PortBinding
@@ -13,10 +15,17 @@ object DockerClientTest extends IOApp {
   implicit val ec: ExecutionContext = ExecutionContext.global
 
   override def run(args: List[String]): IO[ExitCode] = {
+    implicit val system: ActorSystem = ActorSystem()
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
+
     AkkaDockerClient
       .fromEnvironment[IO]
       .use({ client =>
-        main(client).map(_ => ExitCode.Success)
+        main(client).map({ _ =>
+          materializer.shutdown()
+          system.terminate()
+          ExitCode.Success
+        })
       })
   }
 

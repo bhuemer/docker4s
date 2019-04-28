@@ -161,7 +161,7 @@ object Http4sClient extends LazyLogging {
         } else {
           response.headers.get(CaseInsensitiveString(name)) match {
             case Some(header) => F.fromEither(decoder(header.value))
-            case None         => F.raiseError(new IllegalStateException(s"Cannot find the header $name in the response."))
+            case None         => F.raiseError(new DockerApiException(s"Cannot find the header $name in the response."))
           }
         }
       })

@@ -21,7 +21,7 @@
  */
 package org.docker4s.api
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.{ContextShift, IO, Resource, Timer}
 import org.docker4s.{DockerClient, DockerHost, Environment}
 import org.scalactic.source
 import org.scalatest.FlatSpecLike
@@ -39,8 +39,7 @@ trait ClientSpec extends FlatSpecLike {
         implicit val cs: ContextShift[IO] = IO.contextShift(global)
         implicit val timer: Timer[IO] = IO.timer(global)
         implicit val ec: ExecutionContext = global
-
-        // DockerClient.fromHost[IO](dockerHost).use(testFun).unsafeRunSync()
+        dockerClient(dockerHost).foreach(_.use(testFun).unsafeRunSync())
       })
     }
 
@@ -52,6 +51,11 @@ trait ClientSpec extends FlatSpecLike {
     * they shouldn't run.
     */
   protected def runningOnCircleCI: Boolean = Environment.Live.getProperty("CIRCLECI").contains("true")
+
+  protected def dockerClient(host: DockerHost)(
+      implicit ec: ExecutionContext,
+      cs: ContextShift[IO],
+      timer: Timer[IO]): Option[Resource[IO, DockerClient[IO]]] = None
 
   protected def dockerHost: DockerHost = DockerHost.fromEnvironment(Environment.Live)
 

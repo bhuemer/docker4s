@@ -21,7 +21,13 @@
  */
 package org.docker4s.api
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import cats.effect.{ContextShift, IO, Resource, Timer}
+import cats.syntax.all._
+import com.typesafe.scalalogging.LazyLogging
+import org.docker4s.akka.AkkaDockerClient
+import org.docker4s.http4s.Http4sDockerClient
 import org.docker4s.{DockerClient, DockerHost, Environment}
 import org.scalactic.source
 import org.scalatest.FlatSpecLike
@@ -32,14 +38,43 @@ import scala.concurrent.ExecutionContext.global
 
 trait ClientSpec extends FlatSpecLike {
 
-  implicit protected class TestMethodDeclaration(resultOfStringPassedToVerb: ResultOfStringPassedToVerb) {
+  implicit private val cs: ContextShift[IO] = IO.contextShift(global)
+  implicit private val timer: Timer[IO] = IO.timer(global)
+  implicit private val ec: ExecutionContext = global
+
+  implicit protected class TestMethodDeclaration(resultOfStringPassedToVerb: ResultOfStringPassedToVerb)
+      extends LazyLogging {
 
     def given(testFun: DockerClient[IO] => IO[Any])(implicit pos: source.Position): Unit = {
       new InAndIgnoreMethods(resultOfStringPassedToVerb).in(testFun = {
-        implicit val cs: ContextShift[IO] = IO.contextShift(global)
-        implicit val timer: Timer[IO] = IO.timer(global)
-        implicit val ec: ExecutionContext = global
-        dockerClient(dockerHost).foreach(_.use(testFun).unsafeRunSync())
+        logger.info("Running this test with the Http4s implementation.")
+        http4sClient.use(testFun).unsafeRunSync()
+
+        logger.info("Running this test with the Akka implementation.")
+        akkaClient.use(testFun).unsafeRunSync()
+      })
+    }
+
+    private def http4sClient: Resource[IO, DockerClient[IO]] = Http4sDockerClient.fromHost(dockerHost)
+    private def akkaClient: Resource[IO, DockerClient[IO]] = {
+      // Creates an actor system as a cats resource. That'll make sure that the system gets restarted for every test.
+      def actorSystem: Resource[IO, ActorSystem] =
+        Resource.make(IO(ActorSystem()))({ system =>
+          IO.async[Unit]({ cb =>
+            system.terminate().map(_ => ()).onComplete(result => cb(result.toEither))
+          })
+        })
+
+      // Creates an actor matierializer as a cats resource.
+      def actorMaterializer(implicit system: ActorSystem): Resource[IO, ActorMaterializer] =
+        Resource.make(IO(ActorMaterializer()))({ materializer =>
+          IO(materializer.shutdown())
+        })
+
+      actorSystem.flatMap({ implicit system =>
+        actorMaterializer.flatMap({ implicit materializer =>
+          AkkaDockerClient.fromHost(dockerHost)
+        })
       })
     }
 
@@ -51,11 +86,6 @@ trait ClientSpec extends FlatSpecLike {
     * they shouldn't run.
     */
   protected def runningOnCircleCI: Boolean = Environment.Live.getProperty("CIRCLECI").contains("true")
-
-  protected def dockerClient(host: DockerHost)(
-      implicit ec: ExecutionContext,
-      cs: ContextShift[IO],
-      timer: Timer[IO]): Option[Resource[IO, DockerClient[IO]]] = None
 
   protected def dockerHost: DockerHost = DockerHost.fromEnvironment(Environment.Live)
 

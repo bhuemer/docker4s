@@ -2,6 +2,9 @@ apply from: '../gradle/scala.gradle'
 apply from: '../gradle/publish.gradle'
 
 dependencies {
+    testImplementation project(":docker-client-akka")
+    testImplementation project(":docker-client-http4s")
+
     implementation 'org.typelevel:cats-core_2.12:1.6.0'
     implementation 'org.typelevel:cats-effect_2.12:1.2.0'
     implementation 'org.typelevel:cats-kernel_2.12:1.6.0'

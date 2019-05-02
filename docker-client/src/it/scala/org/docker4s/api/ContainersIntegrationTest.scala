@@ -24,6 +24,7 @@ package org.docker4s.api
 import java.io.{ByteArrayInputStream, InputStream}
 
 import cats.effect.IO
+import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.utils.IOUtils
@@ -36,7 +37,7 @@ import org.scalatest.Matchers
 
 import scala.io.Codec
 
-class ContainersIntegrationTest extends ClientSpec with Matchers {
+class ContainersIntegrationTest extends ClientSpec with Matchers with LazyLogging {
 
   "Running a `hello-world` container" should "produce logs for it" given { client =>
     for {
@@ -203,16 +204,26 @@ class ContainersIntegrationTest extends ClientSpec with Matchers {
       container <- client.containers.create("jupyter/minimal-notebook")
       _ <- client.containers.start(container.id)
 
+      // Make sure that numpy isn't installed yet
+      diff <- client.containers.diff(container.id)
+      _ = diff should not contain
+        ContainerChange("/opt/conda/lib/python3.7/site-packages/numpy", ContainerChange.Kind.Added)
+      _ = diff should not contain
+        ContainerChange("/opt/conda/lib/python3.7/site-packages/numpy/LICENSE.txt", ContainerChange.Kind.Added)
+
+      // Install numpy
       _ <- client.execs
-        .run(container.id, "pip", "install", "tensorflow")
-        .evalTap[IO](message => IO(println(message)))
+        .run(container.id, "pip", "install", "numpy")
+        .evalTap[IO](message => IO(logger.debug(s"Install: $message")))
         .compile
         .drain
 
+      // Make sure that it's now installed :)
       diff <- client.containers.diff(container.id)
-      _ = diff should contain(ContainerChange("/opt/conda/bin/tensorboard", ContainerChange.Kind.Added))
       _ = diff should contain(
-        ContainerChange("/opt/conda/lib/python3.7/site-packages/tensorflow", ContainerChange.Kind.Added))
+        ContainerChange("/opt/conda/lib/python3.7/site-packages/numpy", ContainerChange.Kind.Added))
+      _ = diff should contain(
+        ContainerChange("/opt/conda/lib/python3.7/site-packages/numpy/LICENSE.txt", ContainerChange.Kind.Added))
     } yield ()
   }
 

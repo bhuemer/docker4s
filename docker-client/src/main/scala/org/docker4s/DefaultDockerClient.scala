@@ -28,9 +28,10 @@ import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.Decoder
-import org.docker4s.api.{Containers, Images, Networks, Secrets, System, Volumes}
+import org.docker4s.api.{Containers, Execs, Images, Networks, Secrets, System, Volumes}
 import org.docker4s.errors.{ContainerNotFoundException, DockerApiException}
 import org.docker4s.models.containers._
+import org.docker4s.models.execs.Exec
 import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images._
 import org.docker4s.models.networks.{Network, NetworkCreated, NetworksPruned}
@@ -135,6 +136,9 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
           .expect(ContainerCreated.decoder)
     }
 
+    override def exec(id: Container.Id, detach: Boolean, cmd: String, args: String*): Stream[F, Containers.Log] =
+      execs.run(id, detach, cmd, args: _*)
+
     /**
       * Creates a new image from a container.
       *
@@ -162,7 +166,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
           .withParameters(parameters)
           .expect(Decoder.instance({ c =>
             for {
-              id <- c.downField("Id").as[String]
+              id <- c.downField("Id").as[String].right
             } yield Image.Id(id)
           }))
     }
@@ -319,6 +323,53 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
           .post("/containers/prune")
           .withParameters(parameters)
           .expect(ContainersPruned.decoder)
+    }
+
+  }
+
+  override val execs: Execs[F] = new Execs[F] {
+
+    /**
+      * Creates a new exec instance to run a command inside a running container.
+      */
+    override def create(id: Container.Id, parameters: Parameter[Execs.CreateParameter]*): F[Exec.Id] = {
+      client
+        .post(s"/containers/${id.value}/exec")
+        .withParameters(parameters)
+        .expect(Decoder.instance({ c =>
+          for {
+            id <- c.downField("Id").as[String].right
+          } yield Exec.Id(id)
+        }))
+    }
+
+    override def start(id: Exec.Id, detach: Boolean): Stream[F, Containers.Log] = {
+      client
+        .post(s"/exec/${id.value}/start")
+        .withBodyParam("Detach", detach)
+        .withBodyParam("Tty", false)
+        .stream
+        .through(LogDecoder.decode)
+    }
+
+    override def run(id: Container.Id, detach: Boolean, cmd: String, args: String*): Stream[F, Containers.Log] = {
+      import Execs.CreateParameter._
+      Stream
+        .eval(F.delay(logger.info(s"Executing $cmd $args in the container ${id.value}.")))
+        .evalMap(_ => create(id, attachStdout, attachStderr, withCmd(cmd, args: _*)))
+        .flatMap(start(_, detach))
+    }
+
+    /**
+      * Resize the TTY session used by an exec instance.
+      */
+    override def resize(id: Exec.Id, height: Int, width: Int): F[Unit] = {
+      F.delay(logger.info(s"Resizing the exec instance ${id.value} to $width * $height.")) *>
+        client
+          .post(s"/exec/${id.value}/resize")
+          .withQueryParam("h", height)
+          .withQueryParam("w", width)
+          .execute
     }
 
   }

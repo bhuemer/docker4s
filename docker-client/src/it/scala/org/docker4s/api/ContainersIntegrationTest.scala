@@ -23,6 +23,7 @@ package org.docker4s.api
 
 import java.io.{ByteArrayInputStream, InputStream}
 
+import cats.effect.IO
 import fs2.Stream
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.utils.IOUtils
@@ -192,6 +193,26 @@ class ContainersIntegrationTest extends ClientSpec with Matchers {
           ContainerChange("/home/uploaded1.txt", ContainerChange.Kind.Added),
           ContainerChange("/home/uploaded2.txt", ContainerChange.Kind.Added)
         )
+    } yield ()
+  }
+
+  "The client" should "support executing commands inside containers" given { client =>
+    for {
+      _ <- client.images.pull("jupyter/minimal-notebook").compile.drain
+
+      container <- client.containers.create("jupyter/minimal-notebook")
+      _ <- client.containers.start(container.id)
+
+      _ <- client.execs
+        .run(container.id, "pip", "install", "tensorflow")
+        .evalTap[IO](message => IO(println(message)))
+        .compile
+        .drain
+
+      diff <- client.containers.diff(container.id)
+      _ = diff should contain(ContainerChange("/opt/conda/bin/tensorboard", ContainerChange.Kind.Added))
+      _ = diff should contain(
+        ContainerChange("/opt/conda/lib/python3.7/site-packages/tensorflow", ContainerChange.Kind.Added))
     } yield ()
   }
 

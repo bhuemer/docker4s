@@ -90,6 +90,23 @@ trait Containers[F[_]] {
   def create(parameters: Parameter[Containers.CreateParameter]*): F[ContainerCreated]
 
   /**
+    * Runs the given command in the container.
+    *
+    * Similar to the `docker exec` command.
+    */
+  def exec(id: Container.Id, cmd: String, args: String*): Stream[F, Containers.Log] =
+    exec(id, detach = false, cmd, args: _*)
+
+  /**
+    * Runs the given command in the container.
+    *
+    * Similar to the `docker exec` command.
+    *
+    * @param detach If `true` then the command will be run in detached mode, i.e in the background.
+    */
+  def exec(id: Container.Id, detach: Boolean, cmd: String, args: String*): Stream[F, Containers.Log]
+
+  /**
     * Creates a new image from a container.
     *
     * Similar to the `docker commit` command.

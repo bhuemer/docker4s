@@ -21,7 +21,7 @@
  */
 package org.docker4s
 
-import org.docker4s.api.{Containers, Images, Networks, Secrets, System, Volumes}
+import org.docker4s.api.{Containers, Execs, Images, Networks, Secrets, System, Volumes}
 
 import scala.language.higherKinds
 
@@ -35,6 +35,11 @@ trait DockerClient[F[_]] {
     * Returns an object for managing containers on the server.
     */
   def containers: Containers[F]
+
+  /**
+    * Returns an object for executing commands in containers.
+    */
+  def execs: Execs[F]
 
   /**
     * Returns an object for managing images on the server.

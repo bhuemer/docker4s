@@ -27,6 +27,7 @@ import cats.effect.Sync
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
+import io.circe.Decoder
 import org.docker4s.api.{Containers, Images, Networks, Secrets, System, Volumes}
 import org.docker4s.errors.{ContainerNotFoundException, DockerApiException}
 import org.docker4s.models.containers._
@@ -132,6 +133,38 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
           .post(s"/containers/create")
           .withParameters(parameters)
           .expect(ContainerCreated.decoder)
+    }
+
+    /**
+      * Creates a new image from a container.
+      *
+      * Similar to the `docker commit` command.
+      */
+    override def commit(
+        id: Container.Id,
+        repo: Option[String],
+        tag: Option[String],
+        comment: Option[String],
+        author: Option[String],
+        pause: Option[Boolean],
+        parameters: Parameter[Containers.CreateParameter]*): F[Image.Id] = {
+      F.delay(
+        logger.info(s"Committing the container ${id.value} " +
+          s"[repo: $repo, tag: $tag, comment: $comment, parameters:  ${Parameter.toDebugString(parameters)}].")) *>
+        client
+          .post("/commit")
+          .withQueryParam("container", id.value)
+          .withQueryParam("repo", repo)
+          .withQueryParam("tag", tag)
+          .withQueryParam("comment", comment)
+          .withQueryParam("author", author)
+          .withQueryParam("pause", pause)
+          .withParameters(parameters)
+          .expect(Decoder.instance({ c =>
+            for {
+              id <- c.downField("Id").as[String]
+            } yield Image.Id(id)
+          }))
     }
 
     override def start(id: Container.Id): F[Unit] = {
@@ -362,7 +395,10 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
           F.delay(logger.info(s"Fetching events from the docker host " +
             s"[parameters: ${Parameter.toDebugString(parameters)}].")))
         .flatMap({ _ =>
-          client.get("/events").withParameters(parameters).stream(Event.decoder)
+          client
+            .get("/events")
+            .withParameters(parameters)
+            .stream(Event.decoder)
         })
         .evalTap({ event =>
           F.delay(logger.debug(s"System event: $event"))
@@ -584,6 +620,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       F.delay(logger.info(s"Pruning volumes [parameters: ${Parameter.toDebugString(parameters)}].")) *>
         client
           .post("/volumes/prune")
+          .withParameters(parameters)
           .expect(VolumesPruned.decoder)
     }
 

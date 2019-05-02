@@ -90,6 +90,33 @@ trait Containers[F[_]] {
   def create(parameters: Parameter[Containers.CreateParameter]*): F[ContainerCreated]
 
   /**
+    * Creates a new image from a container.
+    *
+    * Similar to the `docker commit` command.
+    */
+  def commit(
+      id: Container.Id,
+      repo: Option[String] = None,
+      tag: Option[String] = None,
+      comment: Option[String] = None,
+      author: Option[String] = None,
+      pause: Option[Boolean] = None): F[Image.Id] = commit(id, repo, tag, comment, author, pause, Seq.empty: _*)
+
+  /**
+    * Creates a new image from a container.
+    *
+    * Similar to the `docker commit` command.
+    */
+  def commit(
+      id: Container.Id,
+      repo: Option[String],
+      tag: Option[String],
+      comment: Option[String],
+      author: Option[String],
+      pause: Option[Boolean],
+      parameters: Parameter[Containers.CreateParameter]*): F[Image.Id]
+
+  /**
     * Returns differences in the given container's file system since it was started.
     *
     * Similar to the `docker container diff` command.

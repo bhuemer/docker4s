@@ -29,6 +29,7 @@ import org.http4s.Uri
 import org.http4s.client.blaze.BlazeClientBuilder
 
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 
 object Http4sDockerClient {
@@ -60,6 +61,8 @@ object Http4sDockerClient {
 
       case DockerHost.Tcp(host, port, sslContext) =>
         BlazeClientBuilder[F](ec)
+        // TODO: Make this configurable
+          .withRequestTimeout(FiniteDuration(60, "seconds"))
           .withSslContextOption(sslContext)
           .resource
           .map({ client =>

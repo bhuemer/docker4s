@@ -63,6 +63,7 @@ object Http4sDockerClient {
         BlazeClientBuilder[F](ec)
         // TODO: Make this configurable
           .withRequestTimeout(FiniteDuration(60, "seconds"))
+          .withResponseHeaderTimeout(FiniteDuration(60, "seconds"))
           .withSslContextOption(sslContext)
           .resource
           .map({ client =>

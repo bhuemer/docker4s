@@ -37,6 +37,8 @@ trait Containers[F[_]] {
 
   def get(id: Container.Id): ContainerRef[F] = ContainerRef(this, id)
 
+  def inspect(id: Container.Id): F[Container]
+
   /**
     * Returns a list of containers.
     *

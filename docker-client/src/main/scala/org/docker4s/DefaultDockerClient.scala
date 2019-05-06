@@ -61,6 +61,13 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
           .expectMany(ContainerChange.decoder)
     }
 
+    override def inspect(id: Container.Id): F[Container] = {
+      F.delay(logger.info(s"Inspecting the container ${id.value}.")) *>
+        client
+          .get(s"/containers/${id.value}/json")
+          .expect(Container.decoder)
+    }
+
     /**
       * Returns a list of containers.
       *
@@ -388,7 +395,7 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
       * Returns detailed information for the given secret. Similar to the `docker secret inspect` command.
       */
     override def inspect(id: Secret.Id): F[Secret] = {
-      F.delay(logger.info(s"Inspecting secret ${id.value}.")) *>
+      F.delay(logger.info(s"Inspecting the secret ${id.value}.")) *>
         client.get(s"/secrets/${id.value}").expect(Secret.decoder)
     }
 

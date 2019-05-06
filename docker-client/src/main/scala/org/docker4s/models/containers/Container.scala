@@ -21,9 +21,12 @@
  */
 package org.docker4s.models.containers
 
-import io.circe.Decoder
+import java.time.ZonedDateTime
 
-case class Container()
+import io.circe.Decoder
+import org.docker4s.models.images.Image
+
+case class Container(id: Container.Id, createdAt: ZonedDateTime, imageId: Image.Id, networkSettings: NetworkSettings)
 
 object Container {
 
@@ -54,6 +57,15 @@ object Container {
 
   private[containers] val statusDecoder: Decoder[Status] = Decoder.decodeString.emap({ str =>
     Status.from(str).toRight(s"Cannot decode $str as a container status.")
+  })
+
+  val decoder: Decoder[Container] = Decoder.instance({ c =>
+    for {
+      id <- c.downField("Id").as[String].right
+      createdAt <- c.downField("Created").as[ZonedDateTime].right
+      imageId <- c.downField("Image").as[String].right
+      networkSettings <- c.downField("NetworkSettings").as(NetworkSettings.decoder).right
+    } yield Container(Container.Id(id), createdAt, Image.Id(imageId), networkSettings)
   })
 
 }

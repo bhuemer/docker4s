@@ -27,7 +27,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import cats.effect.{ExitCode, IO, IOApp}
 import org.docker4s.DockerClient
-import org.docker4s.models.containers.PortBinding
+import org.docker4s.models.containers.{Container, PortBinding}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -52,6 +52,10 @@ object DockerClientTest extends IOApp {
   }
 
   private def main(client: DockerClient[IO]): IO[Unit] = {
+    client.containers.inspect(Container.Id("64c27a8dc9e1")).map(println)
+  }
+
+  private def main2(client: DockerClient[IO]): IO[Unit] = {
     import org.docker4s.api.Containers.CreateParameter._
 
     for {

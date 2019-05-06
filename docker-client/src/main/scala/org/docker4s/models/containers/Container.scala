@@ -24,9 +24,23 @@ package org.docker4s.models.containers
 import java.time.ZonedDateTime
 
 import io.circe.Decoder
+import org.docker4s.models.execs.Exec
 import org.docker4s.models.images.Image
 
-case class Container(id: Container.Id, createdAt: ZonedDateTime, imageId: Image.Id, networkSettings: NetworkSettings)
+/**
+  *
+  * @param id The ID of the container
+  * @param createdAt The time the container was created
+  * @param imageId The container's image
+  * @param execIds IDs of exec instances that are running in the container.
+  * @param networkSettings
+  */
+case class Container(
+    id: Container.Id,
+    createdAt: ZonedDateTime,
+    imageId: Image.Id,
+    execIds: List[Exec.Id],
+    networkSettings: NetworkSettings)
 
 object Container {
 
@@ -64,8 +78,16 @@ object Container {
       id <- c.downField("Id").as[String].right
       createdAt <- c.downField("Created").as[ZonedDateTime].right
       imageId <- c.downField("Image").as[String].right
+      execIds <- c.downField("ExecIDs").as[Option[List[String]]].right
       networkSettings <- c.downField("NetworkSettings").as(NetworkSettings.decoder).right
-    } yield Container(Container.Id(id), createdAt, Image.Id(imageId), networkSettings)
+    } yield
+      Container(
+        id = Container.Id(id),
+        createdAt = createdAt,
+        imageId = Image.Id(imageId),
+        execIds = execIds.getOrElse(List.empty).map(Exec.Id),
+        networkSettings = networkSettings
+      )
   })
 
 }

@@ -25,6 +25,8 @@ import io.circe.Decoder
 import org.docker4s.models.containers.Container.{Id => ContainerId}
 
 /**
+  * Contains non-portable configuration data for a container, i.e. configuration that is dependent on the
+  * host that the container is running on.
   *
   * @param binds List of volume bindings for this container
   * @param logConfig Configuration of the logs for this container

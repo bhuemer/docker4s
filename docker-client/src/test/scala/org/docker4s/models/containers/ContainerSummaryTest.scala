@@ -83,7 +83,7 @@ class ContainerSummaryTest extends ModelsSpec {
         labels = Map.empty,
         state = Container.Status.Exited,
         status = "Exited (0) 6 days ago",
-        networkMode = "default",
+        networkMode = HostConfig.NetworkMode.Default,
         networks = Map("bridge" -> Endpoint.Settings(
           ipamConfig = None,
           links = List.empty,
@@ -172,7 +172,7 @@ class ContainerSummaryTest extends ModelsSpec {
         ),
         state = Container.Status.Running,
         status = "Up 6 seconds",
-        networkMode = "default",
+        networkMode = HostConfig.NetworkMode.Default,
         networks = Map(
           "bridge" -> Endpoint.Settings(
             ipamConfig = None,

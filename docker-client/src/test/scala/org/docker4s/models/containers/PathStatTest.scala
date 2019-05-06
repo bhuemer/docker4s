@@ -26,7 +26,7 @@ import java.time.ZonedDateTime
 
 import org.docker4s.models.ModelsSpec
 
-class PathStatSpec extends ModelsSpec {
+class PathStatTest extends ModelsSpec {
 
   /**
     * {{{

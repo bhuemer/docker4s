@@ -28,6 +28,10 @@ import org.docker4s.models.images.Image
 import org.docker4s.models.networks.Endpoint
 
 /**
+  * Information about a particular container as returned by the `List containers` endpoint. Note that it uses a
+  * different, smaller representation of a container than inspecting a single container.
+  *
+  * @see [[https://docs.docker.com/engine/api/v1.39/#operation/ContainerList Docker Engine API]]
   *
   * @param id The ID of this container
   * @param names The names that this container has been given

@@ -23,6 +23,12 @@ package org.docker4s.models.containers
 
 import io.circe.Decoder
 
+/**
+  * Information about the container that was created as returned by the Docker host.
+  * @see [[https://docs.docker.com/engine/api/v1.39/#operation/ContainerCreate Docker Engine API]]
+  * @param id The ID of the created container
+  * @param warnings Warnings encountered when creating the container
+  */
 case class ContainerCreated(id: Container.Id, warnings: List[String])
 
 object ContainerCreated {

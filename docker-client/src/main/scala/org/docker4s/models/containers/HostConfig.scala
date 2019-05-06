@@ -22,13 +22,54 @@
 package org.docker4s.models.containers
 
 import io.circe.Decoder
+import org.docker4s.models.containers.Container.{Id => ContainerId}
+
+/**
+  *
+  * @param binds List of volume bindings for this container
+  * @param logConfig Configuration of the logs for this container
+  * @param networkMode Network mode to use for this container
+  * @param portBindings The mappings of container ports to host ports.
+  */
+case class HostConfig(
+    binds: List[String],
+    logConfig: HostConfig.LogConfig,
+    networkMode: HostConfig.NetworkMode,
+    portBindings: List[PortBinding])
 
 object HostConfig {
 
-  type NetworkMode = String
+  /**
+    * Represents the logging configuration of the container.
+    */
+  case class LogConfig(`type`: String, config: Map[String, String])
+
+  sealed trait NetworkMode
 
   object NetworkMode {
-    val decoder: Decoder[NetworkMode] = Decoder.decodeString
+
+    case object None extends NetworkMode
+    case object Host extends NetworkMode
+    case object Bridge extends NetworkMode
+    case object Default extends NetworkMode
+    case class Container(id: ContainerId) extends NetworkMode
+    case class Custom(name: String) extends NetworkMode
+
+    // ------------------------------------------ Circe decoders
+
+    val decoder: Decoder[NetworkMode] = Decoder.decodeString.map({
+      case "none" => None
+      case "host" => Host
+      // In Windows this network is given the name NAT but still the bridge network stack
+      case "nat"     => Bridge
+      case "bridge"  => Bridge
+      case "default" => Default
+      case container if container.startsWith("container:") =>
+        Container(ContainerId(container.substring("container:".length)))
+      // Any other value is taken as a custom network's name to which the container should connect to
+      case otherwise => Custom(otherwise)
+    })
+
   }
 
 }

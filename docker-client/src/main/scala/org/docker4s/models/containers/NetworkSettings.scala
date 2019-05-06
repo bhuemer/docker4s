@@ -31,6 +31,8 @@ case class NetworkSettings(ports: List[PortBinding], networks: Map[String, Endpo
 
 object NetworkSettings {
 
+  // -------------------------------------------- Circe decoders
+
   val decoder: Decoder[NetworkSettings] = Decoder.instance({ c =>
     for {
       ports <- c.downField("Ports").as(Decoder.decodeOption(PortBindings.decoder)).right

@@ -19,56 +19,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s
+package org.docker4s.api
 
-import org.docker4s.api.{Containers, Execs, Images, Networks, Secrets, Swarm, System, Volumes}
+import com.typesafe.scalalogging.LazyLogging
+import org.scalatest.Matchers
 
-import scala.language.higherKinds
+class SwarmIntegrationTest extends ClientSpec with Matchers with LazyLogging {
 
-/**
-  * Allows you to communicate with a docker daemon.
-  * @tparam F the effect type for evaluations, e.g. `IO`
-  */
-trait DockerClient[F[_]] {
+  "The client" should "support initializing and leaving Docker swarms" given { client =>
+    for {
+      node <- client.swarm.init("0.0.0.0:2377", forceNewCluster = Some(true))
+      _ = logger.info(s"Initialized a new Docker swarm with ${node.id} as the manager node.")
 
-  /**
-    * Returns an object for managing containers on the server.
-    */
-  def containers: Containers[F]
-
-  /**
-    * Returns an object for executing commands in containers.
-    */
-  def execs: Execs[F]
-
-  /**
-    * Returns an object for managing images on the server.
-    */
-  def images: Images[F]
-
-  /**
-    * Returns an object for managing networks on the docker host.
-    */
-  def networks: Networks[F]
-
-  /**
-    * Returns an object for managing secrets on the docker host.
-    */
-  def secrets: Secrets[F]
-
-  /**
-    * Returns an object for managing Docker swarms.
-    */
-  def swarm: Swarm[F]
-
-  /**
-    * Returns an object for inspecting the system on the docker host.
-    */
-  def system: System[F]
-
-  /**
-    * Returns an object for managing volumes on the docker host.
-    */
-  def volumes: Volumes[F]
+      _ <- client.swarm.leave(force = Some(true))
+      _ = logger.info("Left the Docker swarm.")
+    } yield ()
+  }
 
 }

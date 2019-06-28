@@ -19,56 +19,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s
+package org.docker4s.api
 
-import org.docker4s.api.{Containers, Execs, Images, Networks, Secrets, Swarm, System, Volumes}
+import org.docker4s.models.swarm.Node
 
 import scala.language.higherKinds
 
-/**
-  * Allows you to communicate with a docker daemon.
-  * @tparam F the effect type for evaluations, e.g. `IO`
-  */
-trait DockerClient[F[_]] {
+trait Swarm[F[_]] {
 
   /**
-    * Returns an object for managing containers on the server.
+    *
+    * Similar to the `docker swarm init` command.
+    *
+    * @param listenAddress
+    *
+    * @return the identifier of this current node in the swarm
     */
-  def containers: Containers[F]
+  def init(listenAddress: String, forceNewCluster: Option[Boolean] = None): F[Node.Id]
 
   /**
-    * Returns an object for executing commands in containers.
+    * Leaves the swarm.
+    *
+    * Similar to the `docker swarm leave` command.
+    *
+    * @param force If true, forces to leave the swarm even if this is the last manager or that it will break the cluster.
     */
-  def execs: Execs[F]
-
-  /**
-    * Returns an object for managing images on the server.
-    */
-  def images: Images[F]
-
-  /**
-    * Returns an object for managing networks on the docker host.
-    */
-  def networks: Networks[F]
-
-  /**
-    * Returns an object for managing secrets on the docker host.
-    */
-  def secrets: Secrets[F]
-
-  /**
-    * Returns an object for managing Docker swarms.
-    */
-  def swarm: Swarm[F]
-
-  /**
-    * Returns an object for inspecting the system on the docker host.
-    */
-  def system: System[F]
-
-  /**
-    * Returns an object for managing volumes on the docker host.
-    */
-  def volumes: Volumes[F]
+  def leave(force: Option[Boolean] = None): F[Unit]
 
 }
+
+object Swarm {}

@@ -19,56 +19,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.docker4s
+package org.docker4s.models.swarm
 
-import org.docker4s.api.{Containers, Execs, Images, Networks, Secrets, Swarm, System, Volumes}
+case class Node() {}
 
-import scala.language.higherKinds
+object Node {
 
-/**
-  * Allows you to communicate with a docker daemon.
-  * @tparam F the effect type for evaluations, e.g. `IO`
-  */
-trait DockerClient[F[_]] {
-
-  /**
-    * Returns an object for managing containers on the server.
-    */
-  def containers: Containers[F]
-
-  /**
-    * Returns an object for executing commands in containers.
-    */
-  def execs: Execs[F]
-
-  /**
-    * Returns an object for managing images on the server.
-    */
-  def images: Images[F]
-
-  /**
-    * Returns an object for managing networks on the docker host.
-    */
-  def networks: Networks[F]
-
-  /**
-    * Returns an object for managing secrets on the docker host.
-    */
-  def secrets: Secrets[F]
-
-  /**
-    * Returns an object for managing Docker swarms.
-    */
-  def swarm: Swarm[F]
-
-  /**
-    * Returns an object for inspecting the system on the docker host.
-    */
-  def system: System[F]
-
-  /**
-    * Returns an object for managing volumes on the docker host.
-    */
-  def volumes: Volumes[F]
+  /** Typed identifier for nodes in Docker swarms. */
+  case class Id(id: String)
 
 }

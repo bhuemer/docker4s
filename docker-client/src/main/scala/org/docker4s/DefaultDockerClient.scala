@@ -28,7 +28,7 @@ import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import fs2.Stream
 import io.circe.Decoder
-import org.docker4s.api.{Containers, Execs, Images, Networks, Secrets, System, Volumes}
+import org.docker4s.api.{Containers, Execs, Images, Networks, Secrets, Swarm, System, Volumes}
 import org.docker4s.errors.{ContainerNotFoundException, DockerApiException}
 import org.docker4s.models.containers._
 import org.docker4s.models.execs.Exec
@@ -36,6 +36,7 @@ import org.docker4s.models.system.{Event, Info, Version}
 import org.docker4s.models.images._
 import org.docker4s.models.networks.{Network, NetworkCreated, NetworksPruned}
 import org.docker4s.models.secrets.{Secret, SecretCreated}
+import org.docker4s.models.swarm.Node
 import org.docker4s.models.volumes.{Volume, VolumeList, VolumesPruned}
 import org.docker4s.transport.{Client, Parameter}
 import org.docker4s.util.LogDecoder
@@ -430,6 +431,42 @@ private[docker4s] class DefaultDockerClient[F[_]](private val client: Client[F])
     override def remove(id: Secret.Id): F[Unit] = {
       F.delay(logger.info(s"Removing the secret ${id.value}.")) *>
         client.delete(s"/secrets/${id.value}").execute
+    }
+
+  }
+
+  /**
+    * Returns an object for managing Docker swarms.
+    */
+  override val swarm: Swarm[F] = new Swarm[F] {
+
+    /**
+      *
+      * Similar to the `docker swarm init` command.
+      */
+    override def init(listenAddress: String, forceNewCluster: Option[Boolean]): F[Node.Id] = {
+      F.delay(logger.info(s"Initializing a new swarm [listenAddress: $listenAddress, force: $forceNewCluster].")) *>
+        client
+          .post("/swarm/init")
+          .withBodyParam("ListenAddr", listenAddress)
+          .withBodyParam("ForceNewCluster", forceNewCluster)
+          .expect(Decoder.decodeString)
+          .map(Node.Id)
+    }
+
+    /**
+      * Leaves the swarm.
+      *
+      * Similar to the `docker swarm leave` command.
+      *
+      * @param force If true, forces to leave the swarm even if this is the last manager or that it will break the cluster.
+      */
+    override def leave(force: Option[Boolean]): F[Unit] = {
+      F.delay(logger.info(s"Leaving the swarm [force: $force].")) *>
+        client
+          .post("/swarm/leave")
+          .withQueryParam("force", force)
+          .execute
     }
 
   }
